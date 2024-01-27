@@ -20,7 +20,7 @@
  * <boyko@iitp.ru>
  */
 
-#include "ns3/aodv-module.h"
+#include "ns3/lesap-aodv-module.h"
 #include "ns3/core-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/mobility-module.h"
@@ -35,7 +35,7 @@
 using namespace ns3;
 
 /**
- * \ingroup aodv-examples
+ * \ingroup lesap-aodv-examples
  * \ingroup examples
  * \brief Test script.
  *
@@ -50,10 +50,10 @@ using namespace ns3;
  * stopping ping replies reception after sequence number 33. If the step size is reduced
  * to cover the gap, then also the following pings can be received.
  */
-class AodvExample
+class LesapAodvExample
 {
   public:
-    AodvExample();
+    LesapAodvExample();
     /**
      * \brief Configure script parameters
      * \param argc is the command line argument count
@@ -104,7 +104,7 @@ class AodvExample
 int
 main(int argc, char** argv)
 {
-    AodvExample test;
+    LesapAodvExample test;
     if (!test.Configure(argc, argv))
     {
         NS_FATAL_ERROR("Configuration failed. Aborted.");
@@ -116,7 +116,7 @@ main(int argc, char** argv)
 }
 
 //-----------------------------------------------------------------------------
-AodvExample::AodvExample()
+LesapAodvExample::LesapAodvExample()
     : size(10),
       step(50),
       totalTime(100),
@@ -126,10 +126,10 @@ AodvExample::AodvExample()
 }
 
 bool
-AodvExample::Configure(int argc, char** argv)
+LesapAodvExample::Configure(int argc, char** argv)
 {
-    // Enable AODV logs by default. Comment this if too noisy
-    // LogComponentEnable("AodvRoutingProtocol", LOG_LEVEL_ALL);
+    // Enable LESAP-AODV logs by default. Comment this if too noisy
+    // LogComponentEnable("LesapAodvRoutingProtocol", LOG_LEVEL_ALL);
 
     SeedManager::SetSeed(12345);
     CommandLine cmd(__FILE__);
@@ -145,7 +145,7 @@ AodvExample::Configure(int argc, char** argv)
 }
 
 void
-AodvExample::Run()
+LesapAodvExample::Run()
 {
     //  Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", UintegerValue (1)); //
     //  enable rts cts all the time.
@@ -162,12 +162,12 @@ AodvExample::Run()
 }
 
 void
-AodvExample::Report(std::ostream&)
+LesapAodvExample::Report(std::ostream&)
 {
 }
 
 void
-AodvExample::CreateNodes()
+LesapAodvExample::CreateNodes()
 {
     std::cout << "Creating " << (unsigned)size << " nodes " << step << " m apart.\n";
     nodes.Create(size);
@@ -198,7 +198,7 @@ AodvExample::CreateNodes()
 }
 
 void
-AodvExample::CreateDevices()
+LesapAodvExample::CreateDevices()
 {
     WifiMacHelper wifiMac;
     wifiMac.SetType("ns3::AdhocWifiMac");
@@ -220,12 +220,12 @@ AodvExample::CreateDevices()
 }
 
 void
-AodvExample::InstallInternetStack()
+LesapAodvExample::InstallInternetStack()
 {
-    AodvHelper aodv;
-    // you can configure AODV attributes here using aodv.Set(name, value)
+    LesapAodvHelper lesapAodv;
+    // you can configure LESAP-AODV attributes here using lesapAodv.Set(name, value)
     InternetStackHelper stack;
-    stack.SetRoutingHelper(aodv); // has effect on the next Install ()
+    stack.SetRoutingHelper(lesapAodv); // has effect on the next Install ()
     stack.Install(nodes);
     Ipv4AddressHelper address;
     address.SetBase("10.0.0.0", "255.0.0.0");
@@ -234,13 +234,13 @@ AodvExample::InstallInternetStack()
     if (printRoutes)
     {
         Ptr<OutputStreamWrapper> routingStream =
-            Create<OutputStreamWrapper>("aodv.routes", std::ios::out);
+            Create<OutputStreamWrapper>("lesap-aodv.routes", std::ios::out);
         Ipv4RoutingHelper::PrintRoutingTableAllAt(Seconds(8), routingStream);
     }
 }
 
 void
-AodvExample::InstallApplications()
+LesapAodvExample::InstallApplications()
 {
     PingHelper ping(interfaces.GetAddress(size - 1));
     ping.SetAttribute("VerboseMode", EnumValue(Ping::VerboseMode::VERBOSE));

@@ -7,7 +7,7 @@
 #
 # See test.py for more information.
 cpp_examples = [
-    ("aodv", "True", "True"),
+    ("lesap-aodv", "True", "True"),
 ]
 
 # A list of Python examples to run in order to ensure that they remain

@@ -19,7 +19,7 @@
  */
 
 #include "ns3/abort.h"
-#include "ns3/aodv-helper.h"
+#include "ns3/lesap-aodv-helper.h"
 #include "ns3/boolean.h"
 #include "ns3/config.h"
 #include "ns3/constant-position-mobility-model.h"

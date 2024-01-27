@@ -1,29 +1,29 @@
-#build_lib(
-#  LIBNAME aodv
-#  SOURCE_FILES
-#    helper/aodv-helper.cc
-#    model/aodv-dpd.cc
-#    model/aodv-id-cache.cc
-#    model/aodv-neighbor.cc
-#    model/aodv-packet.cc
-#    model/aodv-routing-protocol.cc
-#    model/aodv-rqueue.cc
-#    model/aodv-rtable.cc
-#  HEADER_FILES
-#    helper/aodv-helper.h
-#    model/aodv-dpd.h
-#    model/aodv-id-cache.h
-#    model/aodv-neighbor.h
-#    model/aodv-packet.h
-#   model/aodv-routing-protocol.h
-#    model/aodv-rqueue.h
-#    model/aodv-rtable.h
-#  LIBRARIES_TO_LINK ${libinternet}
-#                    ${libwifi}
-#  TEST_SOURCES
-#    test/aodv-id-cache-test-suite.cc
-#    test/aodv-regression.cc
-#    test/aodv-test-suite.cc
-#    test/loopback.cc
-#    test/bug-772.cc
-#)
+build_lib(
+  LIBNAME lesap-aodv
+  SOURCE_FILES
+    helper/lesap-aodv-helper.cc
+    model/lesap-aodv-dpd.cc
+    model/lesap-aodv-id-cache.cc
+    model/lesap-aodv-neighbor.cc
+    model/lesap-aodv-packet.cc
+    model/lesap-aodv-routing-protocol.cc
+    model/lesap-aodv-rqueue.cc
+    model/lesap-aodv-rtable.cc
+  HEADER_FILES
+    helper/lesap-aodv-helper.h
+    model/lesap-aodv-dpd.h
+    model/lesap-aodv-id-cache.h
+    model/lesap-aodv-neighbor.h
+    model/lesap-aodv-packet.h
+    model/lesap-aodv-routing-protocol.h
+    model/lesap-aodv-rqueue.h
+    model/lesap-aodv-rtable.h
+  LIBRARIES_TO_LINK ${libinternet}
+                    ${libwifi}
+  TEST_SOURCES
+    test/lesap-aodv-id-cache-test-suite.cc
+    test/lesap-aodv-regression.cc
+    test/lesap-aodv-test-suite.cc
+    test/lesap-aodv-loopback.cc
+    test/lesap-aodv-bug-772.cc
+)
