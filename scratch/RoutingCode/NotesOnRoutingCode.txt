@@ -1,0 +1,16 @@
+- Application needed for Sybil nodes
+- Application needed for Blackhole nodes
+- Modify routing algorithm to validate location of each neighbor (lower distance)
+	- Will need to do this multiple times for various routing algorithms
+	- aodv-neighbors continues to work as normal
+	- aodv-lidar will manage this change
+x Use application on nodes to manage blacklists
+- Use routing algorithm to manage blacklists (works for AODV, easily)
+	- Make the blacklist timeout settable by the script
+	- Set to total time of simulation for permanent blacklisting(or other value as required)
+	- Will need to do this multiple times for various routing algorithms
+- 1 or 2 Applications needed for normal nodes
+
+
+Needs for LESAP-AODV
+
