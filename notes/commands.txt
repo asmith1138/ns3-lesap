@@ -1,0 +1,27 @@
+Run script
+./ns3 run scratch/manet-routing-compare.cc
+./ns3 run scratch/manet-routing-compare.cc &> results/manet.data
+(cd .. &&./ns3 run scratch/second.cc &> results/second.data)
+(cd .. &&./ns3 run scratch/vanet-routing-compare.cc &> results/vanet.data)
+(cd .. &&./ns3 run scratch/manet-routing-compare.cc &> results/manet.data)
+../ns3 run /../scratch/manet-routing-compare.cc &> temp.data
+
+
+Metrics
+java -jar ../../../tracemetrics-1.4.0/tracemetrics.jar 
+../../netanim-3.109/NetAnim ../results/second.xml
+ wireshark ../results/second/p2p-1-0.pcap 
+ tcpdump -n -t -r ../results/second/p2p-1-0.pcap 
+gnuplot mygnucode.plt 
+gnuplot
+
+Sumo
+sumo-gui
+
+
+
+Examples
+./ns3 run hello-simulator
+./ns3 run first
+./ns3 run second
+

@@ -1,0 +1,11 @@
+[0/2] Re-checking globbed directories...
+[1/2] Building CXX object scratch/CMakeFiles/scratch_first.dir/first.cc.o
+[2/2] Linking CXX executable ../build/scratch/ns3.40-first-default
+AnimationInterface WARNING:Node:0 Does not have a mobility model. Use SetConstantPosition if it is stationary
+AnimationInterface WARNING:Node:1 Does not have a mobility model. Use SetConstantPosition if it is stationary
+AnimationInterface WARNING:Node:0 Does not have a mobility model. Use SetConstantPosition if it is stationary
+AnimationInterface WARNING:Node:1 Does not have a mobility model. Use SetConstantPosition if it is stationary
+At time +2s client sent 1024 bytes to 10.1.1.2 port 9
+At time +2.00369s server received 1024 bytes from 10.1.1.1 port 49153
+At time +2.00369s server sent 1024 bytes to 10.1.1.1 port 49153
+At time +2.00737s client received 1024 bytes from 10.1.1.2 port 9
