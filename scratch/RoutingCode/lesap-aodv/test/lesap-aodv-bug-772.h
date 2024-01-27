@@ -14,11 +14,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after Bug772ChainTest by Pavel Boyko
+ * <boyko@iitp.ru>
  */
 
-#ifndef BUG_772_H
-#define BUG_772_H
+#ifndef LESAP_AODV_BUG_772_H
+#define LESAP_AODV_BUG_772_H
 
 #include "ns3/node-container.h"
 #include "ns3/nstime.h"
@@ -28,15 +29,15 @@
 using namespace ns3;
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  *
- * \brief AODV deferred route lookup test case (see \bugid{772})
+ * \brief LESAP-AODV deferred route lookup test case (see \bugid{772})
  *
  * UDP packet transfers are delayed while a route is found and then while
  * ARP completes.  Eight packets should be sent, queued until the path
  * becomes functional, and then delivered.
  */
-class Bug772ChainTest : public TestCase
+class LesapAodvBug772ChainTest : public TestCase
 {
   public:
     /**
@@ -47,8 +48,8 @@ class Bug772ChainTest : public TestCase
      * \param size                Number of nodes in the chain
      * \param time                Simulation time
      */
-    Bug772ChainTest(const char* const prefix, const char* const proto, Time time, uint32_t size);
-    ~Bug772ChainTest() override;
+    LesapAodvBug772ChainTest(const char* const prefix, const char* const proto, Time time, uint32_t size);
+    ~LesapAodvBug772ChainTest() override;
 
   private:
     /// \internal It is important to have pointers here
@@ -96,4 +97,4 @@ class Bug772ChainTest : public TestCase
     void SendData(Ptr<Socket> socket);
 };
 
-#endif /* BUG_772_H */
+#endif /* LESAP_AODV_BUG_772_H */

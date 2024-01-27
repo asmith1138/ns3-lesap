@@ -14,11 +14,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after NeighborTest by Pavel Boyko
+ * <boyko@iitp.ru>
  */
 
-#ifndef AODV_REGRESSION_H
-#define AODV_REGRESSION_H
+#ifndef LESAP_AODV_REGRESSION_H
+#define LESAP_AODV_REGRESSION_H
 
 #include "ns3/node-container.h"
 #include "ns3/nstime.h"
@@ -28,9 +29,9 @@
 using namespace ns3;
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  *
- * \brief AODV chain regression test
+ * \brief LESAP-AODV chain regression test
  *
  * This script creates 1-dimensional grid topology and then ping last node from the first one:
  *
@@ -159,7 +160,7 @@ ID=4, org_seqno=3) src = 10.1.1.2
 ..................................................................
  * \endverbatim
  */
-class ChainRegressionTest : public TestCase
+class LesapAodvChainRegressionTest : public TestCase
 {
   public:
     /**
@@ -171,11 +172,11 @@ class ChainRegressionTest : public TestCase
      * \param arpAliveTimeout     ARP alive timeout, this is used to check that ARP and routing do
      * not interfere
      */
-    ChainRegressionTest(const char* const prefix,
+    LesapAodvChainRegressionTest(const char* const prefix,
                         Time time = Seconds(10),
                         uint32_t size = 5,
                         Time arpAliveTimeout = Seconds(120));
-    ~ChainRegressionTest() override;
+    ~LesapAodvChainRegressionTest() override;
 
   private:
     /// \internal It is important to have pointers here
@@ -208,4 +209,4 @@ class ChainRegressionTest : public TestCase
     void SendPing();
 };
 
-#endif /* AODV_REGRESSION_H */
+#endif /* LESAP_AODV_REGRESSION_H */

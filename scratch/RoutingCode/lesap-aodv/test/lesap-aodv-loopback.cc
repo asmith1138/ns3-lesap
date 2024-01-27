@@ -14,7 +14,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after NeighborTest by Pavel Boyko
+ * <boyko@iitp.ru>
  */
 
 #include "ns3/abort.h"
@@ -43,13 +44,13 @@
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  *
- * \brief AODV loopback UDP echo test case
+ * \brief LESAP-AODV loopback UDP echo test case
  */
 class LoopbackTestCase : public TestCase
 {
@@ -148,10 +149,10 @@ LoopbackTestCase::DoRun()
                                  StringValue("2200"));
     NetDeviceContainer devices = wifi.Install(wifiPhy, wifiMac, nodes);
 
-    // Setup TCP/IP & AODV
-    AodvHelper aodv; // Use default parameters here
+    // Setup TCP/IP & LESAP-AODV
+    LesapAodvHelper lesapAodv; // Use default parameters here
     InternetStackHelper internetStack;
-    internetStack.SetRoutingHelper(aodv);
+    internetStack.SetRoutingHelper(lesapAodv);
     internetStack.Install(nodes);
     Ipv4AddressHelper address;
     address.SetBase("10.1.1.0", "255.255.255.0");
@@ -190,21 +191,21 @@ LoopbackTestCase::DoRun()
 }
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
- * \brief AODV Loopback test suite
+ * \brief LESAP-AODV Loopback test suite
  */
-class AodvLoopbackTestSuite : public TestSuite
+class LesapAodvLoopbackTestSuite : public TestSuite
 {
   public:
-    AodvLoopbackTestSuite()
+    LesapAodvLoopbackTestSuite()
         : TestSuite("routing-aodv-loopback", SYSTEM)
     {
         SetDataDir(NS_TEST_SOURCEDIR);
         // UDP Echo loopback test case
         AddTestCase(new LoopbackTestCase(), TestCase::QUICK);
     }
-} g_aodvLoopbackTestSuite; ///< the test suite
+} g_lesapAodvLoopbackTestSuite; ///< the test suite
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

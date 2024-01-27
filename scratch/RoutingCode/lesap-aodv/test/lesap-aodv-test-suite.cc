@@ -14,22 +14,23 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after NeighborTest by Pavel Boyko
+ * <boyko@iitp.ru>
  */
-#include "ns3/aodv-neighbor.h"
-#include "ns3/aodv-packet.h"
-#include "ns3/aodv-rqueue.h"
-#include "ns3/aodv-rtable.h"
+#include "ns3/lesap-aodv-neighbor.h"
+#include "ns3/lesap-aodv-packet.h"
+#include "ns3/lesap-aodv-rqueue.h"
+#include "ns3/lesap-aodv-rtable.h"
 #include "ns3/ipv4-route.h"
 #include "ns3/test.h"
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Unit test for neighbors
  */
@@ -134,26 +135,26 @@ NeighborTest::DoRun()
 }
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Type header test case
  */
 struct TypeHeaderTest : public TestCase
 {
     TypeHeaderTest()
-        : TestCase("AODV TypeHeader")
+        : TestCase("LESAP-AODV TypeHeader")
     {
     }
 
     void DoRun() override
     {
-        TypeHeader h(AODVTYPE_RREQ);
+        TypeHeader h(LESAPAODVTYPE_RREQ);
         NS_TEST_EXPECT_MSG_EQ(h.IsValid(), true, "Default header is valid");
-        NS_TEST_EXPECT_MSG_EQ(h.Get(), AODVTYPE_RREQ, "Default header is RREQ");
+        NS_TEST_EXPECT_MSG_EQ(h.Get(), LESAPAODVTYPE_RREQ, "Default header is RREQ");
 
         Ptr<Packet> p = Create<Packet>();
         p->AddHeader(h);
-        TypeHeader h2(AODVTYPE_RREP);
+        TypeHeader h2(LESAPAODVTYPE_RREP);
         uint32_t bytes = p->RemoveHeader(h2);
         NS_TEST_EXPECT_MSG_EQ(bytes, 1, "Type header is 1 byte long");
         NS_TEST_EXPECT_MSG_EQ(h, h2, "Round trip serialization works");
@@ -161,14 +162,14 @@ struct TypeHeaderTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Unit test for RREQ
  */
 struct RreqHeaderTest : public TestCase
 {
     RreqHeaderTest()
-        : TestCase("AODV RREQ")
+        : TestCase("LESAP-AODV RREQ")
     {
     }
 
@@ -220,14 +221,14 @@ struct RreqHeaderTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Unit test for RREP
  */
 struct RrepHeaderTest : public TestCase
 {
     RrepHeaderTest()
-        : TestCase("AODV RREP")
+        : TestCase("LESAP-AODV RREP")
     {
     }
 
@@ -277,14 +278,14 @@ struct RrepHeaderTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Unit test for RREP-ACK
  */
 struct RrepAckHeaderTest : public TestCase
 {
     RrepAckHeaderTest()
-        : TestCase("AODV RREP-ACK")
+        : TestCase("LESAP-AODV RREP-ACK")
     {
     }
 
@@ -301,14 +302,14 @@ struct RrepAckHeaderTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Unit test for RERR
  */
 struct RerrHeaderTest : public TestCase
 {
     RerrHeaderTest()
-        : TestCase("AODV RERR")
+        : TestCase("LESAP-AODV RERR")
     {
     }
 
@@ -335,9 +336,9 @@ struct RerrHeaderTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
- * \brief Unit test for AODV routing table entry
+ * \brief Unit test for LESAP-AODV routing table entry
  */
 struct QueueEntryTest : public TestCase
 {
@@ -424,9 +425,9 @@ struct QueueEntryTest : public TestCase
 
 //-----------------------------------------------------------------------------
 /// Unit test for RequestQueue
-struct AodvRqueueTest : public TestCase
+struct LesapAodvRqueueTest : public TestCase
 {
-    AodvRqueueTest()
+    LesapAodvRqueueTest()
         : TestCase("Rqueue"),
           q(64, Seconds(30))
     {
@@ -464,7 +465,7 @@ struct AodvRqueueTest : public TestCase
 };
 
 void
-AodvRqueueTest::DoRun()
+LesapAodvRqueueTest::DoRun()
 {
     NS_TEST_EXPECT_MSG_EQ(q.GetMaxQueueLen(), 64, "trivial");
     q.SetMaxQueueLen(32);
@@ -477,8 +478,8 @@ AodvRqueueTest::DoRun()
     Ipv4Header h;
     h.SetDestination(Ipv4Address("1.2.3.4"));
     h.SetSource(Ipv4Address("4.3.2.1"));
-    Ipv4RoutingProtocol::UnicastForwardCallback ucb = MakeCallback(&AodvRqueueTest::Unicast, this);
-    Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&AodvRqueueTest::Error, this);
+    Ipv4RoutingProtocol::UnicastForwardCallback ucb = MakeCallback(&LesapAodvRqueueTest::Unicast, this);
+    Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&LesapAodvRqueueTest::Error, this);
     QueueEntry e1(packet, h, ucb, ecb, Seconds(1));
     q.Enqueue(e1);
     q.Enqueue(e1);
@@ -516,19 +517,19 @@ AodvRqueueTest::DoRun()
     Ipv4Address dst2("1.2.3.4");
     header2.SetDestination(dst2);
 
-    Simulator::Schedule(q.GetQueueTimeout() + Seconds(1), &AodvRqueueTest::CheckTimeout, this);
+    Simulator::Schedule(q.GetQueueTimeout() + Seconds(1), &LesapAodvRqueueTest::CheckTimeout, this);
 
     Simulator::Run();
     Simulator::Destroy();
 }
 
 void
-AodvRqueueTest::CheckSizeLimit()
+LesapAodvRqueueTest::CheckSizeLimit()
 {
     Ptr<Packet> packet = Create<Packet>();
     Ipv4Header header;
-    Ipv4RoutingProtocol::UnicastForwardCallback ucb = MakeCallback(&AodvRqueueTest::Unicast, this);
-    Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&AodvRqueueTest::Error, this);
+    Ipv4RoutingProtocol::UnicastForwardCallback ucb = MakeCallback(&LesapAodvRqueueTest::Unicast, this);
+    Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&LesapAodvRqueueTest::Error, this);
     QueueEntry e1(packet, header, ucb, ecb, Seconds(1));
 
     for (uint32_t i = 0; i < q.GetMaxQueueLen(); ++i)
@@ -545,19 +546,19 @@ AodvRqueueTest::CheckSizeLimit()
 }
 
 void
-AodvRqueueTest::CheckTimeout()
+LesapAodvRqueueTest::CheckTimeout()
 {
     NS_TEST_EXPECT_MSG_EQ(q.GetSize(), 0, "Must be empty now");
 }
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
- * \brief Unit test for AODV routing table entry
+ * \brief Unit test for LESAP-AODV routing table entry
  */
-struct AodvRtableEntryTest : public TestCase
+struct LesapAodvRtableEntryTest : public TestCase
 {
-    AodvRtableEntryTest()
+    LesapAodvRtableEntryTest()
         : TestCase("RtableEntry")
     {
     }
@@ -644,13 +645,13 @@ struct AodvRtableEntryTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
- * \brief Unit test for AODV routing table
+ * \brief Unit test for LESAP-AODV routing table
  */
-struct AodvRtableTest : public TestCase
+struct LesapAodvRtableTest : public TestCase
 {
-    AodvRtableTest()
+    LesapAodvRtableTest()
         : TestCase("Rtable")
     {
     }
@@ -731,15 +732,15 @@ struct AodvRtableTest : public TestCase
 };
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
- * \brief AODV test suite
+ * \brief LESAP-AODV test suite
  */
-class AodvTestSuite : public TestSuite
+class LesapAodvTestSuite : public TestSuite
 {
   public:
-    AodvTestSuite()
-        : TestSuite("routing-aodv", UNIT)
+    LesapAodvTestSuite()
+        : TestSuite("routing-lesap-aodv", UNIT)
     {
         AddTestCase(new NeighborTest, TestCase::QUICK);
         AddTestCase(new TypeHeaderTest, TestCase::QUICK);
@@ -748,11 +749,11 @@ class AodvTestSuite : public TestSuite
         AddTestCase(new RrepAckHeaderTest, TestCase::QUICK);
         AddTestCase(new RerrHeaderTest, TestCase::QUICK);
         AddTestCase(new QueueEntryTest, TestCase::QUICK);
-        AddTestCase(new AodvRqueueTest, TestCase::QUICK);
-        AddTestCase(new AodvRtableEntryTest, TestCase::QUICK);
-        AddTestCase(new AodvRtableTest, TestCase::QUICK);
+        AddTestCase(new LesapAodvRqueueTest, TestCase::QUICK);
+        AddTestCase(new LesapAodvRtableEntryTest, TestCase::QUICK);
+        AddTestCase(new LesapAodvRtableTest, TestCase::QUICK);
     }
-} g_aodvTestSuite; ///< the test suite
+} g_lesapAodvTestSuite; ///< the test suite
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

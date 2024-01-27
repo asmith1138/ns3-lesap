@@ -21,18 +21,20 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#ifndef AODV_H
-#define AODV_H
+#ifndef LESAP_AODV_H
+#define LESAP_AODV_H
 
 /**
- * \defgroup aodv AODV Routing
+ * \defgroup lesap-aodv LESAP-AODV Routing
  *
- * This section documents the API of the ns-3 AODV module. For a generic functional description,
+ * This section documents the API of the ns-3 LESAP-AODV module. For a generic functional description,
  * please refer to the ns-3 manual.
  */
 
-#endif /* AODV_H */
+#endif /* LESAP_AODV_H */

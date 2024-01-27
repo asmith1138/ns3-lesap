@@ -14,12 +14,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after NeighborTest by Pavel Boyko
+ * <boyko@iitp.ru>
  */
 
-#include "aodv-regression.h"
+#include "lesap-aodv-regression.h"
 
-#include "bug-772.h"
+#include "lesap-aodv-bug-772.h"
 
 #include "ns3/abort.h"
 #include "ns3/aodv-helper.h"
@@ -44,38 +45,38 @@
 using namespace ns3;
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
- * \brief AODV regression test suite
+ * \brief LESAP-AODV regression test suite
  */
-class AodvRegressionTestSuite : public TestSuite
+class LesapAodvRegressionTestSuite : public TestSuite
 {
   public:
-    AodvRegressionTestSuite()
+    LesapAodvRegressionTestSuite()
         : TestSuite("routing-aodv-regression", SYSTEM)
     {
         SetDataDir(NS_TEST_SOURCEDIR);
         // General RREQ-RREP-RRER test case
-        AddTestCase(new ChainRegressionTest("aodv-chain-regression-test"), TestCase::QUICK);
+        AddTestCase(new LesapAodvChainRegressionTest("aodv-chain-regression-test"), TestCase::QUICK);
         // \bugid{606} test case, should crash if bug is not fixed
-        AddTestCase(new ChainRegressionTest("bug-606-test", Seconds(10), 3, Seconds(1)),
+        AddTestCase(new LesapAodvChainRegressionTest("bug-606-test", Seconds(10), 3, Seconds(1)),
                     TestCase::QUICK);
         // \bugid{772} UDP test case
-        AddTestCase(new Bug772ChainTest("udp-chain-test", "ns3::UdpSocketFactory", Seconds(3), 10),
+        AddTestCase(new LesapAodvBug772ChainTest("udp-chain-test", "ns3::UdpSocketFactory", Seconds(3), 10),
                     TestCase::QUICK);
     }
-} g_aodvRegressionTestSuite; ///< the test suite
+} g_lesapAodvRegressionTestSuite; ///< the test suite
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Chain Regression Test
  */
-ChainRegressionTest::ChainRegressionTest(const char* const prefix,
+LesapAodvChainRegressionTest::LesapAodvChainRegressionTest(const char* const prefix,
                                          Time t,
                                          uint32_t size,
                                          Time arpAliveTimeout)
-    : TestCase("AODV chain regression test"),
+    : TestCase("LESAP-AODV chain regression test"),
       m_nodes(nullptr),
       m_prefix(prefix),
       m_time(t),
@@ -86,13 +87,13 @@ ChainRegressionTest::ChainRegressionTest(const char* const prefix,
 {
 }
 
-ChainRegressionTest::~ChainRegressionTest()
+LesapAodvChainRegressionTest::~LesapAodvChainRegressionTest()
 {
     delete m_nodes;
 }
 
 void
-ChainRegressionTest::SendPing()
+LesapAodvChainRegressionTest::SendPing()
 {
     if (Simulator::Now() >= m_time)
     {
@@ -117,11 +118,11 @@ ChainRegressionTest::SendPing()
     }
     p->AddHeader(header);
     m_socket->Send(p, 0);
-    Simulator::Schedule(Seconds(1), &ChainRegressionTest::SendPing, this);
+    Simulator::Schedule(Seconds(1), &LesapAodvChainRegressionTest::SendPing, this);
 }
 
 void
-ChainRegressionTest::DoRun()
+LesapAodvChainRegressionTest::DoRun()
 {
     RngSeedManager::SetSeed(12345);
     RngSeedManager::SetRun(7);
@@ -145,7 +146,7 @@ ChainRegressionTest::DoRun()
 }
 
 void
-ChainRegressionTest::CreateNodes()
+LesapAodvChainRegressionTest::CreateNodes()
 {
     m_nodes = new NodeContainer;
     m_nodes->Create(m_size);
@@ -168,7 +169,7 @@ ChainRegressionTest::CreateNodes()
 }
 
 void
-ChainRegressionTest::CreateDevices()
+LesapAodvChainRegressionTest::CreateDevices()
 {
     // 1. Setup WiFi
     int64_t streamsUsed = 0;
@@ -199,16 +200,16 @@ ChainRegressionTest::CreateDevices()
     // Assign 0 streams per channel for this configuration
     NS_TEST_ASSERT_MSG_EQ(streamsUsed, (devices.GetN() * 2), "Stream assignment mismatch");
 
-    // 2. Setup TCP/IP & AODV
-    AodvHelper aodv; // Use default parameters here
+    // 2. Setup TCP/IP & LESAP-AODV
+    LesapAodvHelper lesapAodv; // Use default parameters here
     InternetStackHelper internetStack;
-    internetStack.SetRoutingHelper(aodv);
+    internetStack.SetRoutingHelper(lesapAodv);
     internetStack.Install(*m_nodes);
     streamsUsed += internetStack.AssignStreams(*m_nodes, streamsUsed);
     // InternetStack uses m_size more streams
     NS_TEST_ASSERT_MSG_EQ(streamsUsed, (devices.GetN() * 5) + m_size, "Stream assignment mismatch");
-    streamsUsed += aodv.AssignStreams(*m_nodes, streamsUsed);
-    // AODV uses m_size more streams
+    streamsUsed += lesapAodv.AssignStreams(*m_nodes, streamsUsed);
+    // LEAP-AODV uses m_size more streams
     NS_TEST_ASSERT_MSG_EQ(streamsUsed,
                           ((devices.GetN() * 5) + (2 * m_size)),
                           "Stream assignment mismatch");
@@ -233,7 +234,7 @@ ChainRegressionTest::CreateDevices()
 }
 
 void
-ChainRegressionTest::CheckResults()
+LesapAodvChainRegressionTest::CheckResults()
 {
     for (uint32_t i = 0; i < m_size; ++i)
     {

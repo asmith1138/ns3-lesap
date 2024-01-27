@@ -21,25 +21,27 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::IdCacheTest by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#include "ns3/aodv-id-cache.h"
+#include "ns3/lesap-aodv-id-cache.h"
 #include "ns3/test.h"
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 
 /**
- * \defgroup aodv-test AODV module tests
- * \ingroup aodv
+ * \defgroup lesap-aodv-test LESAP-AODV module tests
+ * \ingroup lesap-aodv
  * \ingroup tests
  */
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Unit test for id cache
  */
@@ -110,7 +112,7 @@ IdCacheTest::CheckTimeout3()
 }
 
 /**
- * \ingroup aodv-test
+ * \ingroup lesap-aodv-test
  *
  * \brief Id Cache Test Suite
  */
@@ -118,11 +120,11 @@ class IdCacheTestSuite : public TestSuite
 {
   public:
     IdCacheTestSuite()
-        : TestSuite("aodv-routing-id-cache", UNIT)
+        : TestSuite("lesap-aodv-routing-id-cache", UNIT)
     {
         AddTestCase(new IdCacheTest, TestCase::QUICK);
     }
 } g_idCacheTestSuite; ///< the test suite
 
-} // namespace aodv
+} // namespace lesap-aodv
 } // namespace ns3

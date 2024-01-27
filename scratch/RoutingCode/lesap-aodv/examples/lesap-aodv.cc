@@ -16,7 +16,8 @@
  *
  * This is an example script for AODV manet routing protocol.
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after AodvExample by Pavel Boyko
+ * <boyko@iitp.ru>
  */
 
 #include "ns3/aodv-module.h"

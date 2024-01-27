@@ -14,13 +14,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors: Pavel Boyko <boyko@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after Bug772ChainTest by Pavel Boyko
+ * <boyko@iitp.ru>
  */
 
-#include "bug-772.h"
+#include "lesap-aodv-bug-772.h"
 
 #include "ns3/abort.h"
-#include "ns3/aodv-helper.h"
+#include "ns3/lesap-aodv-helper.h"
 #include "ns3/boolean.h"
 #include "ns3/config.h"
 #include "ns3/data-rate.h"
@@ -47,7 +48,7 @@ using namespace ns3;
 //-----------------------------------------------------------------------------
 // UdpChainTest
 //-----------------------------------------------------------------------------
-Bug772ChainTest::Bug772ChainTest(const char* const prefix,
+LesapAodvBug772ChainTest::LesapAodvBug772ChainTest(const char* const prefix,
                                  const char* const proto,
                                  Time t,
                                  uint32_t size)
@@ -63,33 +64,33 @@ Bug772ChainTest::Bug772ChainTest(const char* const prefix,
 {
 }
 
-Bug772ChainTest::~Bug772ChainTest()
+LesapAodvBug772ChainTest::~LesapAodvBug772ChainTest()
 {
     delete m_nodes;
 }
 
 void
-Bug772ChainTest::SendData(Ptr<Socket> socket)
+LesapAodvBug772ChainTest::SendData(Ptr<Socket> socket)
 {
     if (Simulator::Now() < m_time)
     {
         socket->Send(Create<Packet>(1000));
         Simulator::ScheduleWithContext(socket->GetNode()->GetId(),
                                        Seconds(0.25),
-                                       &Bug772ChainTest::SendData,
+                                       &LesapAodvBug772ChainTest::SendData,
                                        this,
                                        socket);
     }
 }
 
 void
-Bug772ChainTest::HandleRead(Ptr<Socket> socket)
+LesapAodvBug772ChainTest::HandleRead(Ptr<Socket> socket)
 {
     m_receivedPackets++;
 }
 
 void
-Bug772ChainTest::DoRun()
+LesapAodvBug772ChainTest::DoRun()
 {
     RngSeedManager::SetSeed(1);
     RngSeedManager::SetRun(2);
@@ -110,7 +111,7 @@ Bug772ChainTest::DoRun()
 }
 
 void
-Bug772ChainTest::CreateNodes()
+LesapAodvBug772ChainTest::CreateNodes()
 {
     m_nodes = new NodeContainer;
     m_nodes->Create(m_size);
@@ -133,7 +134,7 @@ Bug772ChainTest::CreateNodes()
 }
 
 void
-Bug772ChainTest::CreateDevices()
+LesapAodvBug772ChainTest::CreateDevices()
 {
     int64_t streamsUsed = 0;
     // 1. Setup WiFi
@@ -171,18 +172,18 @@ Bug772ChainTest::CreateDevices()
     // Assign 0 streams per channel for this configuration
     NS_TEST_ASSERT_MSG_EQ(streamsUsed, (devices.GetN() * 2), "Stream assignment mismatch");
 
-    // 2. Setup TCP/IP & AODV
-    AodvHelper aodv; // Use default parameters here
+    // 2. Setup TCP/IP & LESAP-AODV
+    LesapAodvHelper lesapAodv; // Use default parameters here
     InternetStackHelper internetStack;
-    internetStack.SetRoutingHelper(aodv);
+    internetStack.SetRoutingHelper(lesapAodv);
     internetStack.Install(*m_nodes);
     streamsUsed += internetStack.AssignStreams(*m_nodes, streamsUsed);
     // Expect to use (3*m_size) more streams for internet stack random variables
     NS_TEST_ASSERT_MSG_EQ(streamsUsed,
                           ((devices.GetN() * 3) + (3 * m_size)),
                           "Stream assignment mismatch");
-    streamsUsed += aodv.AssignStreams(*m_nodes, streamsUsed);
-    // Expect to use m_size more streams for AODV
+    streamsUsed += lesapAodv.AssignStreams(*m_nodes, streamsUsed);
+    // Expect to use m_size more streams for LESAP-AODV
     NS_TEST_ASSERT_MSG_EQ(streamsUsed,
                           ((devices.GetN() * 3) + (3 * m_size) + m_size),
                           "Stream assignment mismatch");
@@ -197,7 +198,7 @@ Bug772ChainTest::CreateDevices()
     m_sendSocket->SetAllowBroadcast(true);
     Simulator::ScheduleWithContext(m_sendSocket->GetNode()->GetId(),
                                    Seconds(1.0),
-                                   &Bug772ChainTest::SendData,
+                                   &LesapAodvBug772ChainTest::SendData,
                                    this,
                                    m_sendSocket);
 
@@ -205,11 +206,11 @@ Bug772ChainTest::CreateDevices()
     m_recvSocket->Bind(InetSocketAddress(Ipv4Address::GetAny(), m_port));
     m_recvSocket->Listen();
     m_recvSocket->ShutdownSend();
-    m_recvSocket->SetRecvCallback(MakeCallback(&Bug772ChainTest::HandleRead, this));
+    m_recvSocket->SetRecvCallback(MakeCallback(&LesapAodvBug772ChainTest::HandleRead, this));
 }
 
 void
-Bug772ChainTest::CheckResults()
+LesapAodvBug772ChainTest::CheckResults()
 {
     // We should have sent 8 packets (every 0.25 seconds from time 1 to time 3)
     // Check that the received packet count is 8
