@@ -21,12 +21,14 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::Neighbors by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#ifndef AODVNEIGHBOR_H
-#define AODVNEIGHBOR_H
+#ifndef LESAP_AODVNEIGHBOR_H
+#define LESAP_AODVNEIGHBOR_H
 
 #include "ns3/arp-cache.h"
 #include "ns3/callback.h"
@@ -41,13 +43,13 @@ namespace ns3
 
 class WifiMacHeader;
 
-namespace aodv
+namespace lesapAodv
 {
 
 class RoutingProtocol;
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  * \brief maintain list of active neighbors
  */
 class Neighbors
@@ -180,7 +182,7 @@ class Neighbors
     void ProcessTxError(const WifiMacHeader& hdr);
 };
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3
 
-#endif /* AODVNEIGHBOR_H */
+#endif /* LESAP_AODVNEIGHBOR_H */

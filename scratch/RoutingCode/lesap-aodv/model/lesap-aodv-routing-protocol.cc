@@ -21,7 +21,9 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::RoutingProtocol by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 #define NS_LOG_APPEND_CONTEXT                                                                      \
@@ -30,7 +32,7 @@
         std::clog << "[node " << m_ipv4->GetObject<Node>()->GetId() << "] ";                       \
     }
 
-#include "aodv-routing-protocol.h"
+#include "lesap-aodv-routing-protocol.h"
 
 #include "ns3/adhoc-wifi-mac.h"
 #include "ns3/boolean.h"
@@ -52,18 +54,18 @@
 namespace ns3
 {
 
-NS_LOG_COMPONENT_DEFINE("AodvRoutingProtocol");
+NS_LOG_COMPONENT_DEFINE("LesapAodvRoutingProtocol");
 
-namespace aodv
+namespace lesapAodv
 {
 NS_OBJECT_ENSURE_REGISTERED(RoutingProtocol);
 
-/// UDP Port for AODV control traffic
-const uint32_t RoutingProtocol::AODV_PORT = 654;
+/// UDP Port for LESAP-AODV control traffic
+const uint32_t RoutingProtocol::LESAP_AODV_PORT = 654;
 
 /**
- * \ingroup aodv
- * \brief Tag used by AODV implementation
+ * \ingroup lesapAodv
+ * \brief Tag used by LESAP-AODV implementation
  */
 class DeferredRouteOutputTag : public Tag
 {
@@ -84,9 +86,9 @@ class DeferredRouteOutputTag : public Tag
      */
     static TypeId GetTypeId()
     {
-        static TypeId tid = TypeId("ns3::aodv::DeferredRouteOutputTag")
+        static TypeId tid = TypeId("ns3::lesapAodv::DeferredRouteOutputTag")
                                 .SetParent<Tag>()
-                                .SetGroupName("Aodv")
+                                .SetGroupName("LesapAodv")
                                 .AddConstructor<DeferredRouteOutputTag>();
         return tid;
     }
@@ -187,9 +189,9 @@ TypeId
 RoutingProtocol::GetTypeId()
 {
     static TypeId tid =
-        TypeId("ns3::aodv::RoutingProtocol")
+        TypeId("ns3::lesapAodv::RoutingProtocol")
             .SetParent<Ipv4RoutingProtocol>()
-            .SetGroupName("Aodv")
+            .SetGroupName("LesapAodv")
             .AddConstructor<RoutingProtocol>()
             .AddAttribute("HelloInterval",
                           "HELLO messages emission interval.",
@@ -383,7 +385,7 @@ RoutingProtocol::PrintRoutingTable(Ptr<OutputStreamWrapper> stream, Time::Unit u
     *stream->GetStream() << "Node: " << m_ipv4->GetObject<Node>()->GetId()
                          << "; Time: " << Now().As(unit)
                          << ", Local time: " << m_ipv4->GetObject<Node>()->GetLocalTime().As(unit)
-                         << ", AODV Routing table" << std::endl;
+                         << ", LESAP-AODV Routing table" << std::endl;
 
     m_routingTable.Print(stream, unit);
     *stream->GetStream() << std::endl;
@@ -427,7 +429,7 @@ RoutingProtocol::RouteOutput(Ptr<Packet> p,
     if (m_socketAddresses.empty())
     {
         sockerr = Socket::ERROR_NOROUTETOHOST;
-        NS_LOG_LOGIC("No aodv interfaces");
+        NS_LOG_LOGIC("No lesap-aodv interfaces");
         Ptr<Ipv4Route> route;
         return route;
     }
@@ -502,7 +504,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     NS_LOG_FUNCTION(this << p->GetUid() << header.GetDestination() << idev->GetAddress());
     if (m_socketAddresses.empty())
     {
-        NS_LOG_LOGIC("No aodv interfaces");
+        NS_LOG_LOGIC("No lesap-aodv interfaces");
         return false;
     }
     NS_ASSERT(m_ipv4);
@@ -531,7 +533,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         return true;
     }
 
-    // AODV is not a multicast routing protocol
+    // LESAP-AODV is not a multicast routing protocol
     if (dst.IsMulticast())
     {
         return false;
@@ -573,9 +575,9 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 {
                     UdpHeader udpHeader;
                     p->PeekHeader(udpHeader);
-                    if (udpHeader.GetDestinationPort() == AODV_PORT)
+                    if (udpHeader.GetDestinationPort() == LESAP_AODV_PORT)
                     {
-                        // AODV packets sent in broadcast are already managed
+                        // LESAP-AODV packets sent in broadcast are already managed
                         return true;
                     }
                 }
@@ -733,7 +735,7 @@ RoutingProtocol::NotifyInterfaceUp(uint32_t i)
     Ptr<Ipv4L3Protocol> l3 = m_ipv4->GetObject<Ipv4L3Protocol>();
     if (l3->GetNAddresses(i) > 1)
     {
-        NS_LOG_WARN("AODV does not work with more then one address per each interface.");
+        NS_LOG_WARN("LESAP-AODV does not work with more then one address per each interface.");
     }
     Ipv4InterfaceAddress iface = l3->GetAddress(i, 0);
     if (iface.GetLocal() == Ipv4Address("127.0.0.1"))
@@ -744,9 +746,9 @@ RoutingProtocol::NotifyInterfaceUp(uint32_t i)
     // Create a socket to listen only on this interface
     Ptr<Socket> socket = Socket::CreateSocket(GetObject<Node>(), UdpSocketFactory::GetTypeId());
     NS_ASSERT(socket);
-    socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAodv, this));
+    socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvLesapAodv, this));
     socket->BindToNetDevice(l3->GetNetDevice(i));
-    socket->Bind(InetSocketAddress(iface.GetLocal(), AODV_PORT));
+    socket->Bind(InetSocketAddress(iface.GetLocal(), LESAP_AODV_PORT));
     socket->SetAllowBroadcast(true);
     socket->SetIpRecvTtl(true);
     m_socketAddresses.insert(std::make_pair(socket, iface));
@@ -754,9 +756,9 @@ RoutingProtocol::NotifyInterfaceUp(uint32_t i)
     // create also a subnet broadcast socket
     socket = Socket::CreateSocket(GetObject<Node>(), UdpSocketFactory::GetTypeId());
     NS_ASSERT(socket);
-    socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAodv, this));
+    socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvLesapAodv, this));
     socket->BindToNetDevice(l3->GetNetDevice(i));
-    socket->Bind(InetSocketAddress(iface.GetBroadcast(), AODV_PORT));
+    socket->Bind(InetSocketAddress(iface.GetBroadcast(), LESAP_AODV_PORT));
     socket->SetAllowBroadcast(true);
     socket->SetIpRecvTtl(true);
     m_socketSubnetBroadcastAddresses.insert(std::make_pair(socket, iface));
@@ -834,7 +836,7 @@ RoutingProtocol::NotifyInterfaceDown(uint32_t i)
 
     if (m_socketAddresses.empty())
     {
-        NS_LOG_LOGIC("No aodv interfaces");
+        NS_LOG_LOGIC("No lesap-aodv interfaces");
         m_htimer.Cancel();
         m_nb.Clear();
         m_routingTable.Clear();
@@ -866,18 +868,18 @@ RoutingProtocol::NotifyAddAddress(uint32_t i, Ipv4InterfaceAddress address)
             Ptr<Socket> socket =
                 Socket::CreateSocket(GetObject<Node>(), UdpSocketFactory::GetTypeId());
             NS_ASSERT(socket);
-            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAodv, this));
+            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvLesapAodv, this));
             socket->BindToNetDevice(l3->GetNetDevice(i));
-            socket->Bind(InetSocketAddress(iface.GetLocal(), AODV_PORT));
+            socket->Bind(InetSocketAddress(iface.GetLocal(), LESAP_AODV_PORT));
             socket->SetAllowBroadcast(true);
             m_socketAddresses.insert(std::make_pair(socket, iface));
 
             // create also a subnet directed broadcast socket
             socket = Socket::CreateSocket(GetObject<Node>(), UdpSocketFactory::GetTypeId());
             NS_ASSERT(socket);
-            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAodv, this));
+            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvLesapAodv, this));
             socket->BindToNetDevice(l3->GetNetDevice(i));
-            socket->Bind(InetSocketAddress(iface.GetBroadcast(), AODV_PORT));
+            socket->Bind(InetSocketAddress(iface.GetBroadcast(), LESAP_AODV_PORT));
             socket->SetAllowBroadcast(true);
             socket->SetIpRecvTtl(true);
             m_socketSubnetBroadcastAddresses.insert(std::make_pair(socket, iface));
@@ -898,7 +900,7 @@ RoutingProtocol::NotifyAddAddress(uint32_t i, Ipv4InterfaceAddress address)
     }
     else
     {
-        NS_LOG_LOGIC("AODV does not work with more then one address per each interface. Ignore "
+        NS_LOG_LOGIC("LESAP-AODV does not work with more then one address per each interface. Ignore "
                      "added address");
     }
 }
@@ -929,10 +931,10 @@ RoutingProtocol::NotifyRemoveAddress(uint32_t i, Ipv4InterfaceAddress address)
             Ptr<Socket> socket =
                 Socket::CreateSocket(GetObject<Node>(), UdpSocketFactory::GetTypeId());
             NS_ASSERT(socket);
-            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAodv, this));
+            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvLesapAodv, this));
             // Bind to any IP address so that broadcasts can be received
             socket->BindToNetDevice(l3->GetNetDevice(i));
-            socket->Bind(InetSocketAddress(iface.GetLocal(), AODV_PORT));
+            socket->Bind(InetSocketAddress(iface.GetLocal(), LESAP_AODV_PORT));
             socket->SetAllowBroadcast(true);
             socket->SetIpRecvTtl(true);
             m_socketAddresses.insert(std::make_pair(socket, iface));
@@ -940,9 +942,9 @@ RoutingProtocol::NotifyRemoveAddress(uint32_t i, Ipv4InterfaceAddress address)
             // create also a unicast socket
             socket = Socket::CreateSocket(GetObject<Node>(), UdpSocketFactory::GetTypeId());
             NS_ASSERT(socket);
-            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvAodv, this));
+            socket->SetRecvCallback(MakeCallback(&RoutingProtocol::RecvLesapAodv, this));
             socket->BindToNetDevice(l3->GetNetDevice(i));
-            socket->Bind(InetSocketAddress(iface.GetBroadcast(), AODV_PORT));
+            socket->Bind(InetSocketAddress(iface.GetBroadcast(), LESAP_AODV_PORT));
             socket->SetAllowBroadcast(true);
             socket->SetIpRecvTtl(true);
             m_socketSubnetBroadcastAddresses.insert(std::make_pair(socket, iface));
@@ -962,7 +964,7 @@ RoutingProtocol::NotifyRemoveAddress(uint32_t i, Ipv4InterfaceAddress address)
         }
         if (m_socketAddresses.empty())
         {
-            NS_LOG_LOGIC("No aodv interfaces");
+            NS_LOG_LOGIC("No lesap-aodv interfaces");
             m_htimer.Cancel();
             m_nb.Clear();
             m_routingTable.Clear();
@@ -971,7 +973,7 @@ RoutingProtocol::NotifyRemoveAddress(uint32_t i, Ipv4InterfaceAddress address)
     }
     else
     {
-        NS_LOG_LOGIC("Remove address not participating in AODV operation");
+        NS_LOG_LOGIC("Remove address not participating in LESAP-AODV operation");
     }
 }
 
@@ -999,17 +1001,17 @@ RoutingProtocol::LoopbackRoute(const Ipv4Header& hdr, Ptr<NetDevice> oif) const
     rt->SetDestination(hdr.GetDestination());
     //
     // Source address selection here is tricky.  The loopback route is
-    // returned when AODV does not have a route; this causes the packet
+    // returned when LESAP-AODV does not have a route; this causes the packet
     // to be looped back and handled (cached) in RouteInput() method
     // while a route is found. However, connection-oriented protocols
     // like TCP need to create an endpoint four-tuple (src, src port,
     // dst, dst port) and create a pseudo-header for checksumming.  So,
-    // AODV needs to guess correctly what the eventual source address
+    // LESAP-AODV needs to guess correctly what the eventual source address
     // will be.
     //
     // For single interface, single address nodes, this is not a problem.
     // When there are possibly multiple outgoing interfaces, the policy
-    // implemented here is to pick the first available AODV interface.
+    // implemented here is to pick the first available LESAP-AODV interface.
     // If RouteOutput() caller specified an outgoing interface, that
     // further constrains the selection of source address
     //
@@ -1032,7 +1034,7 @@ RoutingProtocol::LoopbackRoute(const Ipv4Header& hdr, Ptr<NetDevice> oif) const
     {
         rt->SetSource(j->second.GetLocal());
     }
-    NS_ASSERT_MSG(rt->GetSource() != Ipv4Address(), "Valid AODV source address not found");
+    NS_ASSERT_MSG(rt->GetSource() != Ipv4Address(), "Valid LESAP-AODV source address not found");
     rt->SetGateway(Ipv4Address("127.0.0.1"));
     rt->SetOutputDevice(m_lo);
     return rt;
@@ -1128,7 +1130,7 @@ RoutingProtocol::SendRequest(Ipv4Address dst)
     m_requestId++;
     rreqHeader.SetId(m_requestId);
 
-    // Send RREQ as subnet directed broadcast from each interface used by aodv
+    // Send RREQ as subnet directed broadcast from each interface used by lesap-aodv
     for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
         Ptr<Socket> socket = j->first;
@@ -1142,7 +1144,7 @@ RoutingProtocol::SendRequest(Ipv4Address dst)
         tag.SetTtl(ttl);
         packet->AddPacketTag(tag);
         packet->AddHeader(rreqHeader);
-        TypeHeader tHeader(AODVTYPE_RREQ);
+        TypeHeader tHeader(LESAPAODVTYPE_RREQ);
         packet->AddHeader(tHeader);
         // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
         Ipv4Address destination;
@@ -1169,7 +1171,7 @@ RoutingProtocol::SendRequest(Ipv4Address dst)
 void
 RoutingProtocol::SendTo(Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address destination)
 {
-    socket->SendTo(packet, 0, InetSocketAddress(destination, AODV_PORT));
+    socket->SendTo(packet, 0, InetSocketAddress(destination, LESAP_AODV_PORT));
 }
 
 void
@@ -1203,7 +1205,7 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
 }
 
 void
-RoutingProtocol::RecvAodv(Ptr<Socket> socket)
+RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
 {
     NS_LOG_FUNCTION(this << socket);
     Address sourceAddress;
@@ -1225,33 +1227,33 @@ RoutingProtocol::RecvAodv(Ptr<Socket> socket)
     {
         NS_ASSERT_MSG(false, "Received a packet from an unknown socket");
     }
-    NS_LOG_DEBUG("AODV node " << this << " received a AODV packet from " << sender << " to "
+    NS_LOG_DEBUG("LESAP-AODV node " << this << " received a LESAP-AODV packet from " << sender << " to "
                               << receiver);
 
     UpdateRouteToNeighbor(sender, receiver);
-    TypeHeader tHeader(AODVTYPE_RREQ);
+    TypeHeader tHeader(LESAPAODVTYPE_RREQ);
     packet->RemoveHeader(tHeader);
     if (!tHeader.IsValid())
     {
-        NS_LOG_DEBUG("AODV message " << packet->GetUid() << " with unknown type received: "
+        NS_LOG_DEBUG("LESAP-AODV message " << packet->GetUid() << " with unknown type received: "
                                      << tHeader.Get() << ". Drop");
         return; // drop
     }
     switch (tHeader.Get())
     {
-    case AODVTYPE_RREQ: {
+    case LESAPAODVTYPE_RREQ: {
         RecvRequest(packet, receiver, sender);
         break;
     }
-    case AODVTYPE_RREP: {
+    case LESAPAODVTYPE_RREP: {
         RecvReply(packet, receiver, sender);
         break;
     }
-    case AODVTYPE_RERR: {
+    case LESAPAODVTYPE_RERR: {
         RecvError(packet, sender);
         break;
     }
-    case AODVTYPE_RREP_ACK: {
+    case LESAPAODVTYPE_RREP_ACK: {
         RecvReplyAck(sender);
         break;
     }
@@ -1505,7 +1507,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         ttl.SetTtl(tag.GetTtl() - 1);
         packet->AddPacketTag(ttl);
         packet->AddHeader(rreqHeader);
-        TypeHeader tHeader(AODVTYPE_RREQ);
+        TypeHeader tHeader(LESAPAODVTYPE_RREQ);
         packet->AddHeader(tHeader);
         // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
         Ipv4Address destination;
@@ -1551,11 +1553,11 @@ RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry
     tag.SetTtl(toOrigin.GetHop());
     packet->AddPacketTag(tag);
     packet->AddHeader(rrepHeader);
-    TypeHeader tHeader(AODVTYPE_RREP);
+    TypeHeader tHeader(LESAPAODVTYPE_RREP);
     packet->AddHeader(tHeader);
     Ptr<Socket> socket = FindSocketWithInterfaceAddress(toOrigin.GetInterface());
     NS_ASSERT(socket);
-    socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), AODV_PORT));
+    socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), LESAP_AODV_PORT));
 }
 
 void
@@ -1592,11 +1594,11 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
     tag.SetTtl(toOrigin.GetHop());
     packet->AddPacketTag(tag);
     packet->AddHeader(rrepHeader);
-    TypeHeader tHeader(AODVTYPE_RREP);
+    TypeHeader tHeader(LESAPAODVTYPE_RREP);
     packet->AddHeader(tHeader);
     Ptr<Socket> socket = FindSocketWithInterfaceAddress(toOrigin.GetInterface());
     NS_ASSERT(socket);
-    socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), AODV_PORT));
+    socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), LESAP_AODV_PORT));
 
     // Generating gratuitous RREPs
     if (gratRep)
@@ -1612,12 +1614,12 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
         gratTag.SetTtl(toDst.GetHop());
         packetToDst->AddPacketTag(gratTag);
         packetToDst->AddHeader(gratRepHeader);
-        TypeHeader type(AODVTYPE_RREP);
+        TypeHeader type(LESAPAODVTYPE_RREP);
         packetToDst->AddHeader(type);
         Ptr<Socket> socket = FindSocketWithInterfaceAddress(toDst.GetInterface());
         NS_ASSERT(socket);
         NS_LOG_LOGIC("Send gratuitous RREP " << packet->GetUid());
-        socket->SendTo(packetToDst, 0, InetSocketAddress(toDst.GetNextHop(), AODV_PORT));
+        socket->SendTo(packetToDst, 0, InetSocketAddress(toDst.GetNextHop(), LESAP_AODV_PORT));
     }
 }
 
@@ -1626,7 +1628,7 @@ RoutingProtocol::SendReplyAck(Ipv4Address neighbor)
 {
     NS_LOG_FUNCTION(this << " to " << neighbor);
     RrepAckHeader h;
-    TypeHeader typeHeader(AODVTYPE_RREP_ACK);
+    TypeHeader typeHeader(LESAPAODVTYPE_RREP_ACK);
     Ptr<Packet> packet = Create<Packet>();
     SocketIpTtlTag tag;
     tag.SetTtl(1);
@@ -1637,7 +1639,7 @@ RoutingProtocol::SendReplyAck(Ipv4Address neighbor)
     m_routingTable.LookupRoute(neighbor, toNeighbor);
     Ptr<Socket> socket = FindSocketWithInterfaceAddress(toNeighbor.GetInterface());
     NS_ASSERT(socket);
-    socket->SendTo(packet, 0, InetSocketAddress(neighbor, AODV_PORT));
+    socket->SendTo(packet, 0, InetSocketAddress(neighbor, LESAP_AODV_PORT));
 }
 
 void
@@ -1782,11 +1784,11 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     ttl.SetTtl(tag.GetTtl() - 1);
     packet->AddPacketTag(ttl);
     packet->AddHeader(rrepHeader);
-    TypeHeader tHeader(AODVTYPE_RREP);
+    TypeHeader tHeader(LESAPAODVTYPE_RREP);
     packet->AddHeader(tHeader);
     Ptr<Socket> socket = FindSocketWithInterfaceAddress(toOrigin.GetInterface());
     NS_ASSERT(socket);
-    socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), AODV_PORT));
+    socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), LESAP_AODV_PORT));
 }
 
 void
@@ -1871,7 +1873,7 @@ RoutingProtocol::RecvError(Ptr<Packet> p, Ipv4Address src)
     {
         if (!rerrHeader.AddUnDestination(i->first, i->second))
         {
-            TypeHeader typeHeader(AODVTYPE_RERR);
+            TypeHeader typeHeader(LESAPAODVTYPE_RERR);
             Ptr<Packet> packet = Create<Packet>();
             SocketIpTtlTag tag;
             tag.SetTtl(1);
@@ -1891,7 +1893,7 @@ RoutingProtocol::RecvError(Ptr<Packet> p, Ipv4Address src)
     }
     if (rerrHeader.GetDestCount() != 0)
     {
-        TypeHeader typeHeader(AODVTYPE_RERR);
+        TypeHeader typeHeader(LESAPAODVTYPE_RERR);
         Ptr<Packet> packet = Create<Packet>();
         SocketIpTtlTag tag;
         tag.SetTtl(1);
@@ -2014,7 +2016,7 @@ RoutingProtocol::SendHello()
         tag.SetTtl(1);
         packet->AddPacketTag(tag);
         packet->AddHeader(helloHeader);
-        TypeHeader tHeader(AODVTYPE_RREP);
+        TypeHeader tHeader(LESAPAODVTYPE_RREP);
         packet->AddHeader(tHeader);
         // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
         Ipv4Address destination;
@@ -2076,7 +2078,7 @@ RoutingProtocol::SendRerrWhenBreaksLinkToNextHop(Ipv4Address nextHop)
         if (!rerrHeader.AddUnDestination(i->first, i->second))
         {
             NS_LOG_LOGIC("Send RERR message with maximum size.");
-            TypeHeader typeHeader(AODVTYPE_RERR);
+            TypeHeader typeHeader(LESAPAODVTYPE_RERR);
             Ptr<Packet> packet = Create<Packet>();
             SocketIpTtlTag tag;
             tag.SetTtl(1);
@@ -2096,7 +2098,7 @@ RoutingProtocol::SendRerrWhenBreaksLinkToNextHop(Ipv4Address nextHop)
     }
     if (rerrHeader.GetDestCount() != 0)
     {
-        TypeHeader typeHeader(AODVTYPE_RERR);
+        TypeHeader typeHeader(LESAPAODVTYPE_RERR);
         Ptr<Packet> packet = Create<Packet>();
         SocketIpTtlTag tag;
         tag.SetTtl(1);
@@ -2134,13 +2136,13 @@ RoutingProtocol::SendRerrWhenNoRouteToForward(Ipv4Address dst,
     tag.SetTtl(1);
     packet->AddPacketTag(tag);
     packet->AddHeader(rerrHeader);
-    packet->AddHeader(TypeHeader(AODVTYPE_RERR));
+    packet->AddHeader(TypeHeader(LESAPAODVTYPE_RERR));
     if (m_routingTable.LookupValidRoute(origin, toOrigin))
     {
         Ptr<Socket> socket = FindSocketWithInterfaceAddress(toOrigin.GetInterface());
         NS_ASSERT(socket);
         NS_LOG_LOGIC("Unicast RERR to the source of the data transmission");
-        socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), AODV_PORT));
+        socket->SendTo(packet, 0, InetSocketAddress(toOrigin.GetNextHop(), LESAP_AODV_PORT));
     }
     else
     {
@@ -2160,7 +2162,7 @@ RoutingProtocol::SendRerrWhenNoRouteToForward(Ipv4Address dst,
             {
                 destination = iface.GetBroadcast();
             }
-            socket->SendTo(packet->Copy(), 0, InetSocketAddress(destination, AODV_PORT));
+            socket->SendTo(packet->Copy(), 0, InetSocketAddress(destination, LESAP_AODV_PORT));
         }
     }
 }
@@ -2298,5 +2300,5 @@ RoutingProtocol::DoInitialize()
     Ipv4RoutingProtocol::DoInitialize();
 }
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

@@ -21,16 +21,18 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::IdCache by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#include "aodv-id-cache.h"
+#include "lesap-aodv-id-cache.h"
 
 #include <algorithm>
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 bool
 IdCache::IsDuplicate(Ipv4Address addr, uint32_t id)
@@ -61,5 +63,5 @@ IdCache::GetSize()
     return m_idCache.size();
 }
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

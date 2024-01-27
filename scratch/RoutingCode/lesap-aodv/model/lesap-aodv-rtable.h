@@ -21,11 +21,13 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::RoutingTableEntry by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef AODV_RTABLE_H
-#define AODV_RTABLE_H
+#ifndef LESAP_AODV_RTABLE_H
+#define LESAP_AODV_RTABLE_H
 
 #include "ns3/ipv4-route.h"
 #include "ns3/ipv4.h"
@@ -40,11 +42,11 @@
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  * \brief Route record states
  */
 enum RouteFlags
@@ -55,7 +57,7 @@ enum RouteFlags
 };
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  * \brief Routing table entry
  */
 class RoutingTableEntry
@@ -417,8 +419,8 @@ class RoutingTableEntry
 };
 
 /**
- * \ingroup aodv
- * \brief The Routing table used by AODV protocol
+ * \ingroup lesapAodv
+ * \brief The Routing table used by LESAP-AODV protocol
  */
 class RoutingTable
 {
@@ -548,7 +550,7 @@ class RoutingTable
     void Purge(std::map<Ipv4Address, RoutingTableEntry>& table) const;
 };
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3
 
-#endif /* AODV_RTABLE_H */
+#endif /* LESAP_AODV_RTABLE_H */

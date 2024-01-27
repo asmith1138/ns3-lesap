@@ -21,11 +21,13 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::TypeHeader by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef AODVPACKET_H
-#define AODVPACKET_H
+#ifndef LESAP_AODVPACKET_H
+#define LESAP_AODVPACKET_H
 
 #include "ns3/enum.h"
 #include "ns3/header.h"
@@ -37,33 +39,33 @@
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  * \brief MessageType enumeration
  */
 enum MessageType
 {
-    AODVTYPE_RREQ = 1,    //!< AODVTYPE_RREQ
-    AODVTYPE_RREP = 2,    //!< AODVTYPE_RREP
-    AODVTYPE_RERR = 3,    //!< AODVTYPE_RERR
-    AODVTYPE_RREP_ACK = 4 //!< AODVTYPE_RREP_ACK
+    LESAPAODVTYPE_RREQ = 1,    //!< LESAPAODVTYPE_RREQ
+    LESAPAODVTYPE_RREP = 2,    //!< LESAPAODVTYPE_RREP
+    LESAPAODVTYPE_RERR = 3,    //!< LESAPAODVTYPE_RERR
+    LESAPAODVTYPE_RREP_ACK = 4 //!< LESAPAODVTYPE_RREP_ACK
 };
 
 /**
- * \ingroup aodv
- * \brief AODV types
+ * \ingroup lesapAodv
+ * \brief LESAP-AODV types
  */
 class TypeHeader : public Header
 {
   public:
     /**
      * constructor
-     * \param t the AODV RREQ type
+     * \param t the LESAP-AODV RREQ type
      */
-    TypeHeader(MessageType t = AODVTYPE_RREQ);
+    TypeHeader(MessageType t = LESAPAODVTYPE_RREQ);
 
     /**
      * \brief Get the type ID.
@@ -114,7 +116,7 @@ class TypeHeader : public Header
 std::ostream& operator<<(std::ostream& os, const TypeHeader& h);
 
 /**
-* \ingroup aodv
+* \ingroup lesapAodv
 * \brief   Route Request (RREQ) Message Format
   \verbatim
   0                   1                   2                   3
@@ -336,7 +338,7 @@ class RreqHeader : public Header
 std::ostream& operator<<(std::ostream& os, const RreqHeader&);
 
 /**
-* \ingroup aodv
+* \ingroup lesapAodv
 * \brief Route Reply (RREP) Message Format
   \verbatim
   0                   1                   2                   3
@@ -524,7 +526,7 @@ class RrepHeader : public Header
 std::ostream& operator<<(std::ostream& os, const RrepHeader&);
 
 /**
-* \ingroup aodv
+* \ingroup lesapAodv
 * \brief Route Reply Acknowledgment (RREP-ACK) Message Format
   \verbatim
   0                   1
@@ -570,7 +572,7 @@ class RrepAckHeader : public Header
 std::ostream& operator<<(std::ostream& os, const RrepAckHeader&);
 
 /**
-* \ingroup aodv
+* \ingroup lesapAodv
 * \brief Route Error (RERR) Message Format
   \verbatim
   0                   1                   2                   3
@@ -664,7 +666,7 @@ class RerrHeader : public Header
  */
 std::ostream& operator<<(std::ostream& os, const RerrHeader&);
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3
 
-#endif /* AODVPACKET_H */
+#endif /* LESAP_AODVPACKET_H */

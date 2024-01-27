@@ -21,12 +21,14 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::IdCache by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#ifndef AODV_ID_CACHE_H
-#define AODV_ID_CACHE_H
+#ifndef LESAP_AODV_ID_CACHE_H
+#define LESAP_AODV_ID_CACHE_H
 
 #include "ns3/ipv4-address.h"
 #include "ns3/simulator.h"
@@ -35,10 +37,10 @@
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  *
  * \brief Unique packets identification cache used for simple duplicate detection.
  */
@@ -121,7 +123,7 @@ class IdCache
     Time m_lifetime;
 };
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3
 
-#endif /* AODV_ID_CACHE_H */
+#endif /* LESAP_AODV_ID_CACHE_H */

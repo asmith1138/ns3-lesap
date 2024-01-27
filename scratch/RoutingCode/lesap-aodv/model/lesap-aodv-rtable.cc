@@ -21,11 +21,13 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::RoutingTableEntry by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#include "aodv-rtable.h"
+#include "lesap-aodv-rtable.h"
 
 #include "ns3/log.h"
 #include "ns3/simulator.h"
@@ -36,9 +38,9 @@
 namespace ns3
 {
 
-NS_LOG_COMPONENT_DEFINE("AodvRoutingTable");
+NS_LOG_COMPONENT_DEFINE("LesapAodvRoutingTable");
 
-namespace aodv
+namespace lesapAodv
 {
 
 /*
@@ -484,7 +486,7 @@ RoutingTable::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::
     oldState.copyfmt(*os);
 
     *os << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
-    *os << "\nAODV Routing table\n";
+    *os << "\nLESAP-AODV Routing table\n";
     *os << std::setw(16) << "Destination";
     *os << std::setw(16) << "Gateway";
     *os << std::setw(16) << "Interface";
@@ -498,5 +500,5 @@ RoutingTable::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::
     *stream->GetStream() << "\n";
 }
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

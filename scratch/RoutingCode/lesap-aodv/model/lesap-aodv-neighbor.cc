@@ -21,11 +21,13 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::Neighbors by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#include "aodv-neighbor.h"
+#include "lesap-aodv-neighbor.h"
 
 #include "ns3/log.h"
 #include "ns3/wifi-mac-header.h"
@@ -35,9 +37,9 @@
 namespace ns3
 {
 
-NS_LOG_COMPONENT_DEFINE("AodvNeighbors");
+NS_LOG_COMPONENT_DEFINE("LesapAodvNeighbors");
 
-namespace aodv
+namespace lesapAodv
 {
 Neighbors::Neighbors(Time delay)
     : m_ntimer(Timer::CANCEL_ON_DESTROY)
@@ -189,5 +191,5 @@ Neighbors::ProcessTxError(const WifiMacHeader& hdr)
     Purge();
 }
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

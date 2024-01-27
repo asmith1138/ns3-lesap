@@ -21,17 +21,19 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::RoutingProtocol by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef AODVROUTINGPROTOCOL_H
-#define AODVROUTINGPROTOCOL_H
+#ifndef LESAP_AODVROUTINGPROTOCOL_H
+#define LESAP_AODVROUTINGPROTOCOL_H
 
-#include "aodv-dpd.h"
-#include "aodv-neighbor.h"
-#include "aodv-packet.h"
-#include "aodv-rqueue.h"
-#include "aodv-rtable.h"
+#include "lesap-aodv-dpd.h"
+#include "lesap-aodv-neighbor.h"
+#include "lesap-aodv-packet.h"
+#include "lesap-aodv-rqueue.h"
+#include "lesap-aodv-rtable.h"
 
 #include "ns3/ipv4-interface.h"
 #include "ns3/ipv4-l3-protocol.h"
@@ -48,12 +50,12 @@ namespace ns3
 class WifiMpdu;
 enum WifiMacDropReason : uint8_t; // opaque enum declaration
 
-namespace aodv
+namespace lesapAodv
 {
 /**
- * \ingroup aodv
+ * \ingroup lesapAodv
  *
- * \brief AODV routing protocol
+ * \brief LESAP-AODV routing protocol
  */
 class RoutingProtocol : public Ipv4RoutingProtocol
 {
@@ -63,7 +65,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      * \return the object TypeId
      */
     static TypeId GetTypeId();
-    static const uint32_t AODV_PORT;
+    static const uint32_t LESAP_AODV_PORT;
 
     /// constructor
     RoutingProtocol();
@@ -384,7 +386,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      * Receive and process control packet
      * \param socket input socket
      */
-    void RecvAodv(Ptr<Socket> socket);
+    void RecvLesapAodv(Ptr<Socket> socket);
     /**
      * Receive RREQ
      * \param p packet
@@ -505,7 +507,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Time m_lastBcastTime;
 };
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3
 
-#endif /* AODVROUTINGPROTOCOL_H */
+#endif /* LESAP_AODVROUTINGPROTOCOL_H */

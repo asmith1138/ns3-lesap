@@ -21,17 +21,19 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::TypeHeader by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#include "aodv-packet.h"
+#include "lesap-aodv-packet.h"
 
 #include "ns3/address-utils.h"
 #include "ns3/packet.h"
 
 namespace ns3
 {
-namespace aodv
+namespace lesapAodv
 {
 
 NS_OBJECT_ENSURE_REGISTERED(TypeHeader);
@@ -45,9 +47,9 @@ TypeHeader::TypeHeader(MessageType t)
 TypeId
 TypeHeader::GetTypeId()
 {
-    static TypeId tid = TypeId("ns3::aodv::TypeHeader")
+    static TypeId tid = TypeId("ns3::lesapAodv::TypeHeader")
                             .SetParent<Header>()
-                            .SetGroupName("Aodv")
+                            .SetGroupName("LesapAodv")
                             .AddConstructor<TypeHeader>();
     return tid;
 }
@@ -78,10 +80,10 @@ TypeHeader::Deserialize(Buffer::Iterator start)
     m_valid = true;
     switch (type)
     {
-    case AODVTYPE_RREQ:
-    case AODVTYPE_RREP:
-    case AODVTYPE_RERR:
-    case AODVTYPE_RREP_ACK: {
+    case LESAPAODVTYPE_RREQ:
+    case LESAPAODVTYPE_RREP:
+    case LESAPAODVTYPE_RERR:
+    case LESAPAODVTYPE_RREP_ACK: {
         m_type = (MessageType)type;
         break;
     }
@@ -98,19 +100,19 @@ TypeHeader::Print(std::ostream& os) const
 {
     switch (m_type)
     {
-    case AODVTYPE_RREQ: {
+    case LESAPAODVTYPE_RREQ: {
         os << "RREQ";
         break;
     }
-    case AODVTYPE_RREP: {
+    case LESAPAODVTYPE_RREP: {
         os << "RREP";
         break;
     }
-    case AODVTYPE_RERR: {
+    case LESAPAODVTYPE_RERR: {
         os << "RERR";
         break;
     }
-    case AODVTYPE_RREP_ACK: {
+    case LESAPAODVTYPE_RREP_ACK: {
         os << "RREP_ACK";
         break;
     }
@@ -159,9 +161,9 @@ NS_OBJECT_ENSURE_REGISTERED(RreqHeader);
 TypeId
 RreqHeader::GetTypeId()
 {
-    static TypeId tid = TypeId("ns3::aodv::RreqHeader")
+    static TypeId tid = TypeId("ns3::lesapAodv::RreqHeader")
                             .SetParent<Header>()
-                            .SetGroupName("Aodv")
+                            .SetGroupName("LesapAodv")
                             .AddConstructor<RreqHeader>();
     return tid;
 }
@@ -316,9 +318,9 @@ NS_OBJECT_ENSURE_REGISTERED(RrepHeader);
 TypeId
 RrepHeader::GetTypeId()
 {
-    static TypeId tid = TypeId("ns3::aodv::RrepHeader")
+    static TypeId tid = TypeId("ns3::lesapAodv::RrepHeader")
                             .SetParent<Header>()
-                            .SetGroupName("Aodv")
+                            .SetGroupName("LesapAodv")
                             .AddConstructor<RrepHeader>();
     return tid;
 }
@@ -462,9 +464,9 @@ NS_OBJECT_ENSURE_REGISTERED(RrepAckHeader);
 TypeId
 RrepAckHeader::GetTypeId()
 {
-    static TypeId tid = TypeId("ns3::aodv::RrepAckHeader")
+    static TypeId tid = TypeId("ns3::lesapAodv::RrepAckHeader")
                             .SetParent<Header>()
-                            .SetGroupName("Aodv")
+                            .SetGroupName("LesapAodv")
                             .AddConstructor<RrepAckHeader>();
     return tid;
 }
@@ -529,9 +531,9 @@ NS_OBJECT_ENSURE_REGISTERED(RerrHeader);
 TypeId
 RerrHeader::GetTypeId()
 {
-    static TypeId tid = TypeId("ns3::aodv::RerrHeader")
+    static TypeId tid = TypeId("ns3::lesapAodv::RerrHeader")
                             .SetParent<Header>()
-                            .SetGroupName("Aodv")
+                            .SetGroupName("LesapAodv")
                             .AddConstructor<RerrHeader>();
     return tid;
 }
@@ -676,5 +678,5 @@ operator<<(std::ostream& os, const RerrHeader& h)
     h.Print(os);
     return os;
 }
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3

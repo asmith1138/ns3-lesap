@@ -21,10 +21,12 @@
  *      AODV-UU implementation by Erik Nordström of Uppsala University
  *      https://web.archive.org/web/20100527072022/http://core.it.uu.se/core/index.php/AODV-UU
  *
- * Authors: Elena Buchatskaia <borovkovaes@iitp.ru>
+ * Authors: Andrew Smith <asmith1138@gmail.com>, written after
+ *          AODV::QueueEntry by
+ *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#include "aodv-rqueue.h"
+#include "lesap-aodv-rqueue.h"
 
 #include "ns3/ipv4-route.h"
 #include "ns3/log.h"
@@ -36,9 +38,9 @@
 namespace ns3
 {
 
-NS_LOG_COMPONENT_DEFINE("AodvRequestQueue");
+NS_LOG_COMPONENT_DEFINE("LesapAodvRequestQueue");
 
-namespace aodv
+namespace lesapAodv
 {
 uint32_t
 RequestQueue::GetSize()
@@ -155,5 +157,5 @@ RequestQueue::Drop(QueueEntry en, std::string reason)
     en.GetErrorCallback()(en.GetPacket(), en.GetIpv4Header(), Socket::ERROR_NOROUTETOHOST);
 }
 
-} // namespace aodv
+} // namespace lesapAodv
 } // namespace ns3
