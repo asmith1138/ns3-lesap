@@ -5,19 +5,23 @@ build_lib(
     model/lesap-aodv-dpd.cc
     model/lesap-aodv-id-cache.cc
     model/lesap-aodv-neighbor.cc
+    model/lesap-aodv-lidar.cc
     model/lesap-aodv-packet.cc
     model/lesap-aodv-routing-protocol.cc
     model/lesap-aodv-rqueue.cc
     model/lesap-aodv-rtable.cc
+    model/lesap-aodv-lntable.cc
   HEADER_FILES
     helper/lesap-aodv-helper.h
     model/lesap-aodv-dpd.h
     model/lesap-aodv-id-cache.h
     model/lesap-aodv-neighbor.h
+    model/lesap-aodv-lidar.h
     model/lesap-aodv-packet.h
     model/lesap-aodv-routing-protocol.h
     model/lesap-aodv-rqueue.h
     model/lesap-aodv-rtable.h
+    model/lesap-aodv-lntable.h
   LIBRARIES_TO_LINK ${libinternet}
                     ${libwifi}
   TEST_SOURCES
