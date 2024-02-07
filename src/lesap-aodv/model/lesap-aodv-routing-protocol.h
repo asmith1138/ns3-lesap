@@ -31,6 +31,7 @@
 
 #include "lesap-aodv-dpd.h"
 #include "lesap-aodv-neighbor.h"
+#include "lesap-aodv-lidar.h"
 #include "lesap-aodv-packet.h"
 #include "lesap-aodv-rqueue.h"
 #include "lesap-aodv-rtable.h"
@@ -288,6 +289,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     DuplicatePacketDetection m_dpd;
     /// Handle neighbors
     Neighbors m_nb;
+    /// Handle lidar range neighbors
+    LidarNeighbors m_lnb;
     /// Number of RREQs used for RREQ rate control
     uint16_t m_rreqCount;
     /// Number of RERRs used for RERR rate control

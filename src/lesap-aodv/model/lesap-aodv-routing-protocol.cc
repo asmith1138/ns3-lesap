@@ -175,6 +175,7 @@ RoutingProtocol::RoutingProtocol()
       m_rreqIdCache(m_pathDiscoveryTime),
       m_dpd(m_pathDiscoveryTime),
       m_nb(m_helloInterval),
+      m_lnb(m_helloInterval),
       m_rreqCount(0),
       m_rerrCount(0),
       m_htimer(Timer::CANCEL_ON_DESTROY),
@@ -183,6 +184,7 @@ RoutingProtocol::RoutingProtocol()
       m_lastBcastTime(Seconds(0))
 {
     m_nb.SetCallback(MakeCallback(&RoutingProtocol::SendRerrWhenBreaksLinkToNextHop, this));
+    m_lnb.SetCallback(MakeCallback(&RoutingProtocol::SendRerrWhenBreaksLinkToNextHop, this));
 }
 
 TypeId
@@ -407,6 +409,7 @@ RoutingProtocol::Start()
     {
         m_nb.ScheduleTimer();
     }
+    m_lnb.ScheduleTimer();
     m_rreqRateLimitTimer.SetFunction(&RoutingProtocol::RreqRateLimitTimerExpire, this);
     m_rreqRateLimitTimer.Schedule(Seconds(1));
 
@@ -613,6 +616,10 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         {
             UpdateRouteLifeTime(toOrigin.GetNextHop(), m_activeRouteTimeout);
             m_nb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+            // TODO: add call to distance method
+            if(false){
+                m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+            }
         }
         if (!lcb.IsNull())
         {
@@ -680,6 +687,12 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
 
             m_nb.Update(route->GetGateway(), m_activeRouteTimeout);
             m_nb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+
+            // TODO: Add call to distance method here
+            if(false){
+                m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
+                m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+            }
 
             ucb(route, p, header);
             return true;
@@ -778,6 +791,7 @@ RoutingProtocol::NotifyInterfaceUp(uint32_t i)
     if (l3->GetInterface(i)->GetArpCache())
     {
         m_nb.AddArpCache(l3->GetInterface(i)->GetArpCache());
+        m_lnb.AddArpCache(l3->GetInterface(i)->GetArpCache());
     }
 
     // Allow neighbor manager use this interface for layer 2 feedback if possible
@@ -800,6 +814,7 @@ void
 RoutingProtocol::NotifyTxError(WifiMacDropReason reason, Ptr<const WifiMpdu> mpdu)
 {
     m_nb.GetTxErrorCallback()(mpdu->GetHeader());
+    m_lnb.GetTxErrorCallback()(mpdu->GetHeader());
 }
 
 void
@@ -819,6 +834,7 @@ RoutingProtocol::NotifyInterfaceDown(uint32_t i)
             mac->TraceDisconnectWithoutContext("DroppedMpdu",
                                                MakeCallback(&RoutingProtocol::NotifyTxError, this));
             m_nb.DelArpCache(l3->GetInterface(i)->GetArpCache());
+            m_lnb.DelArpCache(l3->GetInterface(i)->GetArpCache());
         }
     }
 
@@ -839,6 +855,7 @@ RoutingProtocol::NotifyInterfaceDown(uint32_t i)
         NS_LOG_LOGIC("No lesap-aodv interfaces");
         m_htimer.Cancel();
         m_nb.Clear();
+        m_lnb.Clear();
         m_routingTable.Clear();
         return;
     }
@@ -967,6 +984,7 @@ RoutingProtocol::NotifyRemoveAddress(uint32_t i, Ipv4InterfaceAddress address)
             NS_LOG_LOGIC("No lesap-aodv interfaces");
             m_htimer.Cancel();
             m_nb.Clear();
+            m_lnb.Clear();
             m_routingTable.Clear();
             return;
         }
@@ -1230,7 +1248,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     NS_LOG_DEBUG("LESAP-AODV node " << this << " received a LESAP-AODV packet from " << sender << " to "
                               << receiver);
 
-    UpdateRouteToNeighbor(sender, receiver);
+    UpdateRouteToNeighbor(sender, receiver);// TODO: Move lower so we can do more before checking lidar
     TypeHeader tHeader(LESAPAODVTYPE_RREQ);
     packet->RemoveHeader(tHeader);
     if (!tHeader.IsValid())
@@ -1239,6 +1257,10 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                                      << tHeader.Get() << ". Drop");
         return; // drop
     }
+    // TODO: Need to check if sender is lidar neighbor here (or Hello message)
+    // TODO: Skip section if not lidar neighbor (or Hello message)
+    // TODO: If Hello, must be RREP and can continue
+
     switch (tHeader.Get())
     {
     case LESAPAODVTYPE_RREQ: {
@@ -1813,6 +1835,12 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
      * SHOULD make sure that it has an active route to the neighbor, and
      * create one if necessary.
      */
+    // TODO: Check the distance and add/update the lidar neighbor table if within lidar distance
+    if(false){
+        m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
+    }
+    // TODO: Check the distance and skip this whole part if not in the Lidar neighbor table
+
     RoutingTableEntry toNeighbor;
     if (!m_routingTable.LookupRoute(rrepHeader.GetDst(), toNeighbor))
     {

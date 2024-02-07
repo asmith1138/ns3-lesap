@@ -73,6 +73,7 @@ class LidarNeighbors
         /// Neighbor close indicator
         bool close;
 
+        //TODO: Add a signing key
         /**
          * \brief Neighbor structure constructor
          *
