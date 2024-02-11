@@ -218,6 +218,10 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      */
     void NotifyTxError(WifiMacDropReason reason, Ptr<const WifiMpdu> mpdu);
 
+    double DistanceFromNode(Ptr<Socket> socket);
+
+    bool IsNodeWithinLidar(double distance);
+
     // Protocol parameters.
     uint32_t m_rreqRetries; ///< Maximum number of retransmissions of RREQ with TTL = NetDiameter to
                             ///< discover a route
@@ -291,6 +295,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Neighbors m_nb;
     /// Handle lidar range neighbors
     LidarNeighbors m_lnb;
+    /// Lidar range distance
+    uint32_t m_lidarDistance;
     /// Number of RREQs used for RREQ rate control
     uint16_t m_rreqCount;
     /// Number of RERRs used for RERR rate control

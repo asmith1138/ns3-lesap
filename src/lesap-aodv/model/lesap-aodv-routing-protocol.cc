@@ -38,6 +38,7 @@
 #include "ns3/boolean.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/log.h"
+#include "ns3/mobility-model.h"
 #include "ns3/pointer.h"
 #include "ns3/random-variable-stream.h"
 #include "ns3/string.h"
@@ -1220,6 +1221,27 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
     }
     m_addressReqTimer[dst].Schedule(retry);
     NS_LOG_LOGIC("Scheduled RREQ retry in " << retry.As(Time::S));
+}
+
+double
+RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
+{
+    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
+    Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
+
+    Ptr<Node> m_node = m_netdevice->GetNode();
+    Ptr<Node> s_node = s_netdevice->GetNode();
+
+    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    Ptr<MobilityModel> s_Mobility = s_node->GetObject<MobilityModel>();
+
+    return m_Mobility->GetDistanceFrom(s_Mobility);
+}
+
+bool
+RoutingProtocol::IsNodeWithinLidar(double distance)
+{
+    return distance <= m_lidarDistance;
 }
 
 void

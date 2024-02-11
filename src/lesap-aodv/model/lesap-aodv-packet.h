@@ -337,6 +337,7 @@ class RreqHeader : public Header
  */
 std::ostream& operator<<(std::ostream& os, const RreqHeader&);
 // TODO: Either add new type or we need to confer a key in this one
+// TODO: Add HelloAck and SendKey types
 /**
 * \ingroup lesapAodv
 * \brief Route Reply (RREP) Message Format
