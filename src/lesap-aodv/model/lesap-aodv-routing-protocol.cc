@@ -177,6 +177,7 @@ RoutingProtocol::RoutingProtocol()
       m_dpd(m_pathDiscoveryTime),
       m_nb(m_helloInterval),
       m_lnb(m_helloInterval),
+      m_lidarDistance(200),
       m_rreqCount(0),
       m_rerrCount(0),
       m_htimer(Timer::CANCEL_ON_DESTROY),
