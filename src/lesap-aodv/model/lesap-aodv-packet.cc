@@ -116,6 +116,18 @@ TypeHeader::Print(std::ostream& os) const
         os << "RREP_ACK";
         break;
     }
+    case LESAPAODVTYPE_HELLO_ACK: {
+        os << "HELLO_ACK";
+        break;
+    }
+    case LESAPAODVTYPE_SENDKEY: {
+        os << "SENDKEY";
+        break;
+    }
+    case LESAPAODVTYPE_REPORT: {
+        os << "REPORT";
+        break;
+    }
     default:
         os << "UNKNOWN_TYPE";
     }
@@ -449,6 +461,197 @@ operator<<(std::ostream& os, const RrepHeader& h)
     h.Print(os);
     return os;
 }
+
+//-----------------------------------------------------------------------------
+// HELLO-ACK
+//-----------------------------------------------------------------------------
+
+HelloAckHeader::HelloAckHeader()
+    : m_reserved(0)
+{
+}
+
+NS_OBJECT_ENSURE_REGISTERED(HelloAckHeader);
+
+TypeId
+HelloAckHeader::GetTypeId()
+{
+    static TypeId tid = TypeId("ns3::lesapAodv::HelloAckHeader")
+                            .SetParent<Header>()
+                            .SetGroupName("LesapAodv")
+                            .AddConstructor<HelloAckHeader>();
+    return tid;
+}
+
+TypeId
+HelloAckHeader::GetInstanceTypeId() const
+{
+    return GetTypeId();
+}
+
+uint32_t
+HelloAckHeader::GetSerializedSize() const
+{
+    return 1;
+}
+
+void
+HelloAckHeader::Serialize(Buffer::Iterator i) const
+{
+    i.WriteU8(m_reserved);
+}
+
+uint32_t
+HelloAckHeader::Deserialize(Buffer::Iterator start)
+{
+    Buffer::Iterator i = start;
+    m_reserved = i.ReadU8();
+    uint32_t dist = i.GetDistanceFrom(start);
+    NS_ASSERT(dist == GetSerializedSize());
+    return dist;
+}
+
+void
+HelloAckHeader::Print(std::ostream& os) const
+{
+}
+
+bool
+HelloAckHeader::operator==(const HelloAckHeader& o) const
+{
+    return m_reserved == o.m_reserved;
+}
+
+std::ostream&
+operator<<(std::ostream& os, const HelloAckHeader& h)
+{
+    h.Print(os);
+    return os;
+}
+
+//-----------------------------------------------------------------------------
+// SendKey
+//-----------------------------------------------------------------------------
+
+SendKeyHeader::SendKeyHeader(uint64_t key1,
+                       uint64_t key2,
+                       uint64_t key3,
+                       uint64_t key4,
+                       uint32_t speed,
+                       uint32_t x,
+                       uint32_t y,
+                       uint32_t z,
+                       Time lifeTime)
+    : m_key1(key1),
+      m_key2(key2),
+      m_key3(key3),
+      m_key4(key4),
+      m_speed(speed),
+      m_xPosition(x),
+      m_yPosition(y),
+      m_zPosition(z)
+{
+    m_lifeTime = uint32_t(lifeTime.GetMilliSeconds());
+}
+
+NS_OBJECT_ENSURE_REGISTERED(SendKeyHeader);
+
+TypeId
+SendKeyHeader::GetTypeId()
+{
+    static TypeId tid = TypeId("ns3::lesapAodv::SendKeyHeader")
+                            .SetParent<Header>()
+                            .SetGroupName("LesapAodv")
+                            .AddConstructor<SendKeyHeader>();
+    return tid;
+}
+
+TypeId
+SendKeyHeader::GetInstanceTypeId() const
+{
+    return GetTypeId();
+}
+
+uint32_t
+SendKeyHeader::GetSerializedSize() const
+{
+    return 52;
+}
+
+
+
+void
+SendKeyHeader::Serialize(Buffer::Iterator i) const
+{
+    i.WriteHtonU32(m_speed);//4 - 4
+    i.WriteHtonU32(m_xPosition);//4 - 8
+    i.WriteHtonU32(m_yPosition);//4 - 12
+    i.WriteHtonU32(m_zPosition);//4 - 16
+    i.WriteHtonU32(m_lifeTime);//4 - 20
+    i.WriteU64(m_key1);//8 - 28
+    i.WriteU64(m_key2);//8 - 36
+    i.WriteU64(m_key3);//8 - 44
+    i.WriteU64(m_key4);//8 - 52
+}
+
+
+uint32_t
+SendKeyHeader::Deserialize(Buffer::Iterator start)
+{
+    Buffer::Iterator i = start;
+
+    m_speed = i.ReadNtohU32();
+    m_xPosition = i.ReadNtohU32();
+    m_yPosition = i.ReadNtohU32();
+    m_zPosition = i.ReadNtohU32();
+    m_lifeTime = i.ReadNtohU32();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+
+    uint32_t dist = i.GetDistanceFrom(start);
+    NS_ASSERT(dist == GetSerializedSize());
+    return dist;
+}
+
+void
+SendKeyHeader::Print(std::ostream& os) const
+{
+    os << "speed: " << m_speed << " position: (" << m_xPosition << ", " << m_yPosition << ", "
+       << m_zPosition << ")";
+    os << " lifetime " << m_lifeTime
+       << " key: " << m_key1 << " " << m_key2 << " " << m_key3 << " " << m_key4;
+}
+
+void
+SendKeyHeader::SetLifeTime(Time t)
+{
+    m_lifeTime = t.GetMilliSeconds();
+}
+
+Time
+SendKeyHeader::GetLifeTime() const
+{
+    Time t(MilliSeconds(m_lifeTime));
+    return t;
+}
+
+bool
+SendKeyHeader::operator==(const SendKeyHeader& o) const
+{
+    return (m_speed == o.m_speed && m_lifeTime == o.m_lifeTime &&
+            m_xPosition == o.m_xPosition && m_yPosition == o.m_yPosition && m_zPosition == o.m_zPosition &&
+            m_key1 == o.m_key1 && m_key2 == o.m_key2 && m_key3 == o.m_key3 && m_key4 == o.m_key4);
+}
+
+std::ostream&
+operator<<(std::ostream& os, const SendKeyHeader& h)
+{
+    h.Print(os);
+    return os;
+}
+
 
 //-----------------------------------------------------------------------------
 // RREP-ACK

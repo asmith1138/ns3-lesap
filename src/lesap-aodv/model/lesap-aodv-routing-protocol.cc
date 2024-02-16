@@ -1281,6 +1281,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         return; // drop
     }
     // TODO: Need to check if sender is lidar neighbor here (or Hello message)
+    //if(tHeader.Get()==LESAPAODVTYPE_RREP && tHeader.)
     // TODO: Skip section if not lidar neighbor (or Hello message)
     // TODO: If Hello, must be RREP and can continue
 
@@ -1300,6 +1301,18 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     }
     case LESAPAODVTYPE_RREP_ACK: {
         RecvReplyAck(sender);
+        break;
+    }
+    case LESAPAODVTYPE_HELLO_ACK: {
+        RecvHelloAck(sender);
+        break;
+    }
+    case LESAPAODVTYPE_SENDKEY: {
+        RecvSendKey(sender);
+        break;
+    }
+    case LESAPAODVTYPE_REPORT: {
+        RecvReport(sender);
         break;
     }
     }

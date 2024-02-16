@@ -51,7 +51,10 @@ enum MessageType
     LESAPAODVTYPE_RREQ = 1,    //!< LESAPAODVTYPE_RREQ
     LESAPAODVTYPE_RREP = 2,    //!< LESAPAODVTYPE_RREP
     LESAPAODVTYPE_RERR = 3,    //!< LESAPAODVTYPE_RERR
-    LESAPAODVTYPE_RREP_ACK = 4 //!< LESAPAODVTYPE_RREP_ACK
+    LESAPAODVTYPE_RREP_ACK = 4, //!< LESAPAODVTYPE_RREP_ACK
+    LESAPAODVTYPE_HELLO_ACK = 5, //!< LESAPAODVTYPE_HELLO_ACK
+    LESAPAODVTYPE_SENDKEY = 6, //!< LESAPAODVTYPE_SENDKEY
+    LESAPAODVTYPE_REPORT = 7 //!< LESAPAODVTYPE_REPORT
 };
 
 /**
@@ -336,7 +339,7 @@ class RreqHeader : public Header
  * \return updated stream
  */
 std::ostream& operator<<(std::ostream& os, const RreqHeader&);
-// TODO: Either add new type or we need to confer a key in this one
+
 // TODO: Add HelloAck and SendKey types
 /**
 * \ingroup lesapAodv
@@ -525,6 +528,288 @@ class RrepHeader : public Header
  * \return updated stream
  */
 std::ostream& operator<<(std::ostream& os, const RrepHeader&);
+/**
+* \ingroup lesapAodv
+* \brief Hello Ack (HelloAck) Message Format
+  \verbatim
+  0                   1
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |     Type      |   Reserved    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  \endverbatim
+*/
+class HelloAckHeader : public Header
+{
+  public:
+    /**
+     * constructor
+     *
+     */
+    HelloAckHeader();
+    /**
+     * \brief Get the type ID.
+     * \return the object TypeId
+     */
+    static TypeId GetTypeId();
+    TypeId GetInstanceTypeId() const override;
+    uint32_t GetSerializedSize() const override;
+    void Serialize(Buffer::Iterator start) const override;
+    uint32_t Deserialize(Buffer::Iterator start) override;
+    void Print(std::ostream& os) const override;
+
+    /**
+     * \brief Comparison operator
+     * \param o HelloAck header to compare
+     * \return true if the HelloAck headers are equal
+     */
+    bool operator==(const HelloAckHeader& o) const;
+
+  private:
+    uint8_t m_reserved; ///< Not used (must be 0)
+};
+
+/**
+ * \brief Stream output operator
+ * \param os output stream
+ * \return updated stream
+ */
+std::ostream& operator<<(std::ostream& os, const HelloAckHeader&);
+
+/**
+* \ingroup lesapAodv
+* \brief Send Key (SKey) Message Format
+  \verbatim
+  0                   1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |     Type      |R|A|    Reserved     |Prefix Sz|   Hop Count   |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                     Destination IP address                    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                  Destination Sequence Number                  |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Originator IP address                      |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                           Lifetime                            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  \endverbatim
+*/
+class SendKeyHeader : public Header
+{
+  public:
+    /**
+     * constructor
+     *
+     * \param key1 the 1st half of the key
+     * \param key2 the 2nd half of the key
+     * \param x the position of the node on x-axis
+     * \param y the position of the node on y-axis
+     * \param z the position of the node on z-axis
+     * \param speed the speed of the node
+     * \param lifetime the lifetime
+     */
+    SendKeyHeader(uint64_t key1 = 0,
+                  uint64_t key2 = 0,
+                  uint64_t key3 = 0,
+                  uint64_t key4 = 0,
+                  uint32_t speed = 0,
+                  uint32_t x = 0,
+                  uint32_t y = 0,
+                  uint32_t z = 0,
+               Time lifetime = MilliSeconds(0));
+    /**
+     * \brief Get the type ID.
+     * \return the object TypeId
+     */
+    static TypeId GetTypeId();
+    TypeId GetInstanceTypeId() const override;
+    uint32_t GetSerializedSize() const override;
+    void Serialize(Buffer::Iterator start) const override;
+    uint32_t Deserialize(Buffer::Iterator start) override;
+    void Print(std::ostream& os) const override;
+
+    // Fields
+    /**
+     * \brief Set 1st part of key
+     * \param key1 1st part of key
+     */
+    void SetKey1(uint64_t key1)
+    {
+        m_key1 = key1;
+    }
+
+    /**
+     * \brief Get 1st part of key
+     * \return the 1st part of key
+     */
+    uint64_t GetKey1() const
+    {
+        return m_key1;
+    }
+
+    /**
+     * \brief Set 2nd part of key
+     * \param key2 2nd part of key
+     */
+    void SetKey2(uint64_t key2)
+    {
+        m_key2 = key2;
+    }
+
+    /**
+     * \brief Get 2nd part of key
+     * \return the 2nd part of key
+     */
+    uint64_t GetKey2() const
+    {
+        return m_key2;
+    }
+
+    /**
+     * \brief Set 3rd part of key
+     * \param key3 3rd part of key
+     */
+    void SetKey3(int64_t key3)
+    {
+        m_key3 = key3;
+    }
+
+    /**
+     * \brief Get 3rd part of key
+     * \return the 3rd part of key
+     */
+    uint64_t GetKey3() const
+    {
+        return m_key3;
+    }
+
+    /**
+     * \brief Set 4th part of key
+     * \param key4 4th part of key
+     */
+    void SetKey4(uint64_t key4)
+    {
+        m_key4 = key4;
+    }
+
+    /**
+     * \brief Get 4th part of key
+     * \return the 4th part of key
+     */
+    uint64_t GetKey4() const
+    {
+        return m_key4;
+    }
+
+    /**
+     * \brief Set speed
+     * \param speed speed of node
+     */
+    void SetSpeed(uint32_t speed)
+    {
+        m_speed = speed;
+    }
+
+    /**
+     * \brief Get speed of node
+     * \return the speed of node
+     */
+    int32_t GetSpeed() const
+    {
+        return m_speed;
+    }
+
+    /**
+     * \brief Set position on x-axis of node
+     * \param x position on x-axis of node
+     */
+    void SetX(uint32_t x)
+    {
+        m_xPosition = x;
+    }
+
+    /**
+     * \brief Get position on x-axis of node
+     * \return the position on x-axis of node
+     */
+    uint32_t GetX() const
+    {
+        return m_xPosition;
+    }
+
+    /**
+     * \brief Set position on y-axis of node
+     * \param y position on y-axis of node
+     */
+    void SetY(uint32_t y)
+    {
+        m_yPosition = y;
+    }
+
+    /**
+     * \brief Get position on y-axis of node
+     * \return the position on y-axis of node
+     */
+    uint32_t GetY() const
+    {
+        return m_yPosition;
+    }
+
+    /**
+     * \brief Set position on z-axis of node
+     * \param x position on z-axis of node
+     */
+    void SetZ(uint32_t z)
+    {
+        m_zPosition = z;
+    }
+
+    /**
+     * \brief Get position on z-axis of node
+     * \return the position on z-axis of node
+     */
+    uint32_t GetZ() const
+    {
+        return m_zPosition;
+    }
+
+    /**
+     * \brief Set the lifetime
+     * \param t the lifetime
+     */
+    void SetLifeTime(Time t);
+    /**
+     * \brief Get the lifetime
+     * \return the lifetime
+     */
+    Time GetLifeTime() const;
+
+    /**
+     * \brief Comparison operator
+     * \param o RREP header to compare
+     * \return true if the RREP headers are equal
+     */
+    bool operator==(const SendKeyHeader& o) const;
+
+  private:
+    uint64_t m_key1;   ///< 1st part of public key
+    uint64_t m_key2;    ///< 2nd part of public key
+    uint64_t m_key3;   ///< 3rd part of public key
+    uint64_t m_key4;    ///< 4th part of public key
+    uint32_t m_speed;  ///< node speed
+    uint32_t m_xPosition; ///< node position on x-axis
+    uint32_t m_yPosition; ///< node position on y-axis
+    uint32_t m_zPosition; ///< node position on z-axis
+    uint32_t m_lifeTime;  ///< Lifetime (in milliseconds)
+};
+
+/**
+ * \brief Stream output operator
+ * \param os output stream
+ * \return updated stream
+ */
+std::ostream& operator<<(std::ostream& os, const SendKeyHeader&);
 
 /**
 * \ingroup lesapAodv
