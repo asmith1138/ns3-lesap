@@ -73,7 +73,15 @@ class LidarNeighbors
         /// Neighbor close indicator
         bool close;
 
-        //TODO: Add a signing key
+        uint64_t m_key1;   ///< 1st part of public key
+        uint64_t m_key2;    ///< 2nd part of public key
+        uint64_t m_key3;   ///< 3rd part of public key
+        uint64_t m_key4;    ///< 4th part of public key
+        uint32_t m_speed;  ///< node speed
+        uint32_t m_xPosition; ///< node position on x-axis
+        uint32_t m_yPosition; ///< node position on y-axis
+        uint32_t m_zPosition; ///< node position on z-axis
+        Time m_timeSeen; ///< time node was seen on lidar
         /**
          * \brief Neighbor structure constructor
          *
@@ -81,12 +89,23 @@ class LidarNeighbors
          * \param mac Mac48Address entry
          * \param t Time expire time
          */
-        LidarNeighbor(Ipv4Address ip, Mac48Address mac, Time t)
+        LidarNeighbor(Ipv4Address ip, Mac48Address mac, Time t,
+                      uint64_t key1, uint64_t key2, uint64_t key3, uint64_t key4,
+                      uint32_t speed, uint32_t x, uint32_t y, uint32_t z)
             : m_neighborAddress(ip),
               m_hardwareAddress(mac),
               m_expireTime(t),
-              close(false)
+              close(false),
+              m_key1(key1),
+              m_key2(key2),
+              m_key3(key3),
+              m_key4(key4),
+              m_speed(speed),
+              m_xPosition(x),
+              m_yPosition(y),
+              m_zPosition(z)
         {
+            m_timeSeen = Simulator::Now();
         }
     };
 
