@@ -1239,6 +1239,25 @@ RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
     return m_Mobility->GetDistanceFrom(s_Mobility);
 }
 
+double
+RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
+{
+    Address adr = ipv4.ConvertTo();
+    Ipv4 ip;
+    InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(adr);
+    Ptr<NetDevice> netdev = ip->GetNetDevice(ip->GetInterfaceForAddress(ipv4));
+    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
+    Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
+
+    Ptr<Node> m_node = m_netdevice->GetNode();
+    Ptr<Node> s_node = s_netdevice->GetNode();
+
+    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    Ptr<MobilityModel> s_Mobility = s_node->GetObject<MobilityModel>();
+
+    return m_Mobility->GetDistanceFrom(s_Mobility);
+}
+
 bool
 RoutingProtocol::IsNodeWithinLidar(double distance)
 {
@@ -1271,7 +1290,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     NS_LOG_DEBUG("LESAP-AODV node " << this << " received a LESAP-AODV packet from " << sender << " to "
                               << receiver);
 
-    UpdateRouteToNeighbor(sender, receiver);// TODO: Move lower so we can do more before checking lidar
+
     TypeHeader tHeader(LESAPAODVTYPE_RREQ);
     packet->RemoveHeader(tHeader);
     if (!tHeader.IsValid())
@@ -1281,9 +1300,23 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         return; // drop
     }
     // TODO: Need to check if sender is lidar neighbor here (or Hello message)
-    //if(tHeader.Get()==LESAPAODVTYPE_RREP && tHeader.)
-    // TODO: Skip section if not lidar neighbor (or Hello message)
-    // TODO: If Hello, must be RREP and can continue
+    if(!m_lnb.IsNeighbor(sender)){
+        if(!(tHeader.Get() == LESAPAODVTYPE_RREP)){
+            return; // drop
+        }
+        RrepHeader rrepHeader;
+        packet->RemoveHeader(rrepHeader);
+        Ipv4Address dst = rrepHeader.GetDst();
+        if(!(dst == rrepHeader.GetOrigin())){
+            //is not hello msg
+            return; // drop
+        }
+    }
+    double distance = DistanceFromNode(socket);
+    // msg is either from lidar neighbor or a hello msg
+    // Moved lower, so we can do more before checking lidar
+    UpdateRouteToNeighbor(sender, receiver);
+    // We dropped packet earlier if not lidar neighbor (or Hello message)
 
     switch (tHeader.Get())
     {

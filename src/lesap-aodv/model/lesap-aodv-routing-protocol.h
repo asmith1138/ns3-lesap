@@ -219,7 +219,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     void NotifyTxError(WifiMacDropReason reason, Ptr<const WifiMpdu> mpdu);
 
     double DistanceFromNode(Ptr<Socket> socket);
-
+    double DistanceFromNode(Ipv4Address ipv4);
     bool IsNodeWithinLidar(double distance);
 
     // Protocol parameters.
