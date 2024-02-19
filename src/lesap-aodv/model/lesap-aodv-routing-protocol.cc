@@ -1227,10 +1227,10 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
 double
 RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
 {
-    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
+    //Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
     Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
 
-    Ptr<Node> m_node = m_netdevice->GetNode();
+    Ptr<Node> m_node = m_lo->GetNode();
     Ptr<Node> s_node = s_netdevice->GetNode();
 
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
@@ -1242,20 +1242,16 @@ RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
 double
 RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
 {
-    Address adr = ipv4.ConvertTo();
-    Ipv4 ip;
-    InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(adr);
-    Ptr<NetDevice> netdev = ip->GetNetDevice(ip->GetInterfaceForAddress(ipv4));
-    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
-    Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
-
-    Ptr<Node> m_node = m_netdevice->GetNode();
-    Ptr<Node> s_node = s_netdevice->GetNode();
-
-    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
-    Ptr<MobilityModel> s_Mobility = s_node->GetObject<MobilityModel>();
-
-    return m_Mobility->GetDistanceFrom(s_Mobility);
+    //Ipv4InterfaceAddress
+    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    {
+        Ptr<Socket> socket = j->first;
+        Ipv4InterfaceAddress iface = j->second;
+        if(iface.GetLocal() == ipv4){
+            return DistanceFromNode(socket);
+        }
+    }
+    return 10000;//Large Number or infinity?
 }
 
 bool
