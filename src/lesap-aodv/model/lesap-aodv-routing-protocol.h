@@ -514,6 +514,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Ptr<UniformRandomVariable> m_uniformRandomVariable;
     /// Keep track of the last bcast time
     Time m_lastBcastTime;
+    void RecvSendKey(Ipv4Address address);
 };
 
 } // namespace lesapAodv

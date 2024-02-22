@@ -116,8 +116,8 @@ TypeHeader::Print(std::ostream& os) const
         os << "RREP_ACK";
         break;
     }
-    case LESAPAODVTYPE_HELLO_ACK: {
-        os << "HELLO_ACK";
+    case LESAPAODVTYPE_NEEDKEY: {
+        os << "NEEDKEY";
         break;
     }
     case LESAPAODVTYPE_SENDKEY: {
@@ -466,43 +466,43 @@ operator<<(std::ostream& os, const RrepHeader& h)
 // HELLO-ACK
 //-----------------------------------------------------------------------------
 
-HelloAckHeader::HelloAckHeader()
+NeedKeyHeader::NeedKeyHeader()
     : m_reserved(0)
 {
 }
 
-NS_OBJECT_ENSURE_REGISTERED(HelloAckHeader);
+NS_OBJECT_ENSURE_REGISTERED(NeedKeyHeader);
 
 TypeId
-HelloAckHeader::GetTypeId()
+NeedKeyHeader::GetTypeId()
 {
-    static TypeId tid = TypeId("ns3::lesapAodv::HelloAckHeader")
+    static TypeId tid = TypeId("ns3::lesapAodv::NeedKeyHeader")
                             .SetParent<Header>()
                             .SetGroupName("LesapAodv")
-                            .AddConstructor<HelloAckHeader>();
+                            .AddConstructor<NeedKeyHeader>();
     return tid;
 }
 
 TypeId
-HelloAckHeader::GetInstanceTypeId() const
+NeedKeyHeader::GetInstanceTypeId() const
 {
     return GetTypeId();
 }
 
 uint32_t
-HelloAckHeader::GetSerializedSize() const
+NeedKeyHeader::GetSerializedSize() const
 {
     return 1;
 }
 
 void
-HelloAckHeader::Serialize(Buffer::Iterator i) const
+NeedKeyHeader::Serialize(Buffer::Iterator i) const
 {
     i.WriteU8(m_reserved);
 }
 
 uint32_t
-HelloAckHeader::Deserialize(Buffer::Iterator start)
+NeedKeyHeader::Deserialize(Buffer::Iterator start)
 {
     Buffer::Iterator i = start;
     m_reserved = i.ReadU8();
@@ -512,18 +512,18 @@ HelloAckHeader::Deserialize(Buffer::Iterator start)
 }
 
 void
-HelloAckHeader::Print(std::ostream& os) const
+NeedKeyHeader::Print(std::ostream& os) const
 {
 }
 
 bool
-HelloAckHeader::operator==(const HelloAckHeader& o) const
+NeedKeyHeader::operator==(const NeedKeyHeader& o) const
 {
     return m_reserved == o.m_reserved;
 }
 
 std::ostream&
-operator<<(std::ostream& os, const HelloAckHeader& h)
+operator<<(std::ostream& os, const NeedKeyHeader& h)
 {
     h.Print(os);
     return os;

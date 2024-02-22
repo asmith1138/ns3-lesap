@@ -505,7 +505,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                             const MulticastForwardCallback& mcb,
                             const LocalDeliverCallback& lcb,
                             const ErrorCallback& ecb)
-{
+{ // TODO: Check m_lnb table for the sender
     NS_LOG_FUNCTION(this << p->GetUid() << header.GetDestination() << idev->GetAddress());
     if (m_socketAddresses.empty())
     {
@@ -618,9 +618,14 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         {
             UpdateRouteLifeTime(toOrigin.GetNextHop(), m_activeRouteTimeout);
             m_nb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
-            // TODO: add call to distance method
-            if(false){
-                m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+            // Check that next hop is within lidar distance
+            if (IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop()))){
+                if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
+                    m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+                }
+                else{
+                 //TODO: SendNeedKey
+                }
             }
         }
         if (!lcb.IsNull())
@@ -690,10 +695,23 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
             m_nb.Update(route->GetGateway(), m_activeRouteTimeout);
             m_nb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
 
-            // TODO: Add call to distance method here
-            if(false){
-                m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
-                m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+            // Check that next hop/gateway is within lidar distance
+            if (IsNodeWithinLidar(DistanceFromNode(route->GetGateway())))
+            {
+                if(m_lnb.IsNeighbor(route->GetGateway()))
+                {
+                    m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
+                }else{
+                    //TODO: SendNeedKey
+                }
+            }
+            if (IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop())))
+            {
+                if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
+                    m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+                }else{
+                    //TODO: SendNeedKey
+                }
             }
 
             ucb(route, p, header);
@@ -1227,7 +1245,6 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
 double
 RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
 {
-    //Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
     Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
 
     Ptr<Node> m_node = m_lo->GetNode();
@@ -1295,7 +1312,8 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                                      << tHeader.Get() << ". Drop");
         return; // drop
     }
-    // TODO: Need to check if sender is lidar neighbor here (or Hello message)
+    // Checking if sender is lidar neighbor here (or Hello message)
+    // TODO: Allow NEEDKEY and SENDKEY as well
     if(!m_lnb.IsNeighbor(sender)){
         if(!(tHeader.Get() == LESAPAODVTYPE_RREP)){
             return; // drop
@@ -1332,8 +1350,8 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         RecvReplyAck(sender);
         break;
     }
-    case LESAPAODVTYPE_HELLO_ACK: {
-        RecvHelloAck(sender);
+    case LESAPAODVTYPE_NEEDKEY: {
+        RecvNeedKey(sender);
         break;
     }
     case LESAPAODVTYPE_SENDKEY: {
@@ -1900,39 +1918,47 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
      * SHOULD make sure that it has an active route to the neighbor, and
      * create one if necessary.
      */
-    // TODO: Check the distance and add/update the lidar neighbor table if within lidar distance
-    if(false){
-        m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
+    // Checking the distance and add/update the lidar neighbor table if within lidar distance
+    if (IsNodeWithinLidar(DistanceFromNode(rrepHeader.GetDst()))){
+        if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
+            m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
+        }else{
+         // TODO: SendNeedKey
+        }
     }
-    // TODO: Check the distance and skip this whole part if not in the Lidar neighbor table
 
-    RoutingTableEntry toNeighbor;
-    if (!m_routingTable.LookupRoute(rrepHeader.GetDst(), toNeighbor))
-    {
-        Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
-        RoutingTableEntry newEntry(
-            /*dev=*/dev,
-            /*dst=*/rrepHeader.GetDst(),
-            /*vSeqNo=*/true,
-            /*seqNo=*/rrepHeader.GetDstSeqno(),
-            /*iface=*/m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0),
-            /*hops=*/1,
-            /*nextHop=*/rrepHeader.GetDst(),
-            /*lifetime=*/rrepHeader.GetLifeTime());
-        m_routingTable.AddRoute(newEntry);
-    }
-    else
-    {
-        toNeighbor.SetLifeTime(
-            std::max(Time(m_allowedHelloLoss * m_helloInterval), toNeighbor.GetLifeTime()));
-        toNeighbor.SetSeqNo(rrepHeader.GetDstSeqno());
-        toNeighbor.SetValidSeqNo(true);
-        toNeighbor.SetFlag(VALID);
-        toNeighbor.SetOutputDevice(m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver)));
-        toNeighbor.SetInterface(m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0));
-        toNeighbor.SetHop(1);
-        toNeighbor.SetNextHop(rrepHeader.GetDst());
-        m_routingTable.Update(toNeighbor);
+    // if not in Lidar distance don't create a routing table entry for a direct route
+    if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
+        RoutingTableEntry toNeighbor;
+        if (!m_routingTable.LookupRoute(rrepHeader.GetDst(), toNeighbor))
+        {
+            Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
+            RoutingTableEntry newEntry(
+                /*dev=*/dev,
+                /*dst=*/rrepHeader.GetDst(),
+                /*vSeqNo=*/true,
+                /*seqNo=*/rrepHeader.GetDstSeqno(),
+                /*iface=*/m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0),
+                /*hops=*/1,
+                /*nextHop=*/rrepHeader.GetDst(),
+                /*lifetime=*/rrepHeader.GetLifeTime());
+            m_routingTable.AddRoute(newEntry);
+        }
+        else
+        {
+            toNeighbor.SetLifeTime(
+                std::max(Time(m_allowedHelloLoss * m_helloInterval), toNeighbor.GetLifeTime()));
+            toNeighbor.SetSeqNo(rrepHeader.GetDstSeqno());
+            toNeighbor.SetValidSeqNo(true);
+            toNeighbor.SetFlag(VALID);
+            toNeighbor.SetOutputDevice(
+                m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver)));
+            toNeighbor.SetInterface(
+                m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0));
+            toNeighbor.SetHop(1);
+            toNeighbor.SetNextHop(rrepHeader.GetDst());
+            m_routingTable.Update(toNeighbor);
+        }
     }
     if (m_enableHello)
     {
@@ -2391,6 +2417,11 @@ RoutingProtocol::DoInitialize()
         m_htimer.Schedule(MilliSeconds(startTime));
     }
     Ipv4RoutingProtocol::DoInitialize();
+}
+
+void
+RoutingProtocol::RecvNeedKey(Ipv4Address address)
+{
 }
 
 } // namespace lesapAodv

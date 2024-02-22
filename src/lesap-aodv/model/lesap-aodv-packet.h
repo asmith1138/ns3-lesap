@@ -52,7 +52,7 @@ enum MessageType
     LESAPAODVTYPE_RREP = 2,    //!< LESAPAODVTYPE_RREP
     LESAPAODVTYPE_RERR = 3,    //!< LESAPAODVTYPE_RERR
     LESAPAODVTYPE_RREP_ACK = 4, //!< LESAPAODVTYPE_RREP_ACK
-    LESAPAODVTYPE_HELLO_ACK = 5, //!< LESAPAODVTYPE_HELLO_ACK
+    LESAPAODVTYPE_NEEDKEY = 5, //!< LESAPAODVTYPE_NEEDKEY
     LESAPAODVTYPE_SENDKEY = 6, //!< LESAPAODVTYPE_SENDKEY
     LESAPAODVTYPE_REPORT = 7 //!< LESAPAODVTYPE_REPORT
 };
@@ -529,7 +529,7 @@ class RrepHeader : public Header
 std::ostream& operator<<(std::ostream& os, const RrepHeader&);
 /**
 * \ingroup lesapAodv
-* \brief Hello Ack (HelloAck) Message Format
+* \brief Need Key (NeedKey) Message Format
   \verbatim
   0                   1
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
@@ -538,14 +538,14 @@ std::ostream& operator<<(std::ostream& os, const RrepHeader&);
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   \endverbatim
 */
-class HelloAckHeader : public Header
+class NeedKeyHeader : public Header
 {
   public:
     /**
      * constructor
      *
      */
-    HelloAckHeader();
+    NeedKeyHeader();
     /**
      * \brief Get the type ID.
      * \return the object TypeId
@@ -559,10 +559,10 @@ class HelloAckHeader : public Header
 
     /**
      * \brief Comparison operator
-     * \param o HelloAck header to compare
-     * \return true if the HelloAck headers are equal
+     * \param o NeedKey header to compare
+     * \return true if the NeedKey headers are equal
      */
-    bool operator==(const HelloAckHeader& o) const;
+    bool operator==(const NeedKeyHeader& o) const;
 
   private:
     uint8_t m_reserved; ///< Not used (must be 0)
@@ -573,7 +573,7 @@ class HelloAckHeader : public Header
  * \param os output stream
  * \return updated stream
  */
-std::ostream& operator<<(std::ostream& os, const HelloAckHeader&);
+std::ostream& operator<<(std::ostream& os, const NeedKeyHeader&);
 
 /**
 * \ingroup lesapAodv
