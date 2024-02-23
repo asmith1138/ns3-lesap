@@ -51,6 +51,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <random>
 
 namespace ns3
 {
@@ -187,6 +188,13 @@ RoutingProtocol::RoutingProtocol()
 {
     m_nb.SetCallback(MakeCallback(&RoutingProtocol::SendRerrWhenBreaksLinkToNextHop, this));
     m_lnb.SetCallback(MakeCallback(&RoutingProtocol::SendRerrWhenBreaksLinkToNextHop, this));
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> dis;
+    m_key1 = dis(gen);
+    m_key2 = dis(gen);
+    m_key3 = dis(gen);
+    m_key4 = dis(gen);
 }
 
 TypeId
@@ -624,7 +632,8 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }
                 else{
-                 //TODO: SendNeedKey
+                 //TODO: SendNeedKey and defer msg
+                 SendNeedKey(toOrigin.GetNextHop());
                 }
             }
         }
@@ -702,7 +711,8 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 {
                     m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
                 }else{
-                    //TODO: SendNeedKey
+                    //TODO: SendNeedKey and defer msg
+                    SendNeedKey(route->GetGateway());
                 }
             }
             if (IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop())))
@@ -710,7 +720,8 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }else{
-                    //TODO: SendNeedKey
+                    //TODO: SendNeedKey and defer msg
+                    SendNeedKey(toOrigin.GetNextHop());
                 }
             }
 
@@ -1256,6 +1267,20 @@ RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
     return m_Mobility->GetDistanceFrom(s_Mobility);
 }
 
+Vector
+RoutingProtocol::GetPosition(){
+    Ptr<Node> m_node = m_lo->GetNode();
+    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    return m_Mobility->GetPosition();
+}
+
+Vector
+RoutingProtocol::GetVelocity(){
+    Ptr<Node> m_node = m_lo->GetNode();
+    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    return m_Mobility->GetVelocity();
+}
+
 double
 RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
 {
@@ -1312,18 +1337,21 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                                      << tHeader.Get() << ". Drop");
         return; // drop
     }
-    // Checking if sender is lidar neighbor here (or Hello message)
-    // TODO: Allow NEEDKEY and SENDKEY as well
+    // Checking if sender is lidar neighbor here (or Hello message, or send/need key)
     if(!m_lnb.IsNeighbor(sender)){
-        if(!(tHeader.Get() == LESAPAODVTYPE_RREP)){
-            return; // drop
-        }
-        RrepHeader rrepHeader;
-        packet->RemoveHeader(rrepHeader);
-        Ipv4Address dst = rrepHeader.GetDst();
-        if(!(dst == rrepHeader.GetOrigin())){
-            //is not hello msg
-            return; // drop
+        if(!(tHeader.Get() == LESAPAODVTYPE_NEEDKEY) && !(tHeader.Get() == LESAPAODVTYPE_SENDKEY)){
+            if (!(tHeader.Get() == LESAPAODVTYPE_RREP))
+            {
+                return; // drop
+            }
+            RrepHeader rrepHeader;
+            packet->RemoveHeader(rrepHeader);
+            Ipv4Address dst = rrepHeader.GetDst();
+            if (!(dst == rrepHeader.GetOrigin()))
+            {
+                // is not hello msg
+                return; // drop
+            }
         }
     }
     double distance = DistanceFromNode(socket);
@@ -1355,7 +1383,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         break;
     }
     case LESAPAODVTYPE_SENDKEY: {
-        RecvSendKey(sender);
+        RecvSendKey(packet, sender);
         break;
     }
     case LESAPAODVTYPE_REPORT: {
@@ -1748,6 +1776,56 @@ RoutingProtocol::SendReplyAck(Ipv4Address neighbor)
 }
 
 void
+RoutingProtocol::SendSendKey(Ipv4Address neighbor)
+{
+    NS_LOG_FUNCTION(this << " to " << neighbor);
+    Vector position = GetPosition();
+    Vector velocity = GetVelocity();
+    SendKeyHeader h(/*Key1*/m_key1,
+                    /*Key2*/m_key2,
+                    /*Key3*/m_key3,
+                    /*Key4*/m_key4,
+                    /*X velocity*/velocity.x,
+                    /*Y velocity*/velocity.y,
+                    /*Z velocity*/velocity.z,
+                    /*X-coord*/position.x,
+                    /*Y-coord*/position.y,
+                    /*Z-coord*/position.z,
+                    /*lifetime=*/m_helloInterval);
+    TypeHeader typeHeader(LESAPAODVTYPE_SENDKEY);
+    Ptr<Packet> packet = Create<Packet>();
+    SocketIpTtlTag tag;
+    tag.SetTtl(1);
+    packet->AddPacketTag(tag);
+    packet->AddHeader(h);
+    packet->AddHeader(typeHeader);
+    RoutingTableEntry toNeighbor;
+    m_routingTable.LookupRoute(neighbor, toNeighbor);
+    Ptr<Socket> socket = FindSocketWithInterfaceAddress(toNeighbor.GetInterface());
+    NS_ASSERT(socket);
+    socket->SendTo(packet, 0, InetSocketAddress(neighbor, LESAP_AODV_PORT));
+}
+
+void
+RoutingProtocol::SendNeedKey(Ipv4Address neighbor)
+{
+    NS_LOG_FUNCTION(this << " to " << neighbor);
+    NeedKeyHeader h;
+    TypeHeader typeHeader(LESAPAODVTYPE_NEEDKEY);
+    Ptr<Packet> packet = Create<Packet>();
+    SocketIpTtlTag tag;
+    tag.SetTtl(1);
+    packet->AddPacketTag(tag);
+    packet->AddHeader(h);
+    packet->AddHeader(typeHeader);
+    RoutingTableEntry toNeighbor;
+    m_routingTable.LookupRoute(neighbor, toNeighbor);
+    Ptr<Socket> socket = FindSocketWithInterfaceAddress(toNeighbor.GetInterface());
+    NS_ASSERT(socket);
+    socket->SendTo(packet, 0, InetSocketAddress(neighbor, LESAP_AODV_PORT));
+}
+
+void
 RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sender)
 {
     NS_LOG_FUNCTION(this << " src " << sender);
@@ -1923,7 +2001,8 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
         if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
             m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
         }else{
-         // TODO: SendNeedKey
+         // TODO: SendNeedKey and defer msg
+         SendNeedKey(rrepHeader.GetDst());
         }
     }
 
@@ -2422,6 +2501,12 @@ RoutingProtocol::DoInitialize()
 void
 RoutingProtocol::RecvNeedKey(Ipv4Address address)
 {
+    SendSendKey(address);
+}
+void
+RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address)
+{
+    // TODO: Create new lidar neighbor with the packet data
 }
 
 } // namespace lesapAodv

@@ -612,7 +612,9 @@ class SendKeyHeader : public Header
                   uint64_t key2 = 0,
                   uint64_t key3 = 0,
                   uint64_t key4 = 0,
-                  uint32_t speed = 0,
+                  uint32_t velX = 0,
+                  uint32_t velY = 0,
+                  uint32_t velZ = 0,
                   uint32_t x = 0,
                   uint32_t y = 0,
                   uint32_t z = 0,
@@ -702,21 +704,57 @@ class SendKeyHeader : public Header
     }
 
     /**
-     * \brief Set speed
-     * \param speed speed of node
+     * \brief Set velocity x
+     * \param velX X velocity of node
      */
-    void SetSpeed(uint32_t speed)
+    void SetVelX(uint32_t velX)
     {
-        m_speed = speed;
+        m_velX = velX;
     }
 
     /**
-     * \brief Get speed of node
-     * \return the speed of node
+     * \brief Get x velocity of node
+     * \return the x velocity of node
      */
-    int32_t GetSpeed() const
+    int32_t GetVelX() const
     {
-        return m_speed;
+        return m_velX;
+    }
+
+    /**
+     * \brief Set velocity y
+     * \param velY Y velocity of node
+     */
+    void SetVelY(uint32_t velY)
+    {
+        m_velY = velY;
+    }
+
+    /**
+     * \brief Get y velocity of node
+     * \return the y velocity of node
+     */
+    int32_t GetVelY() const
+    {
+        return m_velY;
+    }
+
+    /**
+     * \brief Set velocity z
+     * \param velZ Z velocity of node
+     */
+    void SetVelZ(uint32_t velZ)
+    {
+        m_velZ = velZ;
+    }
+
+    /**
+     * \brief Get z velocity of node
+     * \return the z velocity of node
+     */
+    int32_t GetVelZ() const
+    {
+        return m_velZ;
     }
 
     /**
@@ -796,7 +834,9 @@ class SendKeyHeader : public Header
     uint64_t m_key2;    ///< 2nd part of public key
     uint64_t m_key3;   ///< 3rd part of public key
     uint64_t m_key4;    ///< 4th part of public key
-    uint32_t m_speed;  ///< node speed
+    uint32_t m_velX;  ///< node x velocity
+    uint32_t m_velY;  ///< node y velocity
+    uint32_t m_velZ;  ///< node z velocity
     uint32_t m_xPosition; ///< node position on x-axis
     uint32_t m_yPosition; ///< node position on y-axis
     uint32_t m_zPosition; ///< node position on z-axis

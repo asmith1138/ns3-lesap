@@ -30,8 +30,8 @@
 #define LESAP_AODVROUTINGPROTOCOL_H
 
 #include "lesap-aodv-dpd.h"
-#include "lesap-aodv-neighbor.h"
 #include "lesap-aodv-lidar.h"
+#include "lesap-aodv-neighbor.h"
 #include "lesap-aodv-packet.h"
 #include "lesap-aodv-rqueue.h"
 #include "lesap-aodv-rtable.h"
@@ -42,6 +42,7 @@
 #include "ns3/node.h"
 #include "ns3/output-stream-wrapper.h"
 #include "ns3/random-variable-stream.h"
+#include "ns3/vector.h"
 
 #include <map>
 
@@ -221,6 +222,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     double DistanceFromNode(Ptr<Socket> socket);
     double DistanceFromNode(Ipv4Address ipv4);
     bool IsNodeWithinLidar(double distance);
+    Vector GetPosition();
+    Vector GetVelocity();
 
     // Protocol parameters.
     uint32_t m_rreqRetries; ///< Maximum number of retransmissions of RREQ with TTL = NetDiameter to
@@ -301,6 +304,11 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint16_t m_rreqCount;
     /// Number of RERRs used for RERR rate control
     uint16_t m_rerrCount;
+    /// Public Key (Private key will be assumed)
+    uint64_t m_key1;
+    uint64_t m_key2;
+    uint64_t m_key3;
+    uint64_t m_key4;
 
   private:
     /// Start protocol operation
@@ -456,6 +464,14 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      * \param neighbor neighbor address
      */
     void SendReplyAck(Ipv4Address neighbor);
+    /** Send SENDKEY
+     * \param neighbor neighbor address
+     */
+    void SendSendKey(Ipv4Address neighbor);
+    /** Send NEEDKEY
+     * \param neighbor neighbor address
+     */
+    void SendNeedKey(Ipv4Address neighbor);
     /** Initiate RERR
      * \param nextHop next hop address
      */
@@ -514,7 +530,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Ptr<UniformRandomVariable> m_uniformRandomVariable;
     /// Keep track of the last bcast time
     Time m_lastBcastTime;
-    void RecvSendKey(Ipv4Address address);
+    void RecvSendKey(Ptr<Packet> p, Ipv4Address address);
+    void RecvNeedKey(Ipv4Address address);
 };
 
 } // namespace lesapAodv

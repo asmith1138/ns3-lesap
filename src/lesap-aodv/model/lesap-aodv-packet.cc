@@ -463,7 +463,7 @@ operator<<(std::ostream& os, const RrepHeader& h)
 }
 
 //-----------------------------------------------------------------------------
-// HELLO-ACK
+// NEED-KEY
 //-----------------------------------------------------------------------------
 
 NeedKeyHeader::NeedKeyHeader()
@@ -537,7 +537,9 @@ SendKeyHeader::SendKeyHeader(uint64_t key1,
                        uint64_t key2,
                        uint64_t key3,
                        uint64_t key4,
-                       uint32_t speed,
+                       uint32_t velX,
+                       uint32_t velY,
+                       uint32_t velZ,
                        uint32_t x,
                        uint32_t y,
                        uint32_t z,
@@ -546,7 +548,9 @@ SendKeyHeader::SendKeyHeader(uint64_t key1,
       m_key2(key2),
       m_key3(key3),
       m_key4(key4),
-      m_speed(speed),
+      m_velX(velX),
+      m_velY(velY),
+      m_velY(velZ),
       m_xPosition(x),
       m_yPosition(y),
       m_zPosition(z)
@@ -575,7 +579,7 @@ SendKeyHeader::GetInstanceTypeId() const
 uint32_t
 SendKeyHeader::GetSerializedSize() const
 {
-    return 52;
+    return 60;
 }
 
 
@@ -583,15 +587,17 @@ SendKeyHeader::GetSerializedSize() const
 void
 SendKeyHeader::Serialize(Buffer::Iterator i) const
 {
-    i.WriteHtonU32(m_speed);//4 - 4
-    i.WriteHtonU32(m_xPosition);//4 - 8
-    i.WriteHtonU32(m_yPosition);//4 - 12
-    i.WriteHtonU32(m_zPosition);//4 - 16
-    i.WriteHtonU32(m_lifeTime);//4 - 20
-    i.WriteU64(m_key1);//8 - 28
-    i.WriteU64(m_key2);//8 - 36
-    i.WriteU64(m_key3);//8 - 44
-    i.WriteU64(m_key4);//8 - 52
+    i.WriteHtonU32(m_velX);//4 - 4
+    i.WriteHtonU32(m_velY);//4 - 8
+    i.WriteHtonU32(m_velZ);//4 - 12
+    i.WriteHtonU32(m_xPosition);//4 - 16
+    i.WriteHtonU32(m_yPosition);//4 - 20
+    i.WriteHtonU32(m_zPosition);//4 - 24
+    i.WriteHtonU32(m_lifeTime);//4 - 28
+    i.WriteU64(m_key1);//8 - 36
+    i.WriteU64(m_key2);//8 - 44
+    i.WriteU64(m_key3);//8 - 52
+    i.WriteU64(m_key4);//8 - 60
 }
 
 
@@ -600,7 +606,9 @@ SendKeyHeader::Deserialize(Buffer::Iterator start)
 {
     Buffer::Iterator i = start;
 
-    m_speed = i.ReadNtohU32();
+    m_velX = i.ReadNtohU32();
+    m_velY = i.ReadNtohU32();
+    m_velZ = i.ReadNtohU32();
     m_xPosition = i.ReadNtohU32();
     m_yPosition = i.ReadNtohU32();
     m_zPosition = i.ReadNtohU32();
@@ -618,7 +626,8 @@ SendKeyHeader::Deserialize(Buffer::Iterator start)
 void
 SendKeyHeader::Print(std::ostream& os) const
 {
-    os << "speed: " << m_speed << " position: (" << m_xPosition << ", " << m_yPosition << ", "
+    os << "Velocity: (" << m_velX << ", " << m_velY << ", " << m_velZ << ")"
+       << " position: (" << m_xPosition << ", " << m_yPosition << ", "
        << m_zPosition << ")";
     os << " lifetime " << m_lifeTime
        << " key: " << m_key1 << " " << m_key2 << " " << m_key3 << " " << m_key4;
@@ -640,7 +649,8 @@ SendKeyHeader::GetLifeTime() const
 bool
 SendKeyHeader::operator==(const SendKeyHeader& o) const
 {
-    return (m_speed == o.m_speed && m_lifeTime == o.m_lifeTime &&
+    return (m_velX == o.m_velX && m_velY == o.m_velY && m_velZ == o.m_velZ &&
+            m_lifeTime == o.m_lifeTime &&
             m_xPosition == o.m_xPosition && m_yPosition == o.m_yPosition && m_zPosition == o.m_zPosition &&
             m_key1 == o.m_key1 && m_key2 == o.m_key2 && m_key3 == o.m_key3 && m_key4 == o.m_key4);
 }
