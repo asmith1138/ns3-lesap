@@ -27,7 +27,7 @@
  *          Pavel Boyko <boyko@iitp.ru>
  */
 
-#include "lesap-aodv-lntable.h"
+#include "lesap-aodv-rpttable.h"
 
 #include "ns3/log.h"
 #include "ns3/simulator.h"
@@ -38,16 +38,16 @@
 namespace ns3
 {
 
-NS_LOG_COMPONENT_DEFINE("LesapAodvLidarNeighborTable");
+NS_LOG_COMPONENT_DEFINE("LesapAodvReportTable");
 
 namespace lesapAodv
 {
 
 /*
- The Routing Table
+ The Report Table
  */
 
-LidarNeighborTableEntry::LidarNeighborTableEntry(Ptr<NetDevice> dev,
+ReportTableEntry::ReportTableEntry(Ptr<NetDevice> dev,
                                      Ipv4Address dst,
                                      bool vSeqNo,
                                      uint32_t seqNo,
@@ -61,7 +61,7 @@ LidarNeighborTableEntry::LidarNeighborTableEntry(Ptr<NetDevice> dev,
       m_hops(hops),
       m_lifeTime(lifetime + Simulator::Now()),
       m_iface(iface),
-      m_flag(LIDAR_VALID),
+      m_flag(REPORT_VALID),
       m_reqCount(0),
       m_blackListState(false),
       m_blackListTimeout(Simulator::Now())
@@ -73,12 +73,12 @@ LidarNeighborTableEntry::LidarNeighborTableEntry(Ptr<NetDevice> dev,
     m_ipv4Route->SetOutputDevice(dev);
 }
 
-LidarNeighborTableEntry::~LidarNeighborTableEntry()
+ReportTableEntry::~ReportTableEntry()
 {
 }
 
 bool
-LidarNeighborTableEntry::InsertPrecursor(Ipv4Address id)
+ReportTableEntry::InsertPrecursor(Ipv4Address id)
 {
     NS_LOG_FUNCTION(this << id);
     if (!LookupPrecursor(id))
@@ -93,7 +93,7 @@ LidarNeighborTableEntry::InsertPrecursor(Ipv4Address id)
 }
 
 bool
-LidarNeighborTableEntry::LookupPrecursor(Ipv4Address id)
+ReportTableEntry::LookupPrecursor(Ipv4Address id)
 {
     NS_LOG_FUNCTION(this << id);
     for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
@@ -109,7 +109,7 @@ LidarNeighborTableEntry::LookupPrecursor(Ipv4Address id)
 }
 
 bool
-LidarNeighborTableEntry::DeletePrecursor(Ipv4Address id)
+ReportTableEntry::DeletePrecursor(Ipv4Address id)
 {
     NS_LOG_FUNCTION(this << id);
     auto i = std::remove(m_precursorList.begin(), m_precursorList.end(), id);
@@ -127,20 +127,20 @@ LidarNeighborTableEntry::DeletePrecursor(Ipv4Address id)
 }
 
 void
-LidarNeighborTableEntry::DeleteAllPrecursors()
+ReportTableEntry::DeleteAllPrecursors()
 {
     NS_LOG_FUNCTION(this);
     m_precursorList.clear();
 }
 
 bool
-LidarNeighborTableEntry::IsPrecursorListEmpty() const
+ReportTableEntry::IsPrecursorListEmpty() const
 {
     return m_precursorList.empty();
 }
 
 void
-LidarNeighborTableEntry::GetPrecursors(std::vector<Ipv4Address>& prec) const
+ReportTableEntry::GetPrecursors(std::vector<Ipv4Address>& prec) const
 {
     NS_LOG_FUNCTION(this);
     if (IsPrecursorListEmpty())
@@ -166,20 +166,20 @@ LidarNeighborTableEntry::GetPrecursors(std::vector<Ipv4Address>& prec) const
 }
 
 void
-LidarNeighborTableEntry::Invalidate(Time badLinkLifetime)
+ReportTableEntry::Invalidate(Time badLinkLifetime)
 {
     NS_LOG_FUNCTION(this << badLinkLifetime.As(Time::S));
-    if (m_flag == LIDAR_INVALID)
+    if (m_flag == REPORT_INVALID)
     {
         return;
     }
-    m_flag = LIDAR_INVALID;
+    m_flag = REPORT_INVALID;
     m_reqCount = 0;
     m_lifeTime = badLinkLifetime + Simulator::Now();
 }
 
 void
-LidarNeighborTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
+ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
 {
     std::ostream* os = stream->GetStream();
     // Copy the current ostream state
@@ -202,15 +202,15 @@ LidarNeighborTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit 
     *os << std::setw(16);
     switch (m_flag)
     {
-    case LIDAR_VALID: {
+    case REPORT_VALID: {
         *os << "UP";
         break;
     }
-    case LIDAR_INVALID: {
+    case REPORT_INVALID: {
         *os << "DOWN";
         break;
     }
-    case LIDAR_IN_SEARCH: {
+    case REPORT_IN_SEARCH: {
         *os << "IN_SEARCH";
         break;
     }
@@ -226,13 +226,13 @@ LidarNeighborTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit 
  The Routing Table
  */
 
-LidarNeighborTable::LidarNeighborTable(Time t)
+ReportTable::ReportTable(Time t)
     : m_badLinkLifetime(t)
 {
 }
 
 bool
-LidarNeighborTable::LookupRoute(Ipv4Address id, LidarNeighborTableEntry& rt)
+ReportTable::LookupRoute(Ipv4Address id, ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this << id);
     Purge();
@@ -253,7 +253,7 @@ LidarNeighborTable::LookupRoute(Ipv4Address id, LidarNeighborTableEntry& rt)
 }
 
 bool
-LidarNeighborTable::LookupValidRoute(Ipv4Address id, LidarNeighborTableEntry& rt)
+ReportTable::LookupValidRoute(Ipv4Address id, ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this << id);
     if (!LookupRoute(id, rt))
@@ -262,12 +262,12 @@ LidarNeighborTable::LookupValidRoute(Ipv4Address id, LidarNeighborTableEntry& rt
         return false;
     }
     NS_LOG_LOGIC("Route to " << id << " flag is "
-                             << ((rt.GetFlag() == LIDAR_VALID) ? "valid" : "not valid"));
-    return (rt.GetFlag() == LIDAR_VALID);
+                             << ((rt.GetFlag() == REPORT_VALID) ? "valid" : "not valid"));
+    return (rt.GetFlag() == REPORT_VALID);
 }
 
 bool
-LidarNeighborTable::DeleteRoute(Ipv4Address dst)
+ReportTable::DeleteRoute(Ipv4Address dst)
 {
     NS_LOG_FUNCTION(this << dst);
     Purge();
@@ -281,11 +281,11 @@ LidarNeighborTable::DeleteRoute(Ipv4Address dst)
 }
 
 bool
-LidarNeighborTable::AddRoute(LidarNeighborTableEntry& rt)
+ReportTable::AddRoute(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
     Purge();
-    if (rt.GetFlag() != LIDAR_IN_SEARCH)
+    if (rt.GetFlag() != REPORT_IN_SEARCH)
     {
         rt.SetRreqCnt(0);
     }
@@ -294,7 +294,7 @@ LidarNeighborTable::AddRoute(LidarNeighborTableEntry& rt)
 }
 
 bool
-LidarNeighborTable::Update(LidarNeighborTableEntry& rt)
+ReportTable::Update(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
     auto i = m_ipv4AddressEntry.find(rt.GetDestination());
@@ -304,7 +304,7 @@ LidarNeighborTable::Update(LidarNeighborTableEntry& rt)
         return false;
     }
     i->second = rt;
-    if (i->second.GetFlag() != LIDAR_IN_SEARCH)
+    if (i->second.GetFlag() != REPORT_IN_SEARCH)
     {
         NS_LOG_LOGIC("Route update to " << rt.GetDestination() << " set RreqCnt to 0");
         i->second.SetRreqCnt(0);
@@ -313,7 +313,7 @@ LidarNeighborTable::Update(LidarNeighborTableEntry& rt)
 }
 
 bool
-LidarNeighborTable::SetEntryState(Ipv4Address id, LidarFlags state)
+ReportTable::SetEntryState(Ipv4Address id, ReportFlags state)
 {
     NS_LOG_FUNCTION(this);
     auto i = m_ipv4AddressEntry.find(id);
@@ -329,7 +329,7 @@ LidarNeighborTable::SetEntryState(Ipv4Address id, LidarFlags state)
 }
 
 void
-LidarNeighborTable::GetListOfDestinationWithNextHop(Ipv4Address nextHop,
+ReportTable::GetListOfDestinationWithNextHop(Ipv4Address nextHop,
                                               std::map<Ipv4Address, uint32_t>& unreachable)
 {
     NS_LOG_FUNCTION(this);
@@ -346,7 +346,7 @@ LidarNeighborTable::GetListOfDestinationWithNextHop(Ipv4Address nextHop,
 }
 
 void
-LidarNeighborTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t>& unreachable)
+ReportTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t>& unreachable)
 {
     NS_LOG_FUNCTION(this);
     Purge();
@@ -354,7 +354,7 @@ LidarNeighborTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t
     {
         for (auto j = unreachable.begin(); j != unreachable.end(); ++j)
         {
-            if ((i->first == j->first) && (i->second.GetFlag() == LIDAR_VALID))
+            if ((i->first == j->first) && (i->second.GetFlag() == REPORT_VALID))
             {
                 NS_LOG_LOGIC("Invalidate route with destination address " << i->first);
                 i->second.Invalidate(m_badLinkLifetime);
@@ -364,7 +364,7 @@ LidarNeighborTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t
 }
 
 void
-LidarNeighborTable::DeleteAllRoutesFromInterface(Ipv4InterfaceAddress iface)
+ReportTable::DeleteAllRoutesFromInterface(Ipv4InterfaceAddress iface)
 {
     NS_LOG_FUNCTION(this);
     if (m_ipv4AddressEntry.empty())
@@ -387,7 +387,7 @@ LidarNeighborTable::DeleteAllRoutesFromInterface(Ipv4InterfaceAddress iface)
 }
 
 void
-LidarNeighborTable::Purge()
+ReportTable::Purge()
 {
     NS_LOG_FUNCTION(this);
     if (m_ipv4AddressEntry.empty())
@@ -398,13 +398,13 @@ LidarNeighborTable::Purge()
     {
         if (i->second.GetLifeTime() < Seconds(0))
         {
-            if (i->second.GetFlag() == LIDAR_INVALID)
+            if (i->second.GetFlag() == REPORT_INVALID)
             {
                 auto tmp = i;
                 ++i;
                 m_ipv4AddressEntry.erase(tmp);
             }
-            else if (i->second.GetFlag() == LIDAR_VALID)
+            else if (i->second.GetFlag() == REPORT_VALID)
             {
                 NS_LOG_LOGIC("Invalidate route with destination address " << i->first);
                 i->second.Invalidate(m_badLinkLifetime);
@@ -423,7 +423,7 @@ LidarNeighborTable::Purge()
 }
 
 void
-LidarNeighborTable::Purge(std::map<Ipv4Address, LidarNeighborTableEntry>& table) const
+ReportTable::Purge(std::map<Ipv4Address, ReportTableEntry>& table) const
 {
     NS_LOG_FUNCTION(this);
     if (table.empty())
@@ -434,13 +434,13 @@ LidarNeighborTable::Purge(std::map<Ipv4Address, LidarNeighborTableEntry>& table)
     {
         if (i->second.GetLifeTime() < Seconds(0))
         {
-            if (i->second.GetFlag() == LIDAR_INVALID)
+            if (i->second.GetFlag() == REPORT_INVALID)
             {
                 auto tmp = i;
                 ++i;
                 table.erase(tmp);
             }
-            else if (i->second.GetFlag() == LIDAR_VALID)
+            else if (i->second.GetFlag() == REPORT_VALID)
             {
                 NS_LOG_LOGIC("Invalidate route with destination address " << i->first);
                 i->second.Invalidate(m_badLinkLifetime);
@@ -459,7 +459,7 @@ LidarNeighborTable::Purge(std::map<Ipv4Address, LidarNeighborTableEntry>& table)
 }
 
 bool
-LidarNeighborTable::MarkLinkAsUnidirectional(Ipv4Address neighbor, Time blacklistTimeout)
+ReportTable::MarkLinkAsUnidirectional(Ipv4Address neighbor, Time blacklistTimeout)
 {
     NS_LOG_FUNCTION(this << neighbor << blacklistTimeout.As(Time::S));
     auto i = m_ipv4AddressEntry.find(neighbor);
@@ -476,9 +476,9 @@ LidarNeighborTable::MarkLinkAsUnidirectional(Ipv4Address neighbor, Time blacklis
 }
 
 void
-LidarNeighborTable::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
+ReportTable::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
 {
-    std::map<Ipv4Address, LidarNeighborTableEntry> table = m_ipv4AddressEntry;
+    std::map<Ipv4Address, ReportTableEntry> table = m_ipv4AddressEntry;
     Purge(table);
     std::ostream* os = stream->GetStream();
     // Copy the current ostream state

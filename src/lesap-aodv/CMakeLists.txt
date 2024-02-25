@@ -10,7 +10,7 @@ build_lib(
     model/lesap-aodv-routing-protocol.cc
     model/lesap-aodv-rqueue.cc
     model/lesap-aodv-rtable.cc
-    model/lesap-aodv-lntable.cc
+        model/lesap-aodv-rpttable.cc
   HEADER_FILES
     helper/lesap-aodv-helper.h
     model/lesap-aodv-dpd.h
@@ -21,7 +21,7 @@ build_lib(
     model/lesap-aodv-routing-protocol.h
     model/lesap-aodv-rqueue.h
     model/lesap-aodv-rtable.h
-    model/lesap-aodv-lntable.h
+        model/lesap-aodv-rpttable.h
   LIBRARIES_TO_LINK ${libinternet}
                     ${libwifi}
   TEST_SOURCES

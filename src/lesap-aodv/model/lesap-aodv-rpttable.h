@@ -26,8 +26,8 @@
  *          Elena Buchatskaia <borovkovaes@iitp.ru>
  *          Pavel Boyko <boyko@iitp.ru>
  */
-#ifndef LESAP_AODV_LNTABLE_H
-#define LESAP_AODV_LNTABLE_H
+#ifndef LESAP_AODV_RPTTABLE_H
+#define LESAP_AODV_RPTTABLE_H
 
 #include "ns3/ipv4-route.h"
 #include "ns3/ipv4.h"
@@ -49,18 +49,18 @@ namespace lesapAodv
  * \ingroup lesapAodv
  * \brief Route record states
  */
-enum LidarFlags
+enum ReportFlags
 {
-    LIDAR_VALID = 0,     //!< VALID
-    LIDAR_INVALID = 1,   //!< INVALID
-    LIDAR_IN_SEARCH = 2, //!< IN_SEARCH
+    REPORT_VALID = 0,     //!< VALID
+    REPORT_INVALID = 1,   //!< INVALID
+    REPORT_IN_SEARCH = 2, //!< IN_SEARCH
 };
 
 /**
  * \ingroup lesapAodv
  * \brief Routing table entry
  */
-class LidarNeighborTableEntry
+class ReportTableEntry
 {
   public:
     /**
@@ -75,7 +75,7 @@ class LidarNeighborTableEntry
      * \param nextHop the IP address of the next hop
      * \param lifetime the lifetime of the entry
      */
-    LidarNeighborTableEntry(Ptr<NetDevice> dev = nullptr,
+    ReportTableEntry(Ptr<NetDevice> dev = nullptr,
                       Ipv4Address dst = Ipv4Address(),
                       bool vSeqNo = false,
                       uint32_t seqNo = 0,
@@ -84,7 +84,7 @@ class LidarNeighborTableEntry
                       Ipv4Address nextHop = Ipv4Address(),
                       Time lifetime = Simulator::Now());
 
-    ~LidarNeighborTableEntry();
+    ~ReportTableEntry();
 
     ///\name Precursors management
     //\{
@@ -284,7 +284,7 @@ class LidarNeighborTableEntry
      * Set the route flags
      * \param flag the route flags
      */
-    void SetFlag(LidarFlags flag)
+    void SetFlag(ReportFlags flag)
     {
         m_flag = flag;
     }
@@ -293,7 +293,7 @@ class LidarNeighborTableEntry
      * Get the route flags
      * \returns the route flags
      */
-    LidarFlags GetFlag() const
+    ReportFlags GetFlag() const
     {
         return m_flag;
     }
@@ -404,7 +404,7 @@ class LidarNeighborTableEntry
     /// Output interface address
     Ipv4InterfaceAddress m_iface;
     /// Routing flags: valid, invalid or in search
-    LidarFlags m_flag;
+    ReportFlags m_flag;
 
     /// List of precursors
     std::vector<Ipv4Address> m_precursorList;
@@ -422,14 +422,14 @@ class LidarNeighborTableEntry
  * \ingroup lesapAodv
  * \brief The Routing table used by LESAP-AODV protocol
  */
-class LidarNeighborTable
+class ReportTable
 {
   public:
     /**
      * constructor
      * \param t the routing table entry lifetime
      */
-    LidarNeighborTable(Time t);
+    ReportTable(Time t);
 
     ///\name Handle lifetime of invalid route
     //\{
@@ -459,7 +459,7 @@ class LidarNeighborTable
      * \param r routing table entry
      * \return true in success
      */
-    bool AddRoute(LidarNeighborTableEntry& r);
+    bool AddRoute(ReportTableEntry& r);
     /**
      * Delete routing table entry with destination address dst, if it exists.
      * \param dst destination address
@@ -472,27 +472,27 @@ class LidarNeighborTable
      * \param rt entry with destination address dst, if exists
      * \return true on success
      */
-    bool LookupRoute(Ipv4Address dst, LidarNeighborTableEntry& rt);
+    bool LookupRoute(Ipv4Address dst, ReportTableEntry& rt);
     /**
      * Lookup route in VALID state
      * \param dst destination address
      * \param rt entry with destination address dst, if exists
      * \return true on success
      */
-    bool LookupValidRoute(Ipv4Address dst, LidarNeighborTableEntry& rt);
+    bool LookupValidRoute(Ipv4Address dst, ReportTableEntry& rt);
     /**
      * Update routing table
      * \param rt entry with destination address dst, if exists
      * \return true on success
      */
-    bool Update(LidarNeighborTableEntry& rt);
+    bool Update(ReportTableEntry& rt);
     /**
      * Set routing table entry flags
      * \param dst destination address
      * \param state the routing flags
      * \return true on success
      */
-    bool SetEntryState(Ipv4Address dst, LidarFlags state);
+    bool SetEntryState(Ipv4Address dst, ReportFlags state);
     /**
      * Lookup routing entries with next hop Address dst and not empty list of precursors.
      *
@@ -540,17 +540,17 @@ class LidarNeighborTable
 
   private:
     /// The routing table
-    std::map<Ipv4Address, LidarNeighborTableEntry> m_ipv4AddressEntry;
+    std::map<Ipv4Address, ReportTableEntry> m_ipv4AddressEntry;
     /// Deletion time for invalid routes
     Time m_badLinkLifetime;
     /**
      * const version of Purge, for use by Print() method
      * \param table the routing table entry to purge
      */
-    void Purge(std::map<Ipv4Address, LidarNeighborTableEntry>& table) const;
+    void Purge(std::map<Ipv4Address, ReportTableEntry>& table) const;
 };
 
 } // namespace lesapAodv
 } // namespace ns3
 
-#endif /* LESAP_AODV_LNTABLE_H */
+#endif /* LESAP_AODV_RPTTABLE_H */
