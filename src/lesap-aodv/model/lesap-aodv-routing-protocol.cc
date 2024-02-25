@@ -2506,7 +2506,16 @@ RoutingProtocol::RecvNeedKey(Ipv4Address address)
 void
 RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address)
 {
-    // TODO: Create new lidar neighbor with the packet data
+    SendKeyHeader sendKeyHeader;
+    p->RemoveHeader(sendKeyHeader);
+
+    // Create new lidar neighbor with the packet data,
+    // update if it already exists for some reason
+    m_lnb.Update(address, Time(m_allowedHelloLoss * m_helloInterval),
+              sendKeyHeader.GetKey1(), sendKeyHeader.GetKey2(),
+              sendKeyHeader.GetKey3(), sendKeyHeader.GetKey4(),
+              sendKeyHeader.GetVelX(),sendKeyHeader.GetVelY(),sendKeyHeader.GetVelZ(),
+              sendKeyHeader.GetX(),sendKeyHeader.GetY(),sendKeyHeader.GetZ());
 }
 
 } // namespace lesapAodv

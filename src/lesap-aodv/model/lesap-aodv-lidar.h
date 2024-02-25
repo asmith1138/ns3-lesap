@@ -77,7 +77,9 @@ class LidarNeighbors
         uint64_t m_key2;    ///< 2nd part of public key
         uint64_t m_key3;   ///< 3rd part of public key
         uint64_t m_key4;    ///< 4th part of public key
-        uint32_t m_speed;  ///< node speed
+        uint32_t m_xVelocity;  ///< node velocity on x-axis
+        uint32_t m_yVelocity;  ///< node velocity on y-axis
+        uint32_t m_zVelocity;  ///< node velocity on z-axis
         uint32_t m_xPosition; ///< node position on x-axis
         uint32_t m_yPosition; ///< node position on y-axis
         uint32_t m_zPosition; ///< node position on z-axis
@@ -91,7 +93,8 @@ class LidarNeighbors
          */
         LidarNeighbor(Ipv4Address ip, Mac48Address mac, Time t,
                       uint64_t key1, uint64_t key2, uint64_t key3, uint64_t key4,
-                      uint32_t speed, uint32_t x, uint32_t y, uint32_t z)
+                      uint32_t xv, uint32_t yv, uint32_t zv,
+                      uint32_t x, uint32_t y, uint32_t z)
             : m_neighborAddress(ip),
               m_hardwareAddress(mac),
               m_expireTime(t),
@@ -100,7 +103,9 @@ class LidarNeighbors
               m_key2(key2),
               m_key3(key3),
               m_key4(key4),
-              m_speed(speed),
+              m_xVelocity(xv),
+              m_yVelocity(yv),
+              m_zVelocity(zv),
               m_xPosition(x),
               m_yPosition(y),
               m_zPosition(z)
@@ -127,6 +132,27 @@ class LidarNeighbors
      * \param expire the expire time for the address
      */
     void Update(Ipv4Address addr, Time expire);
+
+    /**
+     * Update entry with address addr, if it exists, else add new entry
+     * \param addr the IP address to check
+     * \param expire the expire time for the address
+     * \param key1 the 1st part of the key
+     * \param key2 the 2nd part of the key
+     * \param key3 the 3rd part of the key
+     * \param key4 the 4th part of the key
+     * \param xVel the velocity of node on x-axis
+     * \param yVel the velocity of node on y-axis
+     * \param zVel the velocity of node on z-axis
+     * \param xPos the position of node on x-axis
+     * \param yPos the position of node on y-axis
+     * \param zPos the position of node on z-axis
+     */
+    void Update(Ipv4Address addr, Time expire,
+             uint64_t key1, uint64_t key2, uint64_t key3, uint64_t key4,
+             uint32_t xVel,uint32_t yVel,uint32_t zVel,
+             uint32_t xPos,uint32_t yPos,uint32_t zPos);
+
     /// Remove all expired entries
     void Purge();
     /// Schedule m_ntimer.

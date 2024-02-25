@@ -92,9 +92,41 @@ LidarNeighbors::Update(Ipv4Address addr, Time expire)
             return;
         }
     }
+}
+
+void
+LidarNeighbors::Update(Ipv4Address addr, Time expire,
+                       uint64_t key1, uint64_t key2, uint64_t key3, uint64_t key4,
+                       uint32_t xVel,uint32_t yVel,uint32_t zVel,
+                       uint32_t xPos,uint32_t yPos,uint32_t zPos)
+{
+    for (auto i = m_nb.begin(); i != m_nb.end(); ++i)
+    {
+        if (i->m_neighborAddress == addr)
+        {
+            i->m_expireTime = std::max(expire + Simulator::Now(), i->m_expireTime);
+            if (i->m_hardwareAddress == Mac48Address())
+            {
+                i->m_hardwareAddress = LookupMacAddress(i->m_neighborAddress);
+            }
+            i->m_key1 = key1;
+            i->m_key2 = key2;
+            i->m_key3 = key3;
+            i->m_key4 = key4;
+            i->m_xVelocity = xVel;
+            i->m_yVelocity = yVel;
+            i->m_zVelocity = zVel;
+            i->m_xPosition = xPos;
+            i->m_yPosition = yPos;
+            i->m_zPosition = zPos;
+            return;
+        }
+    }
 
     NS_LOG_LOGIC("Open link to " << addr);
-    LidarNeighbor neighbor(addr, LookupMacAddress(addr), expire + Simulator::Now());
+    LidarNeighbor neighbor(addr, LookupMacAddress(addr), expire + Simulator::Now(),
+                           key1, key2, key3, key4,
+                           xVel, yVel, zVel, xPos, yPos, zPos);
     m_nb.push_back(neighbor);
     Purge();
 }
