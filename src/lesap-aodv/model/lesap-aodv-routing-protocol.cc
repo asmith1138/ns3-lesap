@@ -513,7 +513,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                             const MulticastForwardCallback& mcb,
                             const LocalDeliverCallback& lcb,
                             const ErrorCallback& ecb)
-{ // TODO: Check m_lnb table for the sender
+{ // TODO: Check m_lnb table for the sender, Do we do this before or after deferredroutoutput??
     NS_LOG_FUNCTION(this << p->GetUid() << header.GetDestination() << idev->GetAddress());
     if (m_socketAddresses.empty())
     {
@@ -1257,8 +1257,9 @@ double
 RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
 {
     Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
+    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
 
-    Ptr<Node> m_node = m_lo->GetNode();
+    Ptr<Node> m_node = m_netdevice->GetNode();
     Ptr<Node> s_node = s_netdevice->GetNode();
 
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
@@ -1269,14 +1270,14 @@ RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
 
 Vector
 RoutingProtocol::GetPosition(){
-    Ptr<Node> m_node = m_lo->GetNode();
+    Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
     return m_Mobility->GetPosition();
 }
 
 Vector
 RoutingProtocol::GetVelocity(){
-    Ptr<Node> m_node = m_lo->GetNode();
+    Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
     return m_Mobility->GetVelocity();
 }
@@ -1338,6 +1339,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         return; // drop
     }
     // Checking if sender is lidar neighbor here (or Hello message, or send/need key)
+    // TODO: If they are close enough go ahead and send a NEEDKEY msg, Do we know the distance? maybe always send NEEDKEY?
     if(!m_lnb.IsNeighbor(sender)){
         if(!(tHeader.Get() == LESAPAODVTYPE_NEEDKEY) && !(tHeader.Get() == LESAPAODVTYPE_SENDKEY)){
             if (!(tHeader.Get() == LESAPAODVTYPE_RREP))
@@ -1388,6 +1390,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     }
     case LESAPAODVTYPE_REPORT: {
         RecvReport(sender);
+        // TODO: blacklist for Simulator::GetMaximumSimulationTime()
         break;
     }
     }
