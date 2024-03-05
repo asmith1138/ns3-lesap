@@ -50,25 +50,32 @@ class QueueEntry
     typedef Ipv4RoutingProtocol::UnicastForwardCallback UnicastForwardCallback;
     /// IPv4 routing error callback typedef
     typedef Ipv4RoutingProtocol::ErrorCallback ErrorCallback;
+    /// IPv4 routing error callback typedef
+    typedef Ipv4RoutingProtocol::LocalDeliverCallback LocalDeliverCallback;
 
     /**
      * constructor
      *
      * \param pa the packet to add to the queue
      * \param h the Ipv4Header
+     * \param idev the netdevice
      * \param ucb the UnicastForwardCallback function
      * \param ecb the ErrorCallback function
      * \param exp the expiration time
      */
     QueueEntry(Ptr<const Packet> pa = nullptr,
                const Ipv4Header& h = Ipv4Header(),
+               Ptr<const NetDevice> idev = nullptr,
                UnicastForwardCallback ucb = UnicastForwardCallback(),
                ErrorCallback ecb = ErrorCallback(),
+               LocalDeliverCallback lcb = LocalDeliverCallback(),
                Time exp = Simulator::Now())
         : m_packet(pa),
           m_header(h),
+          m_idev(idev),
           m_ucb(ucb),
           m_ecb(ecb),
+          m_lcb(lcb),
           m_expire(exp + Simulator::Now())
     {
     }
@@ -123,6 +130,24 @@ class QueueEntry
     }
 
     /**
+     * Get local callback
+     * \returns the local callback
+     */
+    LocalDeliverCallback GetLocalDeliverCallback() const
+    {
+        return m_lcb;
+    }
+
+    /**
+     * Set local callback
+     * \param lcb The local callback
+     */
+    void SetLocalDeliverCallback(LocalDeliverCallback lcb)
+    {
+        m_lcb = lcb;
+    }
+
+    /**
      * Get packet from entry
      * \returns the packet
      */
@@ -159,6 +184,24 @@ class QueueEntry
     }
 
     /**
+     * Get NetDevice of sender
+     * \returns the NetDevice of sender
+     */
+    Ptr<const NetDevice> GetNetDeviceSender() const
+    {
+        return m_idev;
+    }
+
+    /**
+     * Set NetDevice of sender
+     * \param h the NetDevice of sender
+     */
+    void SetIpv4Header(Ptr<const NetDevice> idev)
+    {
+        m_idev = idev;
+    }
+
+    /**
      * Set expire time
      * \param exp The expiration time
      */
@@ -181,10 +224,14 @@ class QueueEntry
     Ptr<const Packet> m_packet;
     /// IP header
     Ipv4Header m_header;
+    /// NetDevice
+    Ptr<const NetDevice> m_idev;
     /// Unicast forward callback
     UnicastForwardCallback m_ucb;
     /// Error callback
     ErrorCallback m_ecb;
+    /// local callback
+    LocalDeliverCallback m_lcb;
     /// Expire time for queue entry
     Time m_expire;
 };
@@ -225,6 +272,14 @@ class RequestQueue
      * \returns true if the entry is dequeued
      */
     bool Dequeue(Ipv4Address dst, QueueEntry& entry);
+    /**
+     * Return first found (the earliest) entry for given sender
+     *
+     * \param sender the sender NetDevice
+     * \param entry the queue entry
+     * \returns true if the entry is dequeued
+     */
+    bool DequeueSecured(Ptr<NetDevice> sender, QueueEntry& entry);
     /**
      * Remove all packets with destination IP address dst
      * \param dst the destination IP address

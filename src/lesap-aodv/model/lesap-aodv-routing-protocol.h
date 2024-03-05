@@ -318,13 +318,16 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      *
      * \param p the packet to route
      * \param header the IP header
+     * \param idev the net device of the sender
      * \param ucb the UnicastForwardCallback function
      * \param ecb the ErrorCallback function
      */
     void DeferredRouteOutput(Ptr<const Packet> p,
                              const Ipv4Header& header,
+                             Ptr<const NetDevice> idev,
                              UnicastForwardCallback ucb,
-                             ErrorCallback ecb);
+                             ErrorCallback ecb,
+                             LocalDeliverCallback lcb);
     /**
      * If route exists and is valid, forward packet.
      *
@@ -336,6 +339,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      */
     bool Forwarding(Ptr<const Packet> p,
                     const Ipv4Header& header,
+                    Ptr<const NetDevice> idev,
                     UnicastForwardCallback ucb,
                     ErrorCallback ecb);
     /**
@@ -441,8 +445,14 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      * \param route route to use
      */
     void SendPacketFromQueue(Ipv4Address dst, Ptr<Ipv4Route> route);
+    /** Forward packet from route request queue
+     * \param sender netdevice of the sender
+     */
+    void SendPacketFromQueueBySender(Ptr<NetDevice> sender);
     /// Send hello
     void SendHello();
+    /// Send hello to one node
+    void SendHello(Ipv4Address dst);
     /** Send RREQ
      * \param dst destination address
      */
@@ -530,7 +540,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Ptr<UniformRandomVariable> m_uniformRandomVariable;
     /// Keep track of the last bcast time
     Time m_lastBcastTime;
-    void RecvSendKey(Ptr<Packet> p, Ipv4Address address);
+    void RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev);
     void RecvNeedKey(Ipv4Address address);
 };
 

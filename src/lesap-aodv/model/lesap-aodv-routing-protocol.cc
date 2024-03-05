@@ -483,13 +483,15 @@ RoutingProtocol::RouteOutput(Ptr<Packet> p,
 void
 RoutingProtocol::DeferredRouteOutput(Ptr<const Packet> p,
                                      const Ipv4Header& header,
+                                     Ptr<const NetDevice> idev,
                                      UnicastForwardCallback ucb,
-                                     ErrorCallback ecb)
+                                     ErrorCallback ecb,
+                                     LocalDeliverCallback lcb)
 {
     NS_LOG_FUNCTION(this << p << header);
     NS_ASSERT(p && p != Ptr<Packet>());
 
-    QueueEntry newEntry(p, header, ucb, ecb);
+    QueueEntry newEntry(p, header, idev, ucb, ecb, lcb);
     bool result = m_queue.Enqueue(newEntry);
     if (result)
     {
@@ -513,7 +515,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                             const MulticastForwardCallback& mcb,
                             const LocalDeliverCallback& lcb,
                             const ErrorCallback& ecb)
-{ // TODO: Check m_lnb table for the sender, Do we do this before or after deferredroutoutput??
+{
     NS_LOG_FUNCTION(this << p->GetUid() << header.GetDestination() << idev->GetAddress());
     if (m_socketAddresses.empty())
     {
@@ -529,13 +531,23 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     Ipv4Address dst = header.GetDestination();
     Ipv4Address origin = header.GetSource();
 
+    // idev is neighbor check
+    Ipv4InterfaceAddress ifa = m_ipv4->GetAddress(iif,0);
+    Ipv4Address senderAddr = ifa.GetLocal();
+    if(!m_lnb.IsNeighbor(senderAddr)){
+        SendHello(senderAddr);
+        SendNeedKey(senderAddr);
+        //Defer until verified sender
+        DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+        return true;
+    }
     // Deferred route request
     if (idev == m_lo)
     {
         DeferredRouteOutputTag tag;
         if (p->PeekPacketTag(tag))
         {
-            DeferredRouteOutput(p, header, ucb, ecb);
+            DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
             return true;
         }
     }
@@ -632,8 +644,11 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }
                 else{
-                 //TODO: SendNeedKey and defer msg
+                 // SendNeedKey and defer msg
                  SendNeedKey(toOrigin.GetNextHop());
+                 SendHello(toOrigin.GetNextHop());
+                 DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+                 return true;
                 }
             }
         }
@@ -660,12 +675,13 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     }
 
     // Forwarding
-    return Forwarding(p, header, ucb, ecb);
+    return Forwarding(p, header, idev, ucb, ecb);
 }
 
 bool
 RoutingProtocol::Forwarding(Ptr<const Packet> p,
                             const Ipv4Header& header,
+                            Ptr<const NetDevice> idev,
                             UnicastForwardCallback ucb,
                             ErrorCallback ecb)
 {
@@ -711,8 +727,11 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 {
                     m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
                 }else{
-                    //TODO: SendNeedKey and defer msg
                     SendNeedKey(route->GetGateway());
+                    SendHello(route->GetGateway());
+                    //Defer until verified sender
+                    LocalDeliverCallback lcb;
+                    DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
                 }
             }
             if (IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop())))
@@ -720,8 +739,11 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }else{
-                    //TODO: SendNeedKey and defer msg
                     SendNeedKey(toOrigin.GetNextHop());
+                    SendHello(toOrigin.GetNextHop());
+                    //Defer until verified sender
+                    LocalDeliverCallback lcb;
+                    DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
                 }
             }
 
@@ -1385,7 +1407,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         break;
     }
     case LESAPAODVTYPE_SENDKEY: {
-        RecvSendKey(packet, sender);
+        RecvSendKey(packet, sender, socket->GetBoundNetDevice());
         break;
     }
     case LESAPAODVTYPE_REPORT: {
@@ -2004,7 +2026,6 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
         if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
             m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
         }else{
-         // TODO: SendNeedKey and defer msg
          SendNeedKey(rrepHeader.GetDst());
         }
     }
@@ -2235,6 +2256,40 @@ RoutingProtocol::SendHello()
 }
 
 void
+RoutingProtocol::SendHello(Ipv4Address dst)
+{
+    NS_LOG_FUNCTION(this);
+    /* Broadcast a RREP with TTL = 1 with the RREP message fields set as follows:
+     *   Destination IP Address         The node's IP address.
+     *   Destination Sequence Number    The node's latest sequence number.
+     *   Hop Count                      0
+     *   Lifetime                       AllowedHelloLoss * HelloInterval
+     */
+    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    {
+        Ptr<Socket> socket = j->first;
+        Ipv4InterfaceAddress iface = j->second;
+
+        RrepHeader helloHeader(/*prefixSize=*/0,
+                               /*hopCount=*/0,
+                               /*dst=*/iface.GetLocal(),
+                               /*dstSeqNo=*/m_seqNo,
+                               /*origin=*/iface.GetLocal(),
+                               /*lifetime=*/Time(m_allowedHelloLoss * m_helloInterval));
+        Ptr<Packet> packet = Create<Packet>();
+        SocketIpTtlTag tag;
+        tag.SetTtl(1);
+        packet->AddPacketTag(tag);
+        packet->AddHeader(helloHeader);
+        TypeHeader tHeader(LESAPAODVTYPE_RREP);
+        packet->AddHeader(tHeader);
+        // Send to address passed in
+        Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
+        Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, dst);
+    }
+}
+
+void
 RoutingProtocol::SendPacketFromQueue(Ipv4Address dst, Ptr<Ipv4Route> route)
 {
     NS_LOG_FUNCTION(this);
@@ -2255,6 +2310,40 @@ RoutingProtocol::SendPacketFromQueue(Ipv4Address dst, Ptr<Ipv4Route> route)
         header.SetTtl(header.GetTtl() +
                       1); // compensate extra TTL decrement by fake loopback routing
         ucb(route, p, header);
+    }
+}
+
+void
+RoutingProtocol::SendPacketFromQueueBySender(Ptr<NetDevice> sender)
+{
+    NS_LOG_FUNCTION(this);
+    QueueEntry queueEntry;
+    while (m_queue.DequeueSecured(sender, queueEntry))
+    {
+        DeferredRouteOutputTag tag;
+        Ptr<Packet> p = ConstCast<Packet>(queueEntry.GetPacket());
+        //get the route based on the destination
+        Ipv4Address dst = queueEntry.GetIpv4Header().GetDestination();
+        RoutingTableEntry toDst;
+        m_routingTable.LookupValidRoute(dst, toDst);
+        Ptr<Ipv4Route> route = toDst.GetRoute();
+
+        if (p->RemovePacketTag(tag) && tag.GetInterface() != -1 &&
+            tag.GetInterface() != m_ipv4->GetInterfaceForDevice(route->GetOutputDevice()))
+        {
+            NS_LOG_DEBUG("Output device doesn't match. Dropped.");
+            return;
+        }
+        UnicastForwardCallback ucb = queueEntry.GetUnicastForwardCallback();
+        Ipv4Header header = queueEntry.GetIpv4Header();
+        header.SetSource(route->GetSource());
+        header.SetTtl(header.GetTtl());
+        ErrorCallback ecb = queueEntry.GetErrorCallback();
+        LocalDeliverCallback lcb = queueEntry.GetLocalDeliverCallback();
+        MulticastForwardCallback mcb;
+        //Rerun RouteInput now that the sender is validated
+        RouteInput(p,header,sender,ucb,mcb,lcb,ecb);
+        //ucb(route, p, header);
     }
 }
 
@@ -2507,11 +2596,11 @@ RoutingProtocol::RecvNeedKey(Ipv4Address address)
     SendSendKey(address);
 }
 void
-RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address)
+RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev)
 {
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
-
+    SendHello(address);
     // Create new lidar neighbor with the packet data,
     // update if it already exists for some reason
     m_lnb.Update(address, Time(m_allowedHelloLoss * m_helloInterval),
@@ -2519,6 +2608,8 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address)
               sendKeyHeader.GetKey3(), sendKeyHeader.GetKey4(),
               sendKeyHeader.GetVelX(),sendKeyHeader.GetVelY(),sendKeyHeader.GetVelZ(),
               sendKeyHeader.GetX(),sendKeyHeader.GetY(),sendKeyHeader.GetZ());
+    //Dequeue packets based on netdevice idev
+    SendPacketFromQueueBySender(idev);
 }
 
 } // namespace lesapAodv
