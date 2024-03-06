@@ -46,7 +46,7 @@ namespace lesapAodv
 /*
  The Report Table
  */
-
+//TODO: Clear out old and replace with report needs
 ReportTableEntry::ReportTableEntry(Ptr<NetDevice> dev,
                                      Ipv4Address dst,
                                      bool vSeqNo,

@@ -1361,11 +1361,16 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         return; // drop
     }
     // Checking if sender is lidar neighbor here (or Hello message, or send/need key)
-    // TODO: If they are close enough go ahead and send a NEEDKEY msg, Do we know the distance? maybe always send NEEDKEY?
+    // If they are close enough go ahead and send a NEEDKEY msg
     if(!m_lnb.IsNeighbor(sender)){
         if(!(tHeader.Get() == LESAPAODVTYPE_NEEDKEY) && !(tHeader.Get() == LESAPAODVTYPE_SENDKEY)){
+            double distance = DistanceFromNode(socket);
             if (!(tHeader.Get() == LESAPAODVTYPE_RREP))
             {
+                if(IsNodeWithinLidar(distance)){
+                    SendNeedKey(sender);
+                    SendHello(sender);
+                }
                 return; // drop
             }
             RrepHeader rrepHeader;
@@ -1374,11 +1379,14 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
             if (!(dst == rrepHeader.GetOrigin()))
             {
                 // is not hello msg
+                if(IsNodeWithinLidar(distance)){
+                    SendNeedKey(sender);
+                    SendHello(sender);
+                }
                 return; // drop
             }
         }
     }
-    double distance = DistanceFromNode(socket);
     // msg is either from lidar neighbor or a hello msg
     // Moved lower, so we can do more before checking lidar
     UpdateRouteToNeighbor(sender, receiver);
@@ -1411,7 +1419,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         break;
     }
     case LESAPAODVTYPE_REPORT: {
-        RecvReport(sender);
+        RecvReport(packet, sender);
         // TODO: blacklist for Simulator::GetMaximumSimulationTime()
         break;
     }

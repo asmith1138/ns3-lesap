@@ -852,6 +852,140 @@ std::ostream& operator<<(std::ostream& os, const SendKeyHeader&);
 
 /**
 * \ingroup lesapAodv
+* \brief Report Message Format
+  \verbatim
+  0                   1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |     Type      |R|A|    Reserved     |Prefix Sz|   Hop Count   |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                     Destination IP address                    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                  Destination Sequence Number                  |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                    Originator IP address                      |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                           Lifetime                            |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  \endverbatim
+*/
+class ReportHeader : public Header
+{
+  public:
+    /**
+     * constructor
+     *
+     * \param mal the malicious node IP address
+     * \param malSeqNo the report sequence number
+     * \param origin the original reporter IP address
+     * \param lifetime the lifetime
+     */
+    ReportHeader(Ipv4Address mal = Ipv4Address(),
+               uint32_t malSeqNo = 0,
+               Ipv4Address origin = Ipv4Address(),
+               Time lifetime = MilliSeconds(0));
+    /**
+     * \brief Get the type ID.
+     * \return the object TypeId
+     */
+    static TypeId GetTypeId();
+    TypeId GetInstanceTypeId() const override;
+    uint32_t GetSerializedSize() const override;
+    void Serialize(Buffer::Iterator start) const override;
+    uint32_t Deserialize(Buffer::Iterator start) override;
+    void Print(std::ostream& os) const override;
+
+    // Fields
+
+    /**
+     * \brief Set the destination address
+     * \param a the malicious address
+     */
+    void SetMal(Ipv4Address a)
+    {
+        m_mal = a;
+    }
+
+    /**
+     * \brief Get the malicious address
+     * \return the malicious address
+     */
+    Ipv4Address GetMal() const
+    {
+        return m_mal;
+    }
+
+    /**
+     * \brief Set the report sequence number
+     * \param s the report sequence number
+     */
+    void SetMalSeqno(uint32_t s)
+    {
+        m_malSeqNo = s;
+    }
+
+    /**
+     * \brief Get the report sequence number
+     * \return the report sequence number
+     */
+    uint32_t GetMalSeqno() const
+    {
+        return m_malSeqNo;
+    }
+
+    /**
+     * \brief Set the origin address
+     * \param a the origin address
+     */
+    void SetOrigin(Ipv4Address a)
+    {
+        m_origin = a;
+    }
+
+    /**
+     * \brief Get the origin address
+     * \return the origin address
+     */
+    Ipv4Address GetOrigin() const
+    {
+        return m_origin;
+    }
+
+    /**
+     * \brief Set the lifetime
+     * \param t the lifetime
+     */
+    void SetLifeTime(Time t);
+    /**
+     * \brief Get the lifetime
+     * \return the lifetime
+     */
+    Time GetLifeTime() const;
+
+    // Flags
+    /**
+     * \brief Comparison operator
+     * \param o Report header to compare
+     * \return true if the Report headers are equal
+     */
+    bool operator==(const ReportHeader& o) const;
+
+  private:
+    Ipv4Address m_mal;    ///< malicious IP Address
+    uint32_t m_malSeqNo;  ///< report Sequence Number
+    Ipv4Address m_origin; ///< Source IP Address
+    uint32_t m_lifeTime;  ///< Lifetime (in milliseconds)
+};
+
+/**
+ * \brief Stream output operator
+ * \param os output stream
+ * \return updated stream
+ */
+std::ostream& operator<<(std::ostream& os, const ReportHeader&);
+
+/**
+* \ingroup lesapAodv
 * \brief Route Reply Acknowledgment (RREP-ACK) Message Format
   \verbatim
   0                   1

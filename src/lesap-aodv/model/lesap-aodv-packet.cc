@@ -550,7 +550,7 @@ SendKeyHeader::SendKeyHeader(uint64_t key1,
       m_key4(key4),
       m_velX(velX),
       m_velY(velY),
-      m_velY(velZ),
+      m_velZ(velZ),
       m_xPosition(x),
       m_yPosition(y),
       m_zPosition(z)
@@ -662,6 +662,101 @@ operator<<(std::ostream& os, const SendKeyHeader& h)
     return os;
 }
 
+//-----------------------------------------------------------------------------
+// Report
+//-----------------------------------------------------------------------------
+
+ReportHeader::ReportHeader(Ipv4Address mal,
+                       uint32_t malSeqNo,
+                       Ipv4Address origin,
+                       Time lifeTime)
+    : m_mal(mal),
+      m_malSeqNo(malSeqNo),
+      m_origin(origin)
+{
+    m_lifeTime = uint32_t(lifeTime.GetMilliSeconds());
+}
+
+NS_OBJECT_ENSURE_REGISTERED(ReportHeader);
+
+TypeId
+ReportHeader::GetTypeId()
+{
+    static TypeId tid = TypeId("ns3::lesapAodv::ReportHeader")
+                            .SetParent<Header>()
+                            .SetGroupName("LesapAodv")
+                            .AddConstructor<ReportHeader>();
+    return tid;
+}
+
+TypeId
+ReportHeader::GetInstanceTypeId() const
+{
+    return GetTypeId();
+}
+
+uint32_t
+ReportHeader::GetSerializedSize() const
+{
+    return 16;
+}
+
+void
+ReportHeader::Serialize(Buffer::Iterator i) const
+{
+    WriteTo(i, m_mal);//4 - 4
+    i.WriteHtonU32(m_malSeqNo);//4 - 8
+    WriteTo(i, m_origin);//4 - 12
+    i.WriteHtonU32(m_lifeTime);//4 - 16
+}
+
+uint32_t
+ReportHeader::Deserialize(Buffer::Iterator start)
+{
+    Buffer::Iterator i = start;
+    ReadFrom(i, m_mal);
+    m_malSeqNo = i.ReadNtohU32();
+    ReadFrom(i, m_origin);
+    m_lifeTime = i.ReadNtohU32();
+
+    uint32_t dist = i.GetDistanceFrom(start);
+    NS_ASSERT(dist == GetSerializedSize());
+    return dist;
+}
+
+void
+ReportHeader::Print(std::ostream& os) const
+{
+    os << "Report malicious: ipv4 " << m_mal << " sequence number " << m_malSeqNo;
+    os << " original reporter ipv4 " << m_origin << " lifetime " << m_lifeTime;
+}
+
+void
+ReportHeader::SetLifeTime(Time t)
+{
+    m_lifeTime = t.GetMilliSeconds();
+}
+
+Time
+ReportHeader::GetLifeTime() const
+{
+    Time t(MilliSeconds(m_lifeTime));
+    return t;
+}
+
+bool
+ReportHeader::operator==(const ReportHeader& o) const
+{
+    return (m_mal == o.m_mal && m_malSeqNo == o.m_malSeqNo &&
+            m_origin == o.m_origin && m_lifeTime == o.m_lifeTime);
+}
+
+std::ostream&
+operator<<(std::ostream& os, const ReportHeader& h)
+{
+    h.Print(os);
+    return os;
+}
 
 //-----------------------------------------------------------------------------
 // RREP-ACK
