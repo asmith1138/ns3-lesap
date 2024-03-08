@@ -46,31 +46,23 @@ namespace lesapAodv
 /*
  The Report Table
  */
-//TODO: Clear out old and replace with report needs
-ReportTableEntry::ReportTableEntry(Ptr<NetDevice> dev,
-                                     Ipv4Address dst,
+ReportTableEntry::ReportTableEntry(Ipv4Address mal,
                                      bool vSeqNo,
                                      uint32_t seqNo,
-                                     Ipv4InterfaceAddress iface,
-                                     uint16_t hops,
-                                     Ipv4Address nextHop,
+                                     Ipv4Address origin,
                                      Time lifetime)
     : m_ackTimer(Timer::CANCEL_ON_DESTROY),
       m_validSeqNo(vSeqNo),
       m_seqNo(seqNo),
-      m_hops(hops),
       m_lifeTime(lifetime + Simulator::Now()),
-      m_iface(iface),
+      m_maliciousNodeAddr(mal),
+      m_originAddress(origin),
       m_flag(REPORT_VALID),
-      m_reqCount(0),
+      m_repCount(0),
       m_blackListState(false),
       m_blackListTimeout(Simulator::Now())
 {
-    m_ipv4Route = Create<Ipv4Route>();
-    m_ipv4Route->SetDestination(dst);
-    m_ipv4Route->SetGateway(nextHop);
-    m_ipv4Route->SetSource(m_iface.GetLocal());
-    m_ipv4Route->SetOutputDevice(dev);
+
 }
 
 ReportTableEntry::~ReportTableEntry()
@@ -78,12 +70,14 @@ ReportTableEntry::~ReportTableEntry()
 }
 
 bool
-ReportTableEntry::InsertPrecursor(Ipv4Address id)
+ReportTableEntry::InsertPrecursor(Ipv4Address id, Time expires)
 {
     NS_LOG_FUNCTION(this << id);
     if (!LookupPrecursor(id))
     {
-        m_precursorList.push_back(id);
+        std::map<Ipv4Address, Time> precurser;
+        precurser.insert(std::make_pair(id,expires));
+        m_precursorList.push_back(precurser);
         return true;
     }
     else
@@ -98,10 +92,13 @@ ReportTableEntry::LookupPrecursor(Ipv4Address id)
     NS_LOG_FUNCTION(this << id);
     for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
     {
-        if (*i == id)
+        for (auto j = i->begin(); j != i->end(); ++j)
         {
-            NS_LOG_LOGIC("Precursor " << id << " found");
-            return true;
+            if (j->first == id)
+            {
+                NS_LOG_LOGIC("Precursor " << id << " found");
+                return true;
+            }
         }
     }
     NS_LOG_LOGIC("Precursor " << id << " not found");
@@ -112,16 +109,21 @@ bool
 ReportTableEntry::DeletePrecursor(Ipv4Address id)
 {
     NS_LOG_FUNCTION(this << id);
-    auto i = std::remove(m_precursorList.begin(), m_precursorList.end(), id);
-    if (i == m_precursorList.end())
+    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
     {
-        NS_LOG_LOGIC("Precursor " << id << " not found");
-        return false;
-    }
-    else
-    {
-        NS_LOG_LOGIC("Precursor " << id << " found");
-        m_precursorList.erase(i, m_precursorList.end());
+        for (auto j = i->begin(); j != i->end(); ++j)
+        {
+            if (j->first == id)
+            {
+                NS_LOG_LOGIC("Precursor " << id << " found");
+                m_precursorList.erase(i, m_precursorList.end());
+            }
+        }
+        if (i == m_precursorList.end())
+        {
+            NS_LOG_LOGIC("Precursor " << id << " not found");
+            return false;
+        }
     }
     return true;
 }
@@ -140,7 +142,7 @@ ReportTableEntry::IsPrecursorListEmpty() const
 }
 
 void
-ReportTableEntry::GetPrecursors(std::vector<Ipv4Address>& prec) const
+ReportTableEntry::GetPrecursors(std::vector<std::map<Ipv4Address,Time>>& prec) const
 {
     NS_LOG_FUNCTION(this);
     if (IsPrecursorListEmpty())
@@ -174,7 +176,7 @@ ReportTableEntry::Invalidate(Time badLinkLifetime)
         return;
     }
     m_flag = REPORT_INVALID;
-    m_reqCount = 0;
+    m_repCount = 0;
     m_lifeTime = badLinkLifetime + Simulator::Now();
 }
 
@@ -188,17 +190,14 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
 
     *os << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
 
-    std::ostringstream dest;
-    std::ostringstream gw;
-    std::ostringstream iface;
+    std::ostringstream mal;
+    std::ostringstream origin;
     std::ostringstream expire;
-    dest << m_ipv4Route->GetDestination();
-    gw << m_ipv4Route->GetGateway();
-    iface << m_iface.GetLocal();
+    mal << m_maliciousNodeAddr;
+    origin << m_originAddress;
     expire << std::setprecision(2) << (m_lifeTime - Simulator::Now()).As(unit);
-    *os << std::setw(16) << dest.str();
-    *os << std::setw(16) << gw.str();
-    *os << std::setw(16) << iface.str();
+    *os << std::setw(16) << mal.str();
+    *os << std::setw(16) << origin.str();
     *os << std::setw(16);
     switch (m_flag)
     {
@@ -217,7 +216,7 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
     }
 
     *os << std::setw(16) << expire.str();
-    *os << m_hops << std::endl;
+    *os << std::endl;
     // Restore the previous ostream state
     (*os).copyfmt(oldState);
 }
@@ -226,70 +225,71 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
  The Routing Table
  */
 
-ReportTable::ReportTable(Time t)
-    : m_badLinkLifetime(t)
+ReportTable::ReportTable(Time t, uint8_t repLimit)
+    : m_badLinkLifetime(t),
+      m_reportLimit(repLimit)
 {
 }
 
 bool
-ReportTable::LookupRoute(Ipv4Address id, ReportTableEntry& rt)
+ReportTable::LookupReport(Ipv4Address id, ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this << id);
     Purge();
     if (m_ipv4AddressEntry.empty())
     {
-        NS_LOG_LOGIC("Route to " << id << " not found; m_ipv4AddressEntry is empty");
+        NS_LOG_LOGIC("Report of " << id << " not found; m_ipv4AddressEntry is empty");
         return false;
     }
     auto i = m_ipv4AddressEntry.find(id);
     if (i == m_ipv4AddressEntry.end())
     {
-        NS_LOG_LOGIC("Route to " << id << " not found");
+        NS_LOG_LOGIC("Report of " << id << " not found");
         return false;
     }
     rt = i->second;
-    NS_LOG_LOGIC("Route to " << id << " found");
+    NS_LOG_LOGIC("Report of " << id << " found");
     return true;
 }
 
 bool
-ReportTable::LookupValidRoute(Ipv4Address id, ReportTableEntry& rt)
+ReportTable::LookupValidReport(Ipv4Address id, ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this << id);
-    if (!LookupRoute(id, rt))
+    if (!LookupReport(id, rt))
     {
-        NS_LOG_LOGIC("Route to " << id << " not found");
+        NS_LOG_LOGIC("Report of " << id << " not found");
         return false;
     }
-    NS_LOG_LOGIC("Route to " << id << " flag is "
+    NS_LOG_LOGIC("Report of " << id << " flag is "
                              << ((rt.GetFlag() == REPORT_VALID) ? "valid" : "not valid"));
     return (rt.GetFlag() == REPORT_VALID);
 }
 
 bool
-ReportTable::DeleteRoute(Ipv4Address dst)
+ReportTable::DeleteReport(Ipv4Address mal)
 {
-    NS_LOG_FUNCTION(this << dst);
+    NS_LOG_FUNCTION(this << mal);
     Purge();
-    if (m_ipv4AddressEntry.erase(dst) != 0)
+    if (m_ipv4AddressEntry.erase(mal) != 0)
     {
-        NS_LOG_LOGIC("Route deletion to " << dst << " successful");
+        NS_LOG_LOGIC("Report deletion to " << mal << " successful");
         return true;
     }
-    NS_LOG_LOGIC("Route deletion to " << dst << " not successful");
+    NS_LOG_LOGIC("Report deletion to " << mal << " not successful");
     return false;
 }
 
 bool
-ReportTable::AddRoute(ReportTableEntry& rt)
+ReportTable::AddReport(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
     Purge();
     if (rt.GetFlag() != REPORT_IN_SEARCH)
     {
-        rt.SetRreqCnt(0);
+        rt.SetRepCnt(1);
     }
-    auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetDestination(), rt));
+    auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetMaliciousAddr(), rt));
     return result.second;
 }
 
@@ -297,17 +297,17 @@ bool
 ReportTable::Update(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
-    auto i = m_ipv4AddressEntry.find(rt.GetDestination());
+    auto i = m_ipv4AddressEntry.find(rt.GetMaliciousAddr());
     if (i == m_ipv4AddressEntry.end())
     {
-        NS_LOG_LOGIC("Route update to " << rt.GetDestination() << " fails; not found");
+        NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " fails; not found");
         return false;
     }
     i->second = rt;
     if (i->second.GetFlag() != REPORT_IN_SEARCH)
     {
-        NS_LOG_LOGIC("Route update to " << rt.GetDestination() << " set RreqCnt to 0");
-        i->second.SetRreqCnt(0);
+        NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " set RepCnt to n+1");
+        i->second.SetRepCnt(i->second.GetRepCnt()+1);
     }
     return true;
 }
@@ -319,34 +319,17 @@ ReportTable::SetEntryState(Ipv4Address id, ReportFlags state)
     auto i = m_ipv4AddressEntry.find(id);
     if (i == m_ipv4AddressEntry.end())
     {
-        NS_LOG_LOGIC("Route set entry state to " << id << " fails; not found");
+        NS_LOG_LOGIC("Report set entry state to " << id << " fails; not found");
         return false;
     }
     i->second.SetFlag(state);
-    i->second.SetRreqCnt(0);
-    NS_LOG_LOGIC("Route set entry state to " << id << ": new state is " << state);
+    //i->second.SetRepCnt(0);
+    NS_LOG_LOGIC("Report set entry state to " << id << ": new state is " << state);
     return true;
 }
 
 void
-ReportTable::GetListOfDestinationWithNextHop(Ipv4Address nextHop,
-                                              std::map<Ipv4Address, uint32_t>& unreachable)
-{
-    NS_LOG_FUNCTION(this);
-    Purge();
-    unreachable.clear();
-    for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end(); ++i)
-    {
-        if (i->second.GetNextHop() == nextHop)
-        {
-            NS_LOG_LOGIC("Unreachable insert " << i->first << " " << i->second.GetSeqNo());
-            unreachable.insert(std::make_pair(i->first, i->second.GetSeqNo()));
-        }
-    }
-}
-
-void
-ReportTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t>& unreachable)
+ReportTable::InvalidateReportsWithMal(const std::map<Ipv4Address, uint32_t>& unreachable)
 {
     NS_LOG_FUNCTION(this);
     Purge();
@@ -364,26 +347,34 @@ ReportTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t>& unre
 }
 
 void
-ReportTable::DeleteAllRoutesFromInterface(Ipv4InterfaceAddress iface)
+ReportTable::ValidateReports()
 {
     NS_LOG_FUNCTION(this);
-    if (m_ipv4AddressEntry.empty())
+    for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end(); ++i)
     {
-        return;
-    }
-    for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end();)
-    {
-        if (i->second.GetInterface() == iface)
-        {
-            auto tmp = i;
-            ++i;
-            m_ipv4AddressEntry.erase(tmp);
-        }
-        else
-        {
-            ++i;
+        if(i->second.GetRepCnt()>=m_reportLimit){
+            i->second.SetFlag(REPORT_VALID);
+            i->second.SetBlacklisted(true);
+            i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
         }
     }
+}
+
+bool
+ReportTable::ValidateReports(Ipv4Address id)
+{
+    NS_LOG_FUNCTION(this);
+    auto i = m_ipv4AddressEntry.find(id);
+    if (i == m_ipv4AddressEntry.end())
+    {
+        NS_LOG_LOGIC("Report validation for " << id << " fails; not found");
+        return false;
+    }
+    if (i->second.GetRepCnt() >= m_reportLimit)
+    {
+        return true;
+    }
+    return false;
 }
 
 void
@@ -406,7 +397,7 @@ ReportTable::Purge()
             }
             else if (i->second.GetFlag() == REPORT_VALID)
             {
-                NS_LOG_LOGIC("Invalidate route with destination address " << i->first);
+                NS_LOG_LOGIC("Invalidate report with malicious address " << i->first);
                 i->second.Invalidate(m_badLinkLifetime);
                 ++i;
             }
@@ -442,7 +433,7 @@ ReportTable::Purge(std::map<Ipv4Address, ReportTableEntry>& table) const
             }
             else if (i->second.GetFlag() == REPORT_VALID)
             {
-                NS_LOG_LOGIC("Invalidate route with destination address " << i->first);
+                NS_LOG_LOGIC("Invalidate report with malicious address " << i->first);
                 i->second.Invalidate(m_badLinkLifetime);
                 ++i;
             }
@@ -456,23 +447,6 @@ ReportTable::Purge(std::map<Ipv4Address, ReportTableEntry>& table) const
             ++i;
         }
     }
-}
-
-bool
-ReportTable::MarkLinkAsUnidirectional(Ipv4Address neighbor, Time blacklistTimeout)
-{
-    NS_LOG_FUNCTION(this << neighbor << blacklistTimeout.As(Time::S));
-    auto i = m_ipv4AddressEntry.find(neighbor);
-    if (i == m_ipv4AddressEntry.end())
-    {
-        NS_LOG_LOGIC("Mark link unidirectional to  " << neighbor << " fails; not found");
-        return false;
-    }
-    i->second.SetUnidirectional(true);
-    i->second.SetBlacklistTimeout(blacklistTimeout);
-    i->second.SetRreqCnt(0);
-    NS_LOG_LOGIC("Set link to " << neighbor << " to unidirectional");
-    return true;
 }
 
 void

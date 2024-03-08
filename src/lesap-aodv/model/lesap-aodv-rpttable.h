@@ -66,22 +66,18 @@ class ReportTableEntry
     /**
      * constructor
      *
-     * \param dev the device
      * \param dst the destination IP address
      * \param vSeqNo verify sequence number flag
      * \param seqNo the sequence number
-     * \param iface the interface
-     * \param hops the number of hops
-     * \param nextHop the IP address of the next hop
+     * \param origin the IP address of the next hop
      * \param lifetime the lifetime of the entry
      */
-    ReportTableEntry(Ptr<NetDevice> dev = nullptr,
+    ReportTableEntry(//Ptr<NetDevice> dev = nullptr,
                       Ipv4Address dst = Ipv4Address(),
                       bool vSeqNo = false,
                       uint32_t seqNo = 0,
-                      Ipv4InterfaceAddress iface = Ipv4InterfaceAddress(),
-                      uint16_t hops = 0,
-                      Ipv4Address nextHop = Ipv4Address(),
+                      //Ipv4InterfaceAddress iface = Ipv4InterfaceAddress(),
+                      Ipv4Address origin = Ipv4Address(),
                       Time lifetime = Simulator::Now());
 
     ~ReportTableEntry();
@@ -93,7 +89,7 @@ class ReportTableEntry
      * \param id precursor address
      * \return true on success
      */
-    bool InsertPrecursor(Ipv4Address id);
+    bool InsertPrecursor(Ipv4Address id, Time expires);
     /**
      * Lookup precursor by address
      * \param id precursor address
@@ -117,8 +113,9 @@ class ReportTableEntry
      * Inserts precursors in output parameter prec if they do not yet exist in vector
      * \param prec vector of precursor addresses
      */
-    void GetPrecursors(std::vector<Ipv4Address>& prec) const;
+    void GetPrecursors(std::vector<std::map<Ipv4Address,Time>>& prec) const;
     //\}
+    
 
     /**
      * Mark entry as "down" (i.e. disable it)
@@ -128,84 +125,39 @@ class ReportTableEntry
 
     // Fields
     /**
-     * Get destination address function
-     * \returns the IPv4 destination address
+     * Get malicious node address function
+     * \returns the IPv4 address of malicious
      */
-    Ipv4Address GetDestination() const
+    Ipv4Address GetMaliciousAddr() const
     {
-        return m_ipv4Route->GetDestination();
+        return m_maliciousNodeAddr;
     }
 
     /**
-     * Get route function
-     * \returns The IPv4 route
+     * Get origin function
+     * \returns The origin of accusation
      */
-    Ptr<Ipv4Route> GetRoute() const
+    Ipv4Address GetOrigin() const
     {
-        return m_ipv4Route;
+        return m_originAddress;
     }
 
     /**
      * Set route function
-     * \param r the IPv4 route
+     * \param mal the IPv4address of accused
      */
-    void SetRoute(Ptr<Ipv4Route> r)
+    void SetMaliciousNodeAddr(Ipv4Address mal)
     {
-        m_ipv4Route = r;
+        m_maliciousNodeAddr = mal;
     }
 
     /**
-     * Set next hop address
-     * \param nextHop the next hop IPv4 address
+     * Set origin address
+     * \param origin the origin address of accusation
      */
-    void SetNextHop(Ipv4Address nextHop)
+    void SetOrigin(Ipv4Address origin)
     {
-        m_ipv4Route->SetGateway(nextHop);
-    }
-
-    /**
-     * Get next hop address
-     * \returns the next hop address
-     */
-    Ipv4Address GetNextHop() const
-    {
-        return m_ipv4Route->GetGateway();
-    }
-
-    /**
-     * Set output device
-     * \param dev The output device
-     */
-    void SetOutputDevice(Ptr<NetDevice> dev)
-    {
-        m_ipv4Route->SetOutputDevice(dev);
-    }
-
-    /**
-     * Get output device
-     * \returns the output device
-     */
-    Ptr<NetDevice> GetOutputDevice() const
-    {
-        return m_ipv4Route->GetOutputDevice();
-    }
-
-    /**
-     * Get the Ipv4InterfaceAddress
-     * \returns the Ipv4InterfaceAddress
-     */
-    Ipv4InterfaceAddress GetInterface() const
-    {
-        return m_iface;
-    }
-
-    /**
-     * Set the Ipv4InterfaceAddress
-     * \param iface The Ipv4InterfaceAddress
-     */
-    void SetInterface(Ipv4InterfaceAddress iface)
-    {
-        m_iface = iface;
+        m_originAddress = origin;
     }
 
     /**
@@ -245,24 +197,6 @@ class ReportTableEntry
     }
 
     /**
-     * Set the number of hops
-     * \param hop the number of hops
-     */
-    void SetHop(uint16_t hop)
-    {
-        m_hops = hop;
-    }
-
-    /**
-     * Get the number of hops
-     * \returns the number of hops
-     */
-    uint16_t GetHop() const
-    {
-        return m_hops;
-    }
-
-    /**
      * Set the lifetime
      * \param lt The lifetime
      */
@@ -299,45 +233,45 @@ class ReportTableEntry
     }
 
     /**
-     * Set the RREQ count
-     * \param n the RREQ count
+     * Set the Report count
+     * \param n the Report count
      */
-    void SetRreqCnt(uint8_t n)
+    void SetRepCnt(uint8_t n)
     {
-        m_reqCount = n;
+        m_repCount = n;
     }
 
     /**
-     * Get the RREQ count
-     * \returns the RREQ count
+     * Get the Report count
+     * \returns the Report count
      */
-    uint8_t GetRreqCnt() const
+    uint8_t GetRepCnt() const
     {
-        return m_reqCount;
+        return m_repCount;
     }
 
     /**
-     * Increment the RREQ count
+     * Increment the Report count
      */
-    void IncrementRreqCnt()
+    void IncrementRepCnt()
     {
-        m_reqCount++;
+        m_repCount++;
     }
 
     /**
      * Set the unidirectional flag
      * \param u the uni directional flag
      */
-    void SetUnidirectional(bool u)
+    void SetBlacklisted(bool u)
     {
         m_blackListState = u;
     }
 
     /**
-     * Get the unidirectional flag
-     * \returns the unidirectional flag
+     * Get the blacklist flag
+     * \returns the blacklist flag
      */
-    bool IsUnidirectional() const
+    bool IsBlacklisted() const
     {
         return m_blackListState;
     }
@@ -368,9 +302,9 @@ class ReportTableEntry
      * \param dst IP address to compare
      * \return true if equal
      */
-    bool operator==(const Ipv4Address dst) const
+    bool operator==(const Ipv4Address mal) const
     {
-        return (m_ipv4Route->GetDestination() == dst);
+        return (m_maliciousNodeAddr == mal);
     }
 
     /**
@@ -385,8 +319,6 @@ class ReportTableEntry
     bool m_validSeqNo;
     /// Destination Sequence Number, if m_validSeqNo = true
     uint32_t m_seqNo;
-    /// Hop Count (number of hops needed to reach destination)
-    uint16_t m_hops;
     /**
      * \brief Expiration or deletion time of the route
      * Lifetime field in the routing table plays dual role:
@@ -394,24 +326,22 @@ class ReportTableEntry
      * it is the deletion time.
      */
     Time m_lifeTime;
-    /** Ip route, include
-     *   - destination address
-     *   - source address
-     *   - next hop address (gateway)
-     *   - output device
-     */
-    Ptr<Ipv4Route> m_ipv4Route;
-    /// Output interface address
-    Ipv4InterfaceAddress m_iface;
+
+    // address of malicious node
+    Ipv4Address m_maliciousNodeAddr;
+    // address of origin node
+    Ipv4Address m_originAddress;
+
     /// Routing flags: valid, invalid or in search
     ReportFlags m_flag;
 
     /// List of precursors
-    std::vector<Ipv4Address> m_precursorList;
-    /// When I can send another request
-    Time m_routeRequestTimeout;
-    /// Number of route requests
-    uint8_t m_reqCount;
+    /// TODO: not implemented yet(list of other nodes that endorse this report)
+    std::vector<std::map<Ipv4Address, Time>> m_precursorList;
+    /// When I can send another report
+    Time m_routeReportTimeout;
+    /// Number of reports of this node
+    uint8_t m_repCount;
     /// Indicate if this entry is in "blacklist"
     bool m_blackListState;
     /// Time for which the node is put into the blacklist
@@ -429,57 +359,35 @@ class ReportTable
      * constructor
      * \param t the routing table entry lifetime
      */
-    ReportTable(Time t);
+    ReportTable(Time t, uint8_t reportLimit);
 
     ///\name Handle lifetime of invalid route
-    //\{
-    /**
-     * Get the lifetime of a bad link
-     *
-     * \return the lifetime of a bad link
-     */
-    Time GetBadLinkLifetime() const
-    {
-        return m_badLinkLifetime;
-    }
-
-    /**
-     * Set the lifetime of a bad link
-     *
-     * \param t the lifetime of a bad link
-     */
-    void SetBadLinkLifetime(Time t)
-    {
-        m_badLinkLifetime = t;
-    }
-
-    //\}
     /**
      * Add routing table entry if it doesn't yet exist in routing table
      * \param r routing table entry
      * \return true in success
      */
-    bool AddRoute(ReportTableEntry& r);
+    bool AddReport(ReportTableEntry& r);
     /**
      * Delete routing table entry with destination address dst, if it exists.
      * \param dst destination address
      * \return true on success
      */
-    bool DeleteRoute(Ipv4Address dst);
+    bool DeleteReport(Ipv4Address dst);
     /**
      * Lookup routing table entry with destination address dst
      * \param dst destination address
      * \param rt entry with destination address dst, if exists
      * \return true on success
      */
-    bool LookupRoute(Ipv4Address dst, ReportTableEntry& rt);
+    bool LookupReport(Ipv4Address dst, ReportTableEntry& rt);
     /**
      * Lookup route in VALID state
      * \param dst destination address
      * \param rt entry with destination address dst, if exists
      * \return true on success
      */
-    bool LookupValidRoute(Ipv4Address dst, ReportTableEntry& rt);
+    bool LookupValidReport(Ipv4Address dst, ReportTableEntry& rt);
     /**
      * Update routing table
      * \param rt entry with destination address dst, if exists
@@ -494,14 +402,6 @@ class ReportTable
      */
     bool SetEntryState(Ipv4Address dst, ReportFlags state);
     /**
-     * Lookup routing entries with next hop Address dst and not empty list of precursors.
-     *
-     * \param nextHop the next hop IP address
-     * \param unreachable
-     */
-    void GetListOfDestinationWithNextHop(Ipv4Address nextHop,
-                                         std::map<Ipv4Address, uint32_t>& unreachable);
-    /**
      * Update routing entries with this destination as follows:
      * 1. The destination sequence number of this routing entry, if it
      *    exists and is valid, is incremented.
@@ -509,12 +409,11 @@ class ReportTable
      * 3. The Lifetime field is updated to current time plus DELETE_PERIOD.
      * \param unreachable routes to invalidate
      */
-    void InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t>& unreachable);
-    /**
-     * Delete all route from interface with address iface
-     * \param iface the interface IP address
-     */
-    void DeleteAllRoutesFromInterface(Ipv4InterfaceAddress iface);
+    void InvalidateReportsWithMal(const std::map<Ipv4Address, uint32_t>& unreachable);
+
+    void ValidateReports();
+
+    bool ValidateReports(Ipv4Address id);
 
     /// Delete all entries from routing table
     void Clear()
@@ -524,13 +423,6 @@ class ReportTable
 
     /// Delete all outdated entries and invalidate valid entry if Lifetime is expired
     void Purge();
-    /** Mark entry as unidirectional (e.g. add this neighbor to "blacklist" for blacklistTimeout
-     * period)
-     * \param neighbor neighbor address link to which assumed to be unidirectional
-     * \param blacklistTimeout time for which the neighboring node is put into the blacklist
-     * \return true on success
-     */
-    bool MarkLinkAsUnidirectional(Ipv4Address neighbor, Time blacklistTimeout);
     /**
      * Print routing table
      * \param stream the output stream
@@ -543,6 +435,7 @@ class ReportTable
     std::map<Ipv4Address, ReportTableEntry> m_ipv4AddressEntry;
     /// Deletion time for invalid routes
     Time m_badLinkLifetime;
+    uint8_t m_reportLimit;
     /**
      * const version of Purge, for use by Print() method
      * \param table the routing table entry to purge
