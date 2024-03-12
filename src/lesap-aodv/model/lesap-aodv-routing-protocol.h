@@ -33,6 +33,7 @@
 #include "lesap-aodv-lidar.h"
 #include "lesap-aodv-neighbor.h"
 #include "lesap-aodv-packet.h"
+#include "lesap-aodv-rpttable.h"
 #include "lesap-aodv-rqueue.h"
 #include "lesap-aodv-rtable.h"
 
@@ -237,6 +238,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint16_t m_rreqRateLimit;  ///< Maximum number of RREQ per second.
     uint16_t m_rerrRateLimit;  ///< Maximum number of REER per second.
     Time m_activeRouteTimeout; ///< Period of time during which the route is considered to be valid.
+    Time m_activeReportTimeout; ///< Period of time during which the report is considered to be valid.
     uint32_t m_netDiameter; ///< Net diameter measures the maximum possible number of hops between
                             ///< two nodes in the network
     /**
@@ -283,6 +285,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
 
     /// Routing table
     RoutingTable m_routingTable;
+
+    ReportTable m_reportTable;
     /// A "drop-front" queue used by the routing layer to buffer packets to which it does not have a
     /// route.
     RequestQueue m_queue;
@@ -542,6 +546,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Time m_lastBcastTime;
     void RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev);
     void RecvNeedKey(Ipv4Address address);
+    void RecvReport(Ptr<Packet> p, Ipv4Address address);
 };
 
 } // namespace lesapAodv

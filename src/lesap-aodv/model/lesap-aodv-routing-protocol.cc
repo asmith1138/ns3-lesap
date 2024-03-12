@@ -155,6 +155,7 @@ RoutingProtocol::RoutingProtocol()
       m_rreqRateLimit(10),
       m_rerrRateLimit(10),
       m_activeRouteTimeout(Seconds(3)),
+      m_activeReportTimeout(Seconds(3)),
       m_netDiameter(35),
       m_nodeTraversalTime(MilliSeconds(40)),
       m_netTraversalTime(Time((2 * m_netDiameter) * m_nodeTraversalTime)),
@@ -171,6 +172,7 @@ RoutingProtocol::RoutingProtocol()
       m_gratuitousReply(true),
       m_enableHello(false),
       m_routingTable(m_deletePeriod),
+      m_reportTable(Seconds(10),2),
       m_queue(m_maxQueueLen, m_maxQueueTime),
       m_requestId(0),
       m_seqNo(0),
@@ -1115,6 +1117,12 @@ void
 RoutingProtocol::SendRequest(Ipv4Address dst)
 {
     NS_LOG_FUNCTION(this << dst);
+    // Check blacklist for this dst
+    ReportTableEntry rp;
+    if(m_reportTable.LookupValidReport(dst, rp)){
+        NS_LOG_DEBUG("Not sending request to node " << dst << " on blacklist");
+        return;
+    }
     // A node SHOULD NOT originate more than RREQ_RATELIMIT RREQ messages per second.
     if (m_rreqCount == m_rreqRateLimit)
     {
@@ -1420,7 +1428,6 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     }
     case LESAPAODVTYPE_REPORT: {
         RecvReport(packet, sender);
-        // TODO: blacklist for Simulator::GetMaximumSimulationTime()
         break;
     }
     }
@@ -1430,6 +1437,12 @@ bool
 RoutingProtocol::UpdateRouteLifeTime(Ipv4Address addr, Time lifetime)
 {
     NS_LOG_FUNCTION(this << addr << lifetime);
+    // Check blacklist for this addr
+    ReportTableEntry rp;
+    if(m_reportTable.LookupValidReport(addr, rp)){
+        NS_LOG_DEBUG("Not updating route to blacklisted node " << addr);
+        return false;
+    }
     RoutingTableEntry rt;
     if (m_routingTable.LookupRoute(addr, rt))
     {
@@ -1449,6 +1462,12 @@ void
 RoutingProtocol::UpdateRouteToNeighbor(Ipv4Address sender, Ipv4Address receiver)
 {
     NS_LOG_FUNCTION(this << "sender " << sender << " receiver " << receiver);
+    // Check blacklist for this sender
+    ReportTableEntry rp;
+    if(m_reportTable.LookupValidReport(sender, rp)){
+        NS_LOG_DEBUG("Not updating route to blacklisted neighbor " << sender);
+        return;
+    }
     RoutingTableEntry toNeighbor;
     if (!m_routingTable.LookupRoute(sender, toNeighbor))
     {
@@ -1535,6 +1554,9 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
      *  5. the Lifetime is set to be the maximum of (ExistingLifetime, MinimalLifetime), where
      *     MinimalLifetime = current time + 2*NetTraversalTime - 2*HopCount*NodeTraversalTime
      */
+
+    ReportTableEntry rpSrc;
+    ReportTableEntry rp;
     RoutingTableEntry toOrigin;
     if (!m_routingTable.LookupRoute(origin, toOrigin))
     {
@@ -1548,7 +1570,15 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
             /*hops=*/hop,
             /*nextHop=*/src,
             /*lifetime=*/Time((2 * m_netTraversalTime - 2 * hop * m_nodeTraversalTime)));
-        m_routingTable.AddRoute(newEntry);
+        // Check blacklist for this origin
+        if (m_reportTable.LookupValidReport(origin, rp) || m_reportTable.LookupValidReport(src, rpSrc))
+        {
+            NS_LOG_DEBUG("Not updating route to node " << origin << " due to node in route being blacklisted.");
+        }
+        else
+        {
+            m_routingTable.AddRoute(newEntry);
+        }
     }
     else
     {
@@ -1570,7 +1600,15 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         toOrigin.SetHop(hop);
         toOrigin.SetLifeTime(std::max(Time(2 * m_netTraversalTime - 2 * hop * m_nodeTraversalTime),
                                       toOrigin.GetLifeTime()));
-        m_routingTable.Update(toOrigin);
+        // Check blacklist for this origin
+        if (m_reportTable.LookupValidReport(origin, rp) || m_reportTable.LookupValidReport(src, rpSrc))
+        {
+            NS_LOG_DEBUG("Not updating route to node " << origin << " due to node in route being blacklisted");
+        }
+        else
+        {
+            m_routingTable.Update(toOrigin);
+        }
         // m_nb.Update (src, Time (AllowedHelloLoss * HelloInterval));
     }
 
@@ -1587,7 +1625,12 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
                                    1,
                                    src,
                                    m_activeRouteTimeout);
-        m_routingTable.AddRoute(newEntry);
+        // Check blacklist for this src
+        if(m_reportTable.LookupValidReport(src, rpSrc)){
+            NS_LOG_DEBUG("Not updating route to blacklisted neighbor " << src);
+        }else{
+            m_routingTable.AddRoute(newEntry);
+        }
     }
     else
     {
@@ -1599,14 +1642,26 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         toNeighbor.SetInterface(m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0));
         toNeighbor.SetHop(1);
         toNeighbor.SetNextHop(src);
-        m_routingTable.Update(toNeighbor);
+
+        // Check blacklist for this src
+        if(m_reportTable.LookupValidReport(src, rpSrc)){
+            NS_LOG_DEBUG("Not updating route to blacklisted neighbor " << src);
+        }else{
+            m_routingTable.Update(toNeighbor);
+        }
     }
+
     m_nb.Update(src, Time(m_allowedHelloLoss * m_helloInterval));
 
     NS_LOG_LOGIC(receiver << " receive RREQ with hop count "
                           << static_cast<uint32_t>(rreqHeader.GetHopCount()) << " ID "
                           << rreqHeader.GetId() << " to destination " << rreqHeader.GetDst());
 
+    // If the src or origin is blacklisted then we drop the rrep
+    if(m_reportTable.LookupValidReport(src, rpSrc) || m_reportTable.LookupValidReport(origin, rp)){
+        NS_LOG_DEBUG("Src or Origin is blacklists so we are dropping the rreq");
+        return;
+    }
     //  A node generates a RREP if either:
     //  (i)  it is itself the destination,
     if (IsMyOwnAddress(rreqHeader.GetDst()))
@@ -1901,6 +1956,15 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
         /*nextHop=*/sender,
         /*lifetime=*/rrepHeader.GetLifeTime());
     RoutingTableEntry toDst;
+
+    // If the sender or destination is blacklisted then we drop the rrep
+    ReportTableEntry rpDst;
+    ReportTableEntry rpSender;
+    if(m_reportTable.LookupValidReport(dst, rpDst) || m_reportTable.LookupValidReport(sender, rpSender)){
+        NS_LOG_DEBUG("Sender or destination is blacklisted so we are dropping the rrep");
+        return;
+    }
+
     if (m_routingTable.LookupRoute(dst, toDst))
     {
         /*
@@ -1964,6 +2028,14 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     {
         return; // Impossible! drop.
     }
+
+    // If the origin or next hop is blacklisted then we drop the rrep
+    ReportTableEntry rpOri;
+    ReportTableEntry rpNxtHp;
+    if(m_reportTable.LookupValidReport(rrepHeader.GetOrigin(), rpOri) || m_reportTable.LookupValidReport(toOrigin.GetNextHop(), rpNxtHp)){
+        NS_LOG_DEBUG("Origin or Next Hop is blacklisted so we are dropping the rrep");
+        return;
+    }
     toOrigin.SetLifeTime(std::max(m_activeRouteTimeout, toOrigin.GetLifeTime()));
     m_routingTable.Update(toOrigin);
 
@@ -2011,6 +2083,12 @@ void
 RoutingProtocol::RecvReplyAck(Ipv4Address neighbor)
 {
     NS_LOG_FUNCTION(this);
+    // drop packet from blacklisted node
+    ReportTableEntry rp;
+    if (m_reportTable.LookupValidReport(neighbor, rp)){
+        NS_LOG_DEBUG("Dropping Reply ack from blacklisted node " << neighbor.GetDst());
+        return;
+    }
     RoutingTableEntry rt;
     if (m_routingTable.LookupRoute(neighbor, rt))
     {
@@ -2029,6 +2107,12 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
      * SHOULD make sure that it has an active route to the neighbor, and
      * create one if necessary.
      */
+    // drop packet from blacklisted node
+    ReportTableEntry rp;
+    if (m_reportTable.LookupValidReport(rrepHeader.GetDst(), rp)){
+        NS_LOG_DEBUG("Dropping hello from blacklisted node " << rrepHeader.GetDst());
+        return;
+    }
     // Checking the distance and add/update the lidar neighbor table if within lidar distance
     if (IsNodeWithinLidar(DistanceFromNode(rrepHeader.GetDst()))){
         if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
@@ -2618,6 +2702,38 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
               sendKeyHeader.GetX(),sendKeyHeader.GetY(),sendKeyHeader.GetZ());
     //Dequeue packets based on netdevice idev
     SendPacketFromQueueBySender(idev);
+}
+
+void
+RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
+{
+    ReportHeader reportHeader;
+    p->RemoveHeader(reportHeader);
+    //m_reportTable.Purge();
+    ReportTableEntry rp;
+    if(m_reportTable.LookupReport(reportHeader.GetMal(), rp)){
+        if(rp.LookupPrecursor(address)){
+            rp.UpdatePrecursorTimeout(address,m_activeReportTimeout);
+        }else{
+            rp.InsertPrecursor(address,m_activeReportTimeout);
+            if(m_reportTable.ValidateReports(reportHeader.GetMal())){
+                RoutingTableEntry rt;
+                if(m_routingTable.LookupRoute(reportHeader.GetMal(), rt)){
+                    m_routingTable.MarkLinkAsUnidirectional(
+                        reportHeader.GetMal(),
+                        Simulator::GetMaximumSimulationTime());
+                }
+            }
+        }
+    }else{
+        ReportTableEntry newEntry(reportHeader.GetMal(),
+                                  reportHeader.GetOrigin(),
+                                  Simulator::GetMaximumSimulationTime());
+        newEntry.InsertPrecursor(address,m_activeReportTimeout);
+
+        m_reportTable.AddReport(newEntry);
+
+    }
 }
 
 } // namespace lesapAodv

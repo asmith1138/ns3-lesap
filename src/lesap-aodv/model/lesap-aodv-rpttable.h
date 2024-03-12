@@ -67,16 +67,10 @@ class ReportTableEntry
      * constructor
      *
      * \param dst the destination IP address
-     * \param vSeqNo verify sequence number flag
-     * \param seqNo the sequence number
      * \param origin the IP address of the next hop
      * \param lifetime the lifetime of the entry
      */
-    ReportTableEntry(//Ptr<NetDevice> dev = nullptr,
-                      Ipv4Address dst = Ipv4Address(),
-                      bool vSeqNo = false,
-                      uint32_t seqNo = 0,
-                      //Ipv4InterfaceAddress iface = Ipv4InterfaceAddress(),
+    ReportTableEntry(Ipv4Address mal = Ipv4Address(),
                       Ipv4Address origin = Ipv4Address(),
                       Time lifetime = Simulator::Now());
 
@@ -91,6 +85,13 @@ class ReportTableEntry
      */
     bool InsertPrecursor(Ipv4Address id, Time expires);
     /**
+     * Update precursor in precursor list to a later expiration
+     * \param id precursor address
+     * \param expires time precursor expires
+     * \return true on success
+     */
+    bool UpdatePrecursorTimeout(Ipv4Address id, Time expires);
+    /**
      * Lookup precursor by address
      * \param id precursor address
      * \return true on success
@@ -104,6 +105,8 @@ class ReportTableEntry
     bool DeletePrecursor(Ipv4Address id);
     /// Delete all precursors
     void DeleteAllPrecursors();
+    /// Purge expired precursors
+    void PurgePrecursors();
     /**
      * Check that precursor list is empty
      * \return true if precursor list is empty
@@ -113,9 +116,9 @@ class ReportTableEntry
      * Inserts precursors in output parameter prec if they do not yet exist in vector
      * \param prec vector of precursor addresses
      */
-    void GetPrecursors(std::vector<std::map<Ipv4Address,Time>>& prec) const;
+    void GetPrecursors(std::map<Ipv4Address,Time>& prec) const;
     //\}
-    
+
 
     /**
      * Mark entry as "down" (i.e. disable it)
@@ -158,42 +161,6 @@ class ReportTableEntry
     void SetOrigin(Ipv4Address origin)
     {
         m_originAddress = origin;
-    }
-
-    /**
-     * Set the valid sequence number
-     * \param s the sequence number
-     */
-    void SetValidSeqNo(bool s)
-    {
-        m_validSeqNo = s;
-    }
-
-    /**
-     * Get the valid sequence number
-     * \returns the valid sequence number
-     */
-    bool GetValidSeqNo() const
-    {
-        return m_validSeqNo;
-    }
-
-    /**
-     * Set the sequence number
-     * \param sn the sequence number
-     */
-    void SetSeqNo(uint32_t sn)
-    {
-        m_seqNo = sn;
-    }
-
-    /**
-     * Get the sequence number
-     * \returns the sequence number
-     */
-    uint32_t GetSeqNo() const
-    {
-        return m_seqNo;
     }
 
     /**
@@ -259,6 +226,14 @@ class ReportTableEntry
     }
 
     /**
+     * Decrement the Report count
+     */
+    void DecrementRepCnt()
+    {
+        m_repCount--;
+    }
+
+    /**
      * Set the unidirectional flag
      * \param u the uni directional flag
      */
@@ -315,10 +290,6 @@ class ReportTableEntry
     void Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
 
   private:
-    /// Valid Destination Sequence Number flag
-    bool m_validSeqNo;
-    /// Destination Sequence Number, if m_validSeqNo = true
-    uint32_t m_seqNo;
     /**
      * \brief Expiration or deletion time of the route
      * Lifetime field in the routing table plays dual role:
@@ -336,8 +307,8 @@ class ReportTableEntry
     ReportFlags m_flag;
 
     /// List of precursors
-    /// TODO: not implemented yet(list of other nodes that endorse this report)
-    std::vector<std::map<Ipv4Address, Time>> m_precursorList;
+    /// TODO: not implemented fully yet(list of other nodes that endorse this report)
+    std::map<Ipv4Address, Time> m_precursorList;
     /// When I can send another report
     Time m_routeReportTimeout;
     /// Number of reports of this node

@@ -47,17 +47,13 @@ namespace lesapAodv
  The Report Table
  */
 ReportTableEntry::ReportTableEntry(Ipv4Address mal,
-                                     bool vSeqNo,
-                                     uint32_t seqNo,
                                      Ipv4Address origin,
                                      Time lifetime)
     : m_ackTimer(Timer::CANCEL_ON_DESTROY),
-      m_validSeqNo(vSeqNo),
-      m_seqNo(seqNo),
       m_lifeTime(lifetime + Simulator::Now()),
       m_maliciousNodeAddr(mal),
       m_originAddress(origin),
-      m_flag(REPORT_VALID),
+      m_flag(REPORT_IN_SEARCH),
       m_repCount(0),
       m_blackListState(false),
       m_blackListTimeout(Simulator::Now())
@@ -75,9 +71,10 @@ ReportTableEntry::InsertPrecursor(Ipv4Address id, Time expires)
     NS_LOG_FUNCTION(this << id);
     if (!LookupPrecursor(id))
     {
-        std::map<Ipv4Address, Time> precurser;
-        precurser.insert(std::make_pair(id,expires));
-        m_precursorList.push_back(precurser);
+        //std::map<Ipv4Address, Time> precurser;
+        m_precursorList.insert(std::make_pair(id,expires+Simulator::Now()));
+        IncrementRepCnt();
+        //m_precursorList.push_back(precurser);
         return true;
     }
     else
@@ -87,45 +84,45 @@ ReportTableEntry::InsertPrecursor(Ipv4Address id, Time expires)
 }
 
 bool
+ReportTableEntry::UpdatePrecursorTimeout(Ipv4Address id, Time expires)
+{
+    NS_LOG_FUNCTION(this << id);
+    auto i = m_precursorList.find(id);
+    if (i == m_precursorList.end())
+    {
+        NS_LOG_LOGIC("Precursor " << id << " not found");
+        return false;
+    }
+    i->second = expires + Simulator::Now();
+    NS_LOG_LOGIC("Precursor " << id << " found and updated to expire at " << expires);
+    return true;
+}
+
+bool
 ReportTableEntry::LookupPrecursor(Ipv4Address id)
 {
     NS_LOG_FUNCTION(this << id);
-    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
+    auto i = m_precursorList.find(id);
+    if (i == m_precursorList.end())
     {
-        for (auto j = i->begin(); j != i->end(); ++j)
-        {
-            if (j->first == id)
-            {
-                NS_LOG_LOGIC("Precursor " << id << " found");
-                return true;
-            }
-        }
+        NS_LOG_LOGIC("Precursor " << id << " not found");
+        return false;
     }
-    NS_LOG_LOGIC("Precursor " << id << " not found");
-    return false;
+    NS_LOG_LOGIC("Precursor " << id << " found");
+    return true;
 }
 
 bool
 ReportTableEntry::DeletePrecursor(Ipv4Address id)
 {
     NS_LOG_FUNCTION(this << id);
-    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
+    if (m_precursorList.erase(id) != 0)
     {
-        for (auto j = i->begin(); j != i->end(); ++j)
-        {
-            if (j->first == id)
-            {
-                NS_LOG_LOGIC("Precursor " << id << " found");
-                m_precursorList.erase(i, m_precursorList.end());
-            }
-        }
-        if (i == m_precursorList.end())
-        {
-            NS_LOG_LOGIC("Precursor " << id << " not found");
-            return false;
-        }
+        NS_LOG_LOGIC("Precurser deletion of " << id << " successful");
+        return true;
     }
-    return true;
+    NS_LOG_LOGIC("Precurser deletion of " << id << " not successful");
+    return false;
 }
 
 void
@@ -135,6 +132,31 @@ ReportTableEntry::DeleteAllPrecursors()
     m_precursorList.clear();
 }
 
+void
+ReportTableEntry::PurgePrecursors()
+{
+    NS_LOG_FUNCTION(this);
+    if (IsPrecursorListEmpty() || GetFlag() == REPORT_VALID)
+    {
+        return;
+    }
+    for (auto i = m_precursorList.begin(); i != m_precursorList.end();)
+    {
+        if (i->second < Simulator::Now())
+        {
+            DeletePrecursor(i->first);
+            DecrementRepCnt();
+
+            if (IsPrecursorListEmpty())
+            {
+                Invalidate(Seconds(0));
+            }
+        }
+        ++i;
+    }
+
+}
+
 bool
 ReportTableEntry::IsPrecursorListEmpty() const
 {
@@ -142,29 +164,14 @@ ReportTableEntry::IsPrecursorListEmpty() const
 }
 
 void
-ReportTableEntry::GetPrecursors(std::vector<std::map<Ipv4Address,Time>>& prec) const
+ReportTableEntry::GetPrecursors(std::map<Ipv4Address,Time>& prec) const
 {
     NS_LOG_FUNCTION(this);
     if (IsPrecursorListEmpty())
     {
         return;
     }
-    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
-    {
-        bool result = true;
-        for (auto j = prec.begin(); j != prec.end(); ++j)
-        {
-            if (*j == *i)
-            {
-                result = false;
-                break;
-            }
-        }
-        if (result)
-        {
-            prec.push_back(*i);
-        }
-    }
+    prec = m_precursorList;
 }
 
 void
@@ -263,7 +270,8 @@ ReportTable::LookupValidReport(Ipv4Address id, ReportTableEntry& rt)
     }
     NS_LOG_LOGIC("Report of " << id << " flag is "
                              << ((rt.GetFlag() == REPORT_VALID) ? "valid" : "not valid"));
-    return (rt.GetFlag() == REPORT_VALID);
+
+    return (rt.GetFlag() == REPORT_VALID) && rt.IsBlacklisted() && (rt.GetBlacklistTimeout() > Simulator::Now());
 }
 
 bool
@@ -356,6 +364,7 @@ ReportTable::ValidateReports()
             i->second.SetFlag(REPORT_VALID);
             i->second.SetBlacklisted(true);
             i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
+            i->second.SetLifeTime(Simulator::GetMaximumSimulationTime());
         }
     }
 }
@@ -372,6 +381,10 @@ ReportTable::ValidateReports(Ipv4Address id)
     }
     if (i->second.GetRepCnt() >= m_reportLimit)
     {
+        i->second.SetFlag(REPORT_VALID);
+        i->second.SetBlacklisted(true);
+        i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
+        i->second.SetLifeTime(Simulator::GetMaximumSimulationTime());
         return true;
     }
     return false;
@@ -387,6 +400,7 @@ ReportTable::Purge()
     }
     for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end();)
     {
+        i->second.PurgePrecursors();
         if (i->second.GetLifeTime() < Seconds(0))
         {
             if (i->second.GetFlag() == REPORT_INVALID)
@@ -423,6 +437,7 @@ ReportTable::Purge(std::map<Ipv4Address, ReportTableEntry>& table) const
     }
     for (auto i = table.begin(); i != table.end();)
     {
+        i->second.PurgePrecursors();
         if (i->second.GetLifeTime() < Seconds(0))
         {
             if (i->second.GetFlag() == REPORT_INVALID)
