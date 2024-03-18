@@ -19,8 +19,16 @@ Needs for LESAP-AODV
 Sybil Nodes
 - pretend to be multiple nodes? why?
 - to report other nodes as malicious
-- act as universal route so you can see all the messages
+x act as universal route so you can see all the messages
 
 Blackhole nodes
 - response that they have an easy route
 - ignore messages when asked to forward
+
+Grayhole nodes
+- response that they have an easy route
+- ignore some messages when asked to forward
+
+Blackhole nodes ver2 (probably out of scope)
+- response that they have an easy route
+- snoop messages when asked to forward
