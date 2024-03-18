@@ -2086,7 +2086,7 @@ RoutingProtocol::RecvReplyAck(Ipv4Address neighbor)
     // drop packet from blacklisted node
     ReportTableEntry rp;
     if (m_reportTable.LookupValidReport(neighbor, rp)){
-        NS_LOG_DEBUG("Dropping Reply ack from blacklisted node " << neighbor.GetDst());
+        NS_LOG_DEBUG("Dropping Reply ack from blacklisted node " << neighbor);
         return;
     }
     RoutingTableEntry rt;

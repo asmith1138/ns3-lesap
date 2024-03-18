@@ -1,16 +1,26 @@
-- Application needed for Sybil nodes
-- Application needed for Blackhole nodes
-- Modify routing algorithm to validate location of each neighbor (lower distance)
-	- Will need to do this multiple times for various routing algorithms
-	- aodv-neighbors continues to work as normal
-	- aodv-lidar will manage this change
++ Application needed for Sybil nodes (use same as normal nodes)
++ Application needed for Blackhole nodes (use same as normal nodes)
++ Modify routing algorithm to validate location of each neighbor (lower distance)
+	x Will need to do this multiple times for various routing algorithms
+	+ aodv-neighbors continues to work as normal
+	+ aodv-lidar will manage this change
 x Use application on nodes to manage blacklists
-- Use routing algorithm to manage blacklists (works for AODV, easily)
-	- Make the blacklist timeout settable by the script
-	- Set to total time of simulation for permanent blacklisting(or other value as required)
-	- Will need to do this multiple times for various routing algorithms
++ Use routing algorithm to manage blacklists (works for AODV, easily)
+	+ Make the blacklist timeout settable by the script
+	+ Set to total time of simulation for permanent blacklisting(or other value as required)
+	x Will need to do this multiple times for various routing algorithms
 - 1 or 2 Applications needed for normal nodes
 
 
 Needs for LESAP-AODV
 
+
+
+Sybil Nodes
+- pretend to be multiple nodes? why?
+- to report other nodes as malicious
+- act as universal route so you can see all the messages
+
+Blackhole nodes
+- response that they have an easy route
+- ignore messages when asked to forward
