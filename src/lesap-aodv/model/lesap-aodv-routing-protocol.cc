@@ -267,6 +267,11 @@ RoutingProtocol::GetTypeId()
                           TimeValue(Seconds(3)),
                           MakeTimeAccessor(&RoutingProtocol::m_activeRouteTimeout),
                           MakeTimeChecker())
+            .AddAttribute("ActiveReportTimeout",
+                          "Period of time during which the report is considered to be valid",
+                          TimeValue(Seconds(3)),
+                          MakeTimeAccessor(&RoutingProtocol::m_activeReportTimeout),
+                          MakeTimeChecker())
             .AddAttribute("MyRouteTimeout",
                           "Value of lifetime field in RREP generating by this node = 2 * "
                           "max(ActiveRouteTimeout, PathDiscoveryTime)",
