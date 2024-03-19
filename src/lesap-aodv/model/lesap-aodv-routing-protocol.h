@@ -57,6 +57,18 @@ namespace lesapAodv
 {
 /**
  * \ingroup lesapAodv
+ * \brief NodeType enumeration
+ */
+enum NodeType
+{
+    LESAPAODVNODE = 1,    //!< LESARAODVNODE
+    LESAPAODVSYBIL = 2,    //!< LESARAODVSYBIL
+    LESAPAODVBLACKHOLE = 3,    //!< LESARAODVBLACKHOLE
+    LESAPAODVGRAYHOLE = 4, //!< LESARAODVGRAYHOLE
+};
+
+/**
+ * \ingroup lesapAodv
  *
  * \brief LESAP-AODV routing protocol
  */
@@ -178,6 +190,24 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     bool GetHelloEnable() const
     {
         return m_enableHello;
+    }
+
+    /**
+     * Set node type
+     * \param n the node type
+     */
+    void SetNodeType(NodeType n)
+    {
+        m_nodeType = n;
+    }
+
+    /**
+     * Get node type
+     * \returns the node type
+     */
+    NodeType GetNodeType() const
+    {
+        return m_nodeType;
     }
 
     /**
@@ -313,6 +343,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint64_t m_key2;
     uint64_t m_key3;
     uint64_t m_key4;
+    NodeType m_nodeType;
 
   private:
     /// Start protocol operation
@@ -547,6 +578,14 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     void RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev);
     void RecvNeedKey(Ipv4Address address);
     void RecvReport(Ptr<Packet> p, Ipv4Address address);
+    /**
+     * Determine whether malicious
+     * \returns true if the node is malicious
+     */
+    bool IsMalicious();
+    bool IsSybil();
+    bool IsBlackhole();
+    bool IsGrayhole();
 };
 
 } // namespace lesapAodv

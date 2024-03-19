@@ -183,6 +183,7 @@ RoutingProtocol::RoutingProtocol()
       m_lidarDistance(200),
       m_rreqCount(0),
       m_rerrCount(0),
+      m_nodeType(LESAPAODVNODE),
       m_htimer(Timer::CANCEL_ON_DESTROY),
       m_rreqRateLimitTimer(Timer::CANCEL_ON_DESTROY),
       m_rerrRateLimitTimer(Timer::CANCEL_ON_DESTROY),
@@ -347,6 +348,12 @@ RoutingProtocol::GetTypeId()
                           MakeBooleanAccessor(&RoutingProtocol::SetHelloEnable,
                                               &RoutingProtocol::GetHelloEnable),
                           MakeBooleanChecker())
+            .AddAttribute("NodeType",
+                          "Indicates a node type.",
+                          EnumValue(LESAPAODVNODE),
+                          MakeEnumAccessor(&RoutingProtocol::SetNodeType,
+                                              &RoutingProtocol::GetNodeType),
+                          MakeEnumChecker(LESAPAODVNODE,"LESAPAODVNODE"))
             .AddAttribute("EnableBroadcast",
                           "Indicates whether a broadcast data packets forwarding enable.",
                           BooleanValue(true),
@@ -2698,6 +2705,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
     SendHello(address);
+    // TODO: Check for lidar collisions based on position and velocity
     // Create new lidar neighbor with the packet data,
     // update if it already exists for some reason
     m_lnb.Update(address, Time(m_allowedHelloLoss * m_helloInterval),
@@ -2739,6 +2747,30 @@ RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
         m_reportTable.AddReport(newEntry);
 
     }
+}
+
+bool
+RoutingProtocol::IsMalicious()
+{
+    return m_nodeType != LESAPAODVNODE;
+}
+
+bool
+RoutingProtocol::IsSybil()
+{
+    return m_nodeType == LESAPAODVSYBIL;
+}
+
+bool
+RoutingProtocol::IsBlackhole()
+{
+    return m_nodeType == LESAPAODVBLACKHOLE;
+}
+
+bool
+RoutingProtocol::IsGrayhole()
+{
+    return m_nodeType == LESAPAODVGRAYHOLE;
 }
 
 } // namespace lesapAodv
