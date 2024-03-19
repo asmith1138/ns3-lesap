@@ -19,7 +19,9 @@ Needs for LESAP-AODV
 Sybil Nodes
 - pretend to be multiple nodes? why?
 - to report other nodes as malicious
+- when you recieve a message report that node as malicious to all neighbors
 x act as universal route so you can see all the messages
+- need to extend routing algorithm to track lidar neighbors
 
 Blackhole nodes
 - response that they have an easy route
