@@ -1793,9 +1793,9 @@ RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry
                           /*dstSeqNo=*/m_seqNo,
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/m_myRouteTimeout);
+    //return larger sequence number when malicious
     if(IsBlackhole() || IsGrayhole()){
-        //TODO: check that this is high enough
-        rrepHeader.SetDstSeqno(m_seqNo + 32);
+        rrepHeader.SetDstSeqno(m_seqNo + m_routingTable.GetLargestSeqNo());
     }
     Ptr<Packet> packet = Create<Packet>();
     SocketIpTtlTag tag;
@@ -1821,9 +1821,9 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
                           /*dstSeqNo=*/toDst.GetSeqNo(),
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/toDst.GetLifeTime());
+    //return larger sequence number when malicious
     if(IsBlackhole() || IsGrayhole()){
-        //TODO: check that this is high enough
-        rrepHeader.SetDstSeqno(toDst.GetSeqNo() + 32);
+        rrepHeader.SetDstSeqno(toDst.GetSeqNo() + m_routingTable.GetLargestSeqNo());
     }
     /* If the node we received a RREQ for is a neighbor we are
      * probably facing a unidirectional link... Better request a RREP-ack

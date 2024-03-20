@@ -502,6 +502,12 @@ class RoutingTable
     void GetListOfDestinationWithNextHop(Ipv4Address nextHop,
                                          std::map<Ipv4Address, uint32_t>& unreachable);
     /**
+     * Lookup the largest sequence number in the routing table
+     * @return the largest sequence number
+     */
+    uint32_t
+    GetLargestSeqNo();
+    /**
      * Update routing entries with this destination as follows:
      * 1. The destination sequence number of this routing entry, if it
      *    exists and is valid, is incremented.
