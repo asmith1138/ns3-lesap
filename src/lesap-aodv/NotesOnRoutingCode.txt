@@ -16,21 +16,21 @@ Needs for LESAP-AODV
 
 
 
-Sybil Nodes
-- pretend to be multiple nodes? why?
-- to report other nodes as malicious
-- when you recieve a message report that node as malicious to all neighbors
-x act as universal route so you can see all the messages
-- need to extend routing algorithm to track lidar neighbors
+- Sybil Nodes
+	- pretend to be multiple nodes? why?
+	- to report other nodes as malicious
+	- when you recieve a message report that node as malicious to all neighbors
+	x act as universal route so you can see all the messages
+	- need to extend routing algorithm to track lidar neighbors
 
-Blackhole nodes
-- response that they have an easy route
-- ignore messages when asked to forward
+- Blackhole nodes
+	- response that they have an easy route
+	- ignore messages when asked to forward
 
-Grayhole nodes
-- response that they have an easy route
-- ignore some messages when asked to forward
+- Grayhole nodes
+	- response that they have an easy route
+	- ignore some messages when asked to forward
 
-Blackhole nodes ver2 (probably out of scope)
-- response that they have an easy route
-- snoop messages when asked to forward
+x Blackhole nodes ver2 (probably out of scope)
+	x response that they have an easy route
+	x snoop messages when asked to forward
