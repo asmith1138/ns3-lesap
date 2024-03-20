@@ -548,6 +548,18 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     // idev is neighbor check
     Ipv4InterfaceAddress ifa = m_ipv4->GetAddress(iif,0);
     Ipv4Address senderAddr = ifa.GetLocal();
+    if(IsBlackhole()){
+        // Drop packets, blackhole node
+        return true;
+    }
+    if(IsGrayhole()){
+        // Drop packets sometimes, grayhole node
+        uint8_t randomNum = rand() % 10;
+        if (randomNum < 2){
+            return true;
+        }
+    }
+
     if(!m_lnb.IsNeighbor(senderAddr)){
         SendHello(senderAddr);
         SendNeedKey(senderAddr);
@@ -1781,6 +1793,10 @@ RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry
                           /*dstSeqNo=*/m_seqNo,
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/m_myRouteTimeout);
+    if(IsBlackhole() || IsGrayhole()){
+        //TODO: check that this is high enough
+        rrepHeader.SetDstSeqno(m_seqNo + 32);
+    }
     Ptr<Packet> packet = Create<Packet>();
     SocketIpTtlTag tag;
     tag.SetTtl(toOrigin.GetHop());
@@ -1805,6 +1821,10 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
                           /*dstSeqNo=*/toDst.GetSeqNo(),
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/toDst.GetLifeTime());
+    if(IsBlackhole() || IsGrayhole()){
+        //TODO: check that this is high enough
+        rrepHeader.SetDstSeqno(toDst.GetSeqNo() + 32);
+    }
     /* If the node we received a RREQ for is a neighbor we are
      * probably facing a unidirectional link... Better request a RREP-ack
      */
