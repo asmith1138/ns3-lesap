@@ -51,6 +51,18 @@ enum WifiMacDropReason : uint8_t; // opaque enum declaration
 namespace aodv
 {
 /**
+ * \ingroup lesapAodv
+ * \brief NodeType enumeration
+ */
+enum NodeType
+{
+    AODVNODE = 1,    //!< AODVNODE
+    AODVSYBIL = 2,    //!< AODVSYBIL
+    AODVBLACKHOLE = 3,    //!< AODVBLACKHOLE
+    AODVGRAYHOLE = 4, //!< AODVGRAYHOLE
+};
+
+/**
  * \ingroup aodv
  *
  * \brief AODV routing protocol
@@ -176,6 +188,24 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     }
 
     /**
+     * Set node type
+     * \param n the node type
+     */
+    void SetNodeType(NodeType n)
+    {
+        m_nodeType = n;
+    }
+
+    /**
+     * Get node type
+     * \returns the node type
+     */
+    NodeType GetNodeType() const
+    {
+        return m_nodeType;
+    }
+
+    /**
      * Set broadcast enable flag
      * \param f enable broadcast flag
      */
@@ -290,6 +320,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint16_t m_rreqCount;
     /// Number of RERRs used for RERR rate control
     uint16_t m_rerrCount;
+    NodeType m_nodeType;
 
   private:
     /// Start protocol operation
@@ -503,6 +534,14 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Ptr<UniformRandomVariable> m_uniformRandomVariable;
     /// Keep track of the last bcast time
     Time m_lastBcastTime;
+    /**
+     * Determine whether malicious
+     * \returns true if the node is malicious
+     */
+    bool IsMalicious();
+    bool IsSybil();
+    bool IsBlackhole();
+    bool IsGrayhole();
 };
 
 } // namespace aodv

@@ -343,6 +343,21 @@ RoutingTable::GetListOfDestinationWithNextHop(Ipv4Address nextHop,
     }
 }
 
+uint32_t
+RoutingTable::GetLargestSeqNo()
+{
+    NS_LOG_FUNCTION(this);
+    uint32_t maxSeqNo = 0;
+    for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end(); ++i)
+    {
+        if (i->second.GetSeqNo() > maxSeqNo)
+        {
+            maxSeqNo = i->second.GetSeqNo();
+        }
+    }
+    return maxSeqNo;
+}
+
 void
 RoutingTable::InvalidateRoutesWithDst(const std::map<Ipv4Address, uint32_t>& unreachable)
 {

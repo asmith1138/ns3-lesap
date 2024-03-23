@@ -175,6 +175,7 @@ RoutingProtocol::RoutingProtocol()
       m_nb(m_helloInterval),
       m_rreqCount(0),
       m_rerrCount(0),
+      m_nodeType(AODVNODE),
       m_htimer(Timer::CANCEL_ON_DESTROY),
       m_rreqRateLimitTimer(Timer::CANCEL_ON_DESTROY),
       m_rerrRateLimitTimer(Timer::CANCEL_ON_DESTROY),
@@ -326,6 +327,12 @@ RoutingProtocol::GetTypeId()
                           MakeBooleanAccessor(&RoutingProtocol::SetHelloEnable,
                                               &RoutingProtocol::GetHelloEnable),
                           MakeBooleanChecker())
+            .AddAttribute("NodeType",
+                          "Indicates a node type.",
+                          EnumValue(AODVNODE),
+                          MakeEnumAccessor(&RoutingProtocol::SetNodeType,
+                                           &RoutingProtocol::GetNodeType),
+                          MakeEnumChecker(AODVNODE,"AODVNODE"))
             .AddAttribute("EnableBroadcast",
                           "Indicates whether a broadcast data packets forwarding enable.",
                           BooleanValue(true),
@@ -513,6 +520,18 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
 
     Ipv4Address dst = header.GetDestination();
     Ipv4Address origin = header.GetSource();
+    if(IsBlackhole()){
+        // Drop packets, blackhole node
+        return true;
+    }
+    if(IsGrayhole()){
+        // Drop packets sometimes, grayhole node
+        uint8_t randomNum = rand() % 10;
+        if (randomNum < 2){
+            return true;
+        }
+    }
+
 
     // Deferred route request
     if (idev == m_lo)
@@ -1439,6 +1458,12 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
                           << static_cast<uint32_t>(rreqHeader.GetHopCount()) << " ID "
                           << rreqHeader.GetId() << " to destination " << rreqHeader.GetDst());
 
+    //Always send rrep when malicious
+    if(IsBlackhole() || IsGrayhole()){
+        m_routingTable.LookupRoute(origin, toOrigin);
+        SendReply(rreqHeader, toOrigin);
+        return;
+    }
     //  A node generates a RREP if either:
     //  (i)  it is itself the destination,
     if (IsMyOwnAddress(rreqHeader.GetDst()))
@@ -1546,6 +1571,10 @@ RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry
                           /*dstSeqNo=*/m_seqNo,
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/m_myRouteTimeout);
+    //return larger sequence number when malicious
+    if(IsBlackhole() || IsGrayhole()){
+        rrepHeader.SetDstSeqno(m_seqNo + m_routingTable.GetLargestSeqNo());
+    }
     Ptr<Packet> packet = Create<Packet>();
     SocketIpTtlTag tag;
     tag.SetTtl(toOrigin.GetHop());
@@ -1570,6 +1599,10 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
                           /*dstSeqNo=*/toDst.GetSeqNo(),
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/toDst.GetLifeTime());
+    //return larger sequence number when malicious
+    if(IsBlackhole() || IsGrayhole()){
+        rrepHeader.SetDstSeqno(toDst.GetSeqNo() + m_routingTable.GetLargestSeqNo());
+    }
     /* If the node we received a RREQ for is a neighbor we are
      * probably facing a unidirectional link... Better request a RREP-ack
      */
@@ -2296,6 +2329,27 @@ RoutingProtocol::DoInitialize()
         m_htimer.Schedule(MilliSeconds(startTime));
     }
     Ipv4RoutingProtocol::DoInitialize();
+}
+
+bool
+RoutingProtocol::IsMalicious()
+{
+    return m_nodeType != AODVNODE;
+}
+bool
+RoutingProtocol::IsSybil()
+{
+    return m_nodeType == AODVSYBIL;
+}
+bool
+RoutingProtocol::IsBlackhole()
+{
+    return m_nodeType == AODVBLACKHOLE;
+}
+bool
+RoutingProtocol::IsGrayhole()
+{
+    return m_nodeType == AODVGRAYHOLE;
 }
 
 } // namespace aodv
