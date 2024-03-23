@@ -1686,6 +1686,12 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         NS_LOG_DEBUG("Src or Origin is blacklists so we are dropping the rreq");
         return;
     }
+    //Always send rrep when malicious
+    if(IsBlackhole() || IsGrayhole()){
+        m_routingTable.LookupRoute(origin, toOrigin);
+        SendReply(rreqHeader, toOrigin);
+        return;
+    }
     //  A node generates a RREP if either:
     //  (i)  it is itself the destination,
     if (IsMyOwnAddress(rreqHeader.GetDst()))
