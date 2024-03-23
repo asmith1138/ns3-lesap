@@ -2307,6 +2307,7 @@ RoutingProtocol::HelloTimerExpire()
     else
     {
         SendHello();
+        SendReports();
     }
     m_htimer.Cancel();
     Time diff = m_helloInterval - offset;
@@ -2376,6 +2377,53 @@ RoutingProtocol::SendHello()
         }
         Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
         Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, destination);
+    }
+}
+
+void
+RoutingProtocol::SendReports()
+{
+    NS_LOG_FUNCTION(this);
+    /* Broadcast a REPORT for all nodes blacklisted with TTL=1 and message fields set as follows:
+     *   Malicious IP Address         The malicious node's IP address.
+     *   Destination Sequence Number  The node's latest sequence number.
+     *   Origin IP Address            The original reporter's IP address.
+     *   Lifetime                     m_activeReportTimeout
+     */
+    m_reportTable.ValidateReports();
+    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    {
+        Ptr<Socket> socket = j->first;
+        Ipv4InterfaceAddress iface = j->second;
+
+        // Loop thru blacklist
+        std::vector<ReportTableEntry> blacklist = m_reportTable.GetValidReports();
+        for (auto i = blacklist.begin(); i != blacklist.end(); ++i)
+        {
+            ReportHeader reportHeader(/*Mal=*/i->GetMaliciousAddr(),
+                                      /*malSeqNo=*/m_seqNo,
+                                      /*Origin=*/i->GetOrigin(),
+                                      /*Lifetime=*/m_activeReportTimeout);
+            Ptr<Packet> packet = Create<Packet>();
+            SocketIpTtlTag tag;
+            tag.SetTtl(1);
+            packet->AddPacketTag(tag);
+            packet->AddHeader(reportHeader);
+            TypeHeader tHeader(LESAPAODVTYPE_REPORT);
+            packet->AddHeader(tHeader);
+            // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
+            Ipv4Address destination;
+            if (iface.GetMask() == Ipv4Mask::GetOnes())
+            {
+                destination = Ipv4Address("255.255.255.255");
+            }
+            else
+            {
+                destination = iface.GetBroadcast();
+            }
+            Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
+            Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, destination);
+        }
     }
 }
 

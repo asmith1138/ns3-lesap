@@ -386,6 +386,8 @@ class ReportTable
 
     bool ValidateReports(Ipv4Address id);
 
+    std::vector<ReportTableEntry> GetValidReports();
+
     /// Delete all entries from routing table
     void Clear()
     {

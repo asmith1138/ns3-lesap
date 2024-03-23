@@ -390,6 +390,18 @@ ReportTable::ValidateReports(Ipv4Address id)
     return false;
 }
 
+std::vector<ReportTableEntry>
+ReportTable::GetValidReports(){
+    NS_LOG_FUNCTION(this);
+    std::vector<ReportTableEntry> validReports;
+    for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end(); ++i)
+    {
+        if(i->second.GetFlag()==REPORT_VALID){
+            validReports.push_back(i->second);
+        }
+    }
+}
+
 void
 ReportTable::Purge()
 {

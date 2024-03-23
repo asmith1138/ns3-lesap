@@ -488,7 +488,9 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     void SendHello();
     /// Send hello to one node
     void SendHello(Ipv4Address dst);
-    /** Send RREQ
+    /// Send reports
+    void SendReports();
+        /** Send RREQ
      * \param dst destination address
      */
     void SendRequest(Ipv4Address dst);
