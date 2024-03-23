@@ -24,13 +24,25 @@ Needs for LESAP-AODV
 	- need to extend routing algorithm to track lidar neighbors
 
 - Blackhole nodes
-	- response that they have an easy route
-	- ignore messages when asked to forward
+	+ response that they have an easy route
+	+ ignore messages when asked to forward
 
 - Grayhole nodes
-	- response that they have an easy route
-	- ignore some messages when asked to forward
+	+ response that they have an easy route
+	+ ignore some messages when asked to forward
 
 x Blackhole nodes ver2 (probably out of scope)
 	x response that they have an easy route
 	x snoop messages when asked to forward
+	
+finished steps
+1 - implement lesap-aodv (2 months)
+2 - implement blackhole and grayhole nodes in aodv and lesap-aodv (1 week)
+
+REMAINING Steps
+1 - Write applications x2 (2 days)
+2 - Write script (1 days)
+3 - Write Sybil node functionality in aodv and lesap-aodv (1 day)
+4 - Write Sybil detection fuctionality in lesap-aodv (1 day)
+5 - 
+6 - Test (? days)
