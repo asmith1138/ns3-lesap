@@ -524,7 +524,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         // Drop packets, blackhole node
         return true;
     }
-    if(IsGrayhole()){
+    if(IsGrayhole() || IsSybil()){
         // Drop packets sometimes, grayhole node
         uint8_t randomNum = rand() % 10;
         if (randomNum < 2){
@@ -1459,7 +1459,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
                           << rreqHeader.GetId() << " to destination " << rreqHeader.GetDst());
 
     //Always send rrep when malicious
-    if(IsBlackhole() || IsGrayhole()){
+    if(IsBlackhole() || IsGrayhole() || IsSybil()){
         m_routingTable.LookupRoute(origin, toOrigin);
         SendReply(rreqHeader, toOrigin);
         return;
@@ -1572,7 +1572,7 @@ RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/m_myRouteTimeout);
     //return larger sequence number when malicious
-    if(IsBlackhole() || IsGrayhole()){
+    if(IsBlackhole() || IsGrayhole() || IsSybil()){
         rrepHeader.SetDstSeqno(m_seqNo + m_routingTable.GetLargestSeqNo());
     }
     Ptr<Packet> packet = Create<Packet>();
@@ -1600,7 +1600,7 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/toDst.GetLifeTime());
     //return larger sequence number when malicious
-    if(IsBlackhole() || IsGrayhole()){
+    if(IsBlackhole() || IsGrayhole() || IsSybil()){
         rrepHeader.SetDstSeqno(toDst.GetSeqNo() + m_routingTable.GetLargestSeqNo());
     }
     /* If the node we received a RREQ for is a neighbor we are
