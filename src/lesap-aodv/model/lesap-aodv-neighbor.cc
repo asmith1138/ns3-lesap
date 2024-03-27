@@ -116,6 +116,19 @@ struct CloseNeighbor
     }
 };
 
+std::vector<Ipv4Address>
+Neighbors::GetNeighbors()
+{
+    NS_LOG_FUNCTION(this);
+    std::vector<Ipv4Address> neighborAddresses;
+    Purge();
+    for (auto i = m_nb.begin(); i != m_nb.end(); ++i)
+    {
+        neighborAddresses.push_back(i->m_neighborAddress);
+    }
+    return neighborAddresses;
+}
+
 void
 Neighbors::Purge()
 {

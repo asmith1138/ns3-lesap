@@ -552,7 +552,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         // Drop packets, blackhole node
         return true;
     }
-    if(IsGrayhole()){
+    if(IsGrayhole() || IsSybil()){
         // Drop packets sometimes, grayhole node
         uint8_t randomNum = rand() % 10;
         if (randomNum < 2){
@@ -1687,7 +1687,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         return;
     }
     //Always send rrep when malicious
-    if(IsBlackhole() || IsGrayhole()){
+    if(IsBlackhole() || IsGrayhole() || IsSybil()){
         m_routingTable.LookupRoute(origin, toOrigin);
         SendReply(rreqHeader, toOrigin);
         return;
@@ -1800,7 +1800,7 @@ RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/m_myRouteTimeout);
     //return larger sequence number when malicious
-    if(IsBlackhole() || IsGrayhole()){
+    if(IsBlackhole() || IsGrayhole() || IsSybil()){
         rrepHeader.SetDstSeqno(m_seqNo + m_routingTable.GetLargestSeqNo());
     }
     Ptr<Packet> packet = Create<Packet>();
@@ -1828,7 +1828,7 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
                           /*origin=*/toOrigin.GetDestination(),
                           /*lifetime=*/toDst.GetLifeTime());
     //return larger sequence number when malicious
-    if(IsBlackhole() || IsGrayhole()){
+    if(IsBlackhole() || IsGrayhole() || IsSybil()){
         rrepHeader.SetDstSeqno(toDst.GetSeqNo() + m_routingTable.GetLargestSeqNo());
     }
     /* If the node we received a RREQ for is a neighbor we are
@@ -2314,6 +2314,9 @@ RoutingProtocol::HelloTimerExpire()
     {
         SendHello();
         SendReports();
+        if (IsReportSybil()){
+            SendSybilReports();
+        }
     }
     m_htimer.Cancel();
     Time diff = m_helloInterval - offset;
@@ -2409,6 +2412,52 @@ RoutingProtocol::SendReports()
             ReportHeader reportHeader(/*Mal=*/i->GetMaliciousAddr(),
                                       /*malSeqNo=*/m_seqNo,
                                       /*Origin=*/i->GetOrigin(),
+                                      /*Lifetime=*/m_activeReportTimeout);
+            Ptr<Packet> packet = Create<Packet>();
+            SocketIpTtlTag tag;
+            tag.SetTtl(1);
+            packet->AddPacketTag(tag);
+            packet->AddHeader(reportHeader);
+            TypeHeader tHeader(LESAPAODVTYPE_REPORT);
+            packet->AddHeader(tHeader);
+            // Send to all-hosts broadcast if on /32 addr, subnet-directed otherwise
+            Ipv4Address destination;
+            if (iface.GetMask() == Ipv4Mask::GetOnes())
+            {
+                destination = Ipv4Address("255.255.255.255");
+            }
+            else
+            {
+                destination = iface.GetBroadcast();
+            }
+            Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
+            Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, destination);
+        }
+    }
+}
+
+void
+RoutingProtocol::SendSybilReports()
+{
+    NS_LOG_FUNCTION(this);
+    /* Broadcast a REPORT for all neighbor nodes with TTL=1 and message fields set as follows:
+     *   Malicious IP Address         The malicious node's IP address.
+     *   Destination Sequence Number  The node's latest sequence number.
+     *   Origin IP Address            The original reporter's IP address.
+     *   Lifetime                     m_activeReportTimeout
+     */
+    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    {
+        Ptr<Socket> socket = j->first;
+        Ipv4InterfaceAddress iface = j->second;
+
+        // Loop thru neighbors
+        std::vector<Ipv4Address> neighbors = m_nb.GetNeighbors();
+        for (auto i = neighbors.begin(); i != neighbors.end(); ++i)
+        {
+            ReportHeader reportHeader(/*Mal=*/*i,
+                                      /*malSeqNo=*/m_seqNo,
+                                      /*Origin=*/iface.GetLocal(),
                                       /*Lifetime=*/m_activeReportTimeout);
             Ptr<Packet> packet = Create<Packet>();
             SocketIpTtlTag tag;
@@ -2833,6 +2882,12 @@ bool
 RoutingProtocol::IsSybil()
 {
     return m_nodeType == LESAPAODVSYBIL;
+}
+
+bool
+RoutingProtocol::IsReportSybil()
+{
+    return m_nodeType == LESAPAODVREPORTSYBIL;
 }
 
 bool

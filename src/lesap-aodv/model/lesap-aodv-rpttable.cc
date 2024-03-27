@@ -400,6 +400,7 @@ ReportTable::GetValidReports(){
             validReports.push_back(i->second);
         }
     }
+    return validReports;
 }
 
 void

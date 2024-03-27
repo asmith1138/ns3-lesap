@@ -65,6 +65,7 @@ enum NodeType
     LESAPAODVSYBIL = 2,    //!< LESARAODVSYBIL
     LESAPAODVBLACKHOLE = 3,    //!< LESARAODVBLACKHOLE
     LESAPAODVGRAYHOLE = 4, //!< LESARAODVGRAYHOLE
+    LESAPAODVREPORTSYBIL = 5, //!< LESARAODVGRAYHOLE
 };
 
 /**
@@ -490,6 +491,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     void SendHello(Ipv4Address dst);
     /// Send reports
     void SendReports();
+    /// Send fake reports(Sybil nodes)
+    void SendSybilReports();
         /** Send RREQ
      * \param dst destination address
      */
@@ -586,6 +589,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      */
     bool IsMalicious();
     bool IsSybil();
+    bool IsReportSybil();
     bool IsBlackhole();
     bool IsGrayhole();
 };

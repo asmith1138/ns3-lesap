@@ -109,6 +109,7 @@ class Neighbors
     void Update(Ipv4Address addr, Time expire);
     /// Remove all expired entries
     void Purge();
+    std::vector<Ipv4Address> GetNeighbors();
     /// Schedule m_ntimer.
     void ScheduleTimer();
 
