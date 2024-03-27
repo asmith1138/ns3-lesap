@@ -43,6 +43,6 @@ REMAINING Steps
 1 - Write applications x2 (2 days)
 2 - Write script (1 days)
 3 - Write Sybil node functionality in aodv and lesap-aodv (1 day)
-4 - Write Sybil detection fuctionality in lesap-aodv (1 day)
+4 - Write Sybil detection fuctionality in lesap-aodv (2 days)
 5 - 
 6 - Test (? days)
