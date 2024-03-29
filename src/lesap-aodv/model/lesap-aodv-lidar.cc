@@ -30,6 +30,7 @@
 #include "lesap-aodv-lidar.h"
 
 #include "ns3/log.h"
+#include "ns3/vector.h"
 #include "ns3/wifi-mac-header.h"
 
 #include <algorithm>
@@ -119,6 +120,7 @@ LidarNeighbors::Update(Ipv4Address addr, Time expire,
             i->m_xPosition = xPos;
             i->m_yPosition = yPos;
             i->m_zPosition = zPos;
+            i->m_timeSeen = Simulator::Now();
             return;
         }
     }
@@ -171,6 +173,36 @@ LidarNeighbors::Purge()
     m_nb.erase(std::remove_if(m_nb.begin(), m_nb.end(), pred), m_nb.end());
     m_ntimer.Cancel();
     m_ntimer.Schedule();
+}
+
+bool
+LidarNeighbors::CheckCollisions(uint32_t x, uint32_t y, uint32_t z)
+{
+    Time now = Simulator::Now();
+    Vector checkPosition(x,y,z);
+    for (auto i = m_nb.begin(); i != m_nb.end(); ++i)
+    {
+        double seconds = now.GetSeconds() - i->m_timeSeen.GetSeconds();
+        if (seconds <= 3)
+        {
+            // multiply the velocity by seconds (time between now and adding the lidar neighbor) and add to position
+            Vector position(i->m_xPosition,i->m_yPosition,i->m_zPosition);
+            Vector velocity(i->m_xVelocity * seconds,
+                            i->m_yVelocity * seconds,
+                            i->m_zVelocity * seconds);
+            Vector newPosition = position + velocity;
+
+            // determine if that's within 2.5 meters of the parameter position
+            double distanceBetween = CalculateDistance(newPosition, checkPosition);
+            if(distanceBetween <= 2.5){
+                NS_LOG_LOGIC("Collision detected");
+                //return true if it is
+                return true;
+            }
+        }
+    }
+    NS_LOG_LOGIC("No collisions detected");
+    return false;
 }
 
 void

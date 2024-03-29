@@ -155,6 +155,8 @@ class LidarNeighbors
 
     /// Remove all expired entries
     void Purge();
+    /// Check entries for collisions with potential new entry
+    bool CheckCollisions(uint32_t x, uint32_t y, uint32_t z);
     /// Schedule m_ntimer.
     void ScheduleTimer();
 

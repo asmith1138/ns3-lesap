@@ -1326,6 +1326,7 @@ Vector
 RoutingProtocol::GetPosition(){
     Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    // Unit: meters
     return m_Mobility->GetPosition();
 }
 
@@ -1333,6 +1334,7 @@ Vector
 RoutingProtocol::GetVelocity(){
     Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    // Unit: meters/s
     return m_Mobility->GetVelocity();
 }
 
@@ -1343,8 +1345,8 @@ RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
     for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
         Ptr<Socket> socket = j->first;
-        Ipv4InterfaceAddress iface = j->second;
-        if(iface.GetLocal() == ipv4){
+        Ipv4InterfaceAddress iface = j->second;;
+        if(iface.GetLocal() == ipv4){ //TODO: GetAddress()?
             return DistanceFromNode(socket);
         }
     }
@@ -2827,8 +2829,21 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
 {
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
+    // Check for lidar collisions based on position and velocity
+    if(m_lnb.CheckCollisions(sendKeyHeader.GetX(), sendKeyHeader.GetY(), sendKeyHeader.GetZ())){
+        //TODO: report node as malicious and add to blacklist
+        Ipv4InterfaceAddress iaddr = m_ipv4->GetAddress (1,0);
+        Ipv4Address ipAddr = iaddr.GetLocal();
+        ReportTableEntry newEntry(address,
+                                  ipAddr,
+                                  Simulator::GetMaximumSimulationTime());
+        newEntry.InsertPrecursor(ipAddr,m_activeReportTimeout);
+        //TODO: add directly to blacklist, new method
+        m_reportTable.AddReport(newEntry);
+    }
+    // The position is not within 2.5 meters of any other node
+
     SendHello(address);
-    // TODO: Check for lidar collisions based on position and velocity
     // Create new lidar neighbor with the packet data,
     // update if it already exists for some reason
     m_lnb.Update(address, Time(m_allowedHelloLoss * m_helloInterval),
