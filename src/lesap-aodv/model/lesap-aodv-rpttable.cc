@@ -302,6 +302,24 @@ ReportTable::AddReport(ReportTableEntry& rt)
 }
 
 bool
+ReportTable::AddReportToBlacklist(ReportTableEntry& rt)
+{
+    NS_LOG_FUNCTION(this);
+    Purge();
+    if (rt.GetFlag() != REPORT_IN_SEARCH)
+    {
+        rt.SetRepCnt(1);
+    }
+
+    rt.SetFlag(REPORT_VALID);
+    rt.SetBlacklisted(true);
+    rt.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
+    rt.SetLifeTime(Simulator::GetMaximumSimulationTime());
+    auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetMaliciousAddr(), rt));
+    return result.second;
+}
+
+bool
 ReportTable::Update(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
@@ -317,6 +335,32 @@ ReportTable::Update(ReportTableEntry& rt)
         NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " set RepCnt to n+1");
         i->second.SetRepCnt(i->second.GetRepCnt()+1);
     }
+    return true;
+}
+
+bool
+ReportTable::UpdateToBlacklist(ReportTableEntry& rt, Ipv4Address ip)
+{
+    NS_LOG_FUNCTION(this);
+    auto i = m_ipv4AddressEntry.find(rt.GetMaliciousAddr());
+    if (i == m_ipv4AddressEntry.end())
+    {
+        NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " fails; not found");
+        return false;
+    }
+    rt.SetOrigin(ip);
+    i->second = rt;
+    if (i->second.GetFlag() != REPORT_IN_SEARCH)
+    {
+        NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " set RepCnt to n+1");
+        i->second.SetRepCnt(i->second.GetRepCnt()+1);
+    }
+
+    i->second.SetFlag(REPORT_VALID);
+    i->second.SetBlacklisted(true);
+    i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
+    i->second.SetLifeTime(Simulator::GetMaximumSimulationTime());
+
     return true;
 }
 
@@ -378,6 +422,9 @@ ReportTable::ValidateReports(Ipv4Address id)
     {
         NS_LOG_LOGIC("Report validation for " << id << " fails; not found");
         return false;
+    }
+    if(i->second.GetFlag() == REPORT_VALID && i->second.GetBlacklistTimeout() > Simulator::Now()){
+        return true;
     }
     if (i->second.GetRepCnt() >= m_reportLimit)
     {

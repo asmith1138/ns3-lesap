@@ -340,6 +340,12 @@ class ReportTable
      */
     bool AddReport(ReportTableEntry& r);
     /**
+     * Add routing table entry if it doesn't yet exist in routing table and blacklist it
+     * \param r routing table entry
+     * \return true in success
+     */
+    bool AddReportToBlacklist(ReportTableEntry& r);
+    /**
      * Delete routing table entry with destination address dst, if it exists.
      * \param dst destination address
      * \return true on success
@@ -365,6 +371,13 @@ class ReportTable
      * \return true on success
      */
     bool Update(ReportTableEntry& rt);
+    /**
+     * Update routing table to blacklist
+     * \param rt entry with destination address dst, if exists
+     * \param ip origin for blacklist
+     * \return true on success
+     */
+    bool UpdateToBlacklist(ReportTableEntry& rt, Ipv4Address ip);
     /**
      * Set routing table entry flags
      * \param dst destination address

@@ -2831,15 +2831,32 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     p->RemoveHeader(sendKeyHeader);
     // Check for lidar collisions based on position and velocity
     if(m_lnb.CheckCollisions(sendKeyHeader.GetX(), sendKeyHeader.GetY(), sendKeyHeader.GetZ())){
-        //TODO: report node as malicious and add to blacklist
+        //report node as malicious and add to blacklist
         Ipv4InterfaceAddress iaddr = m_ipv4->GetAddress (1,0);
         Ipv4Address ipAddr = iaddr.GetLocal();
-        ReportTableEntry newEntry(address,
-                                  ipAddr,
-                                  Simulator::GetMaximumSimulationTime());
-        newEntry.InsertPrecursor(ipAddr,m_activeReportTimeout);
-        //TODO: add directly to blacklist, new method
-        m_reportTable.AddReport(newEntry);
+        ReportTableEntry rp;
+        if(m_reportTable.LookupReport(address, rp))
+        {
+            //update directly to blacklist
+            m_reportTable.UpdateToBlacklist(rp, ipAddr);
+        }else{
+            ReportTableEntry newEntry(address,
+                                      ipAddr,
+                                      Simulator::GetMaximumSimulationTime());
+            newEntry.InsertPrecursor(ipAddr,m_activeReportTimeout);
+            //add directly to blacklist
+            m_reportTable.AddReportToBlacklist(newEntry);
+        }
+        //Set route to unidirectional
+        if(m_reportTable.ValidateReports(address)){
+            RoutingTableEntry rt;
+            if(m_routingTable.LookupRoute(address, rt)){
+                m_routingTable.MarkLinkAsUnidirectional(
+                    address,
+                    Simulator::GetMaximumSimulationTime());
+            }
+        }
+        return;
     }
     // The position is not within 2.5 meters of any other node
 
