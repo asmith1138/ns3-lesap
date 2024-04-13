@@ -1341,16 +1341,29 @@ RoutingProtocol::GetVelocity(){
 double
 RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
 {
-    //Ipv4InterfaceAddress
-    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
-    {
-        Ptr<Socket> socket = j->first;
-        Ipv4InterfaceAddress iface = j->second;;
-        if(iface.GetLocal() == ipv4){ //TODO: GetAddress()?
-            return DistanceFromNode(socket);
-        }
-    }
-    return 10000;//Large Number or infinity?
+    //This should work better
+    uint32_t interface = m_ipv4->GetInterfaceForAddress(ipv4);
+    Ptr<NetDevice> s_netdevice = m_ipv4->GetNetDevice(interface);
+    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
+
+    Ptr<Node> m_node = m_netdevice->GetNode();
+    Ptr<Node> s_node = s_netdevice->GetNode();
+
+    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
+    Ptr<MobilityModel> s_Mobility = s_node->GetObject<MobilityModel>();
+
+    return m_Mobility->GetDistanceFrom(s_Mobility);
+
+    //Rather than this
+    //for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    //{
+    //    Ptr<Socket> socket = j->first;
+    //    Ipv4InterfaceAddress iface = j->second;
+    //    if(iface.GetLocal() == ipv4){ //TODO: GetAddress()?
+    //        return DistanceFromNode(socket);
+    //    }
+    //}
+    //return 10000;//Large Number or infinity?
 }
 
 bool
@@ -1398,7 +1411,8 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     // If they are close enough go ahead and send a NEEDKEY msg
     if(!m_lnb.IsNeighbor(sender)){
         if(!(tHeader.Get() == LESAPAODVTYPE_NEEDKEY) && !(tHeader.Get() == LESAPAODVTYPE_SENDKEY)){
-            double distance = DistanceFromNode(socket);
+            //double distance = DistanceFromNode(socket);
+            double distance = DistanceFromNode(sender);
             if (!(tHeader.Get() == LESAPAODVTYPE_RREP))
             {
                 if(IsNodeWithinLidar(distance)){

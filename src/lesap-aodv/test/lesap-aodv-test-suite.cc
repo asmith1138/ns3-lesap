@@ -340,9 +340,9 @@ struct RerrHeaderTest : public TestCase
  *
  * \brief Unit test for LESAP-AODV routing table entry
  */
-struct QueueEntryTest : public TestCase
+struct LesapAodvQueueEntryTest : public TestCase
 {
-    QueueEntryTest()
+    LesapAodvQueueEntryTest()
         : TestCase("QueueEntry")
     {
     }
@@ -354,6 +354,16 @@ struct QueueEntryTest : public TestCase
      * \param header the IPv4 header
      */
     void Unicast(Ptr<Ipv4Route> route, Ptr<const Packet> packet, const Ipv4Header& header)
+    {
+    }
+
+    /**
+     * Loacl test function
+     * \param packet the packet
+     * \param header the IPv4 header
+     * \param iif the interface device
+     */
+    void Local(Ptr<const Packet> packet, const Ipv4Header& header, uint32_t iif)
     {
     }
 
@@ -393,10 +403,12 @@ struct QueueEntryTest : public TestCase
         Ipv4Header h;
         h.SetDestination(Ipv4Address("1.2.3.4"));
         h.SetSource(Ipv4Address("4.3.2.1"));
+        Ptr<const NetDevice> idev;
         Ipv4RoutingProtocol::UnicastForwardCallback ucb =
-            MakeCallback(&QueueEntryTest::Unicast, this);
-        Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&QueueEntryTest::Error, this);
-        QueueEntry entry(packet, h, ucb, ecb, Seconds(1));
+            MakeCallback(&LesapAodvQueueEntryTest::Unicast, this);
+        Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&LesapAodvQueueEntryTest::Error, this);
+        Ipv4RoutingProtocol::LocalDeliverCallback lcb = MakeCallback(&LesapAodvQueueEntryTest::Local, this);
+        QueueEntry entry(packet, h, idev, ucb, ecb, lcb, Seconds(1));
         NS_TEST_EXPECT_MSG_EQ(h.GetDestination(),
                               entry.GetIpv4Header().GetDestination(),
                               "trivial");
@@ -414,8 +426,8 @@ struct QueueEntryTest : public TestCase
                               Ipv4Address("1.1.1.1"),
                               "trivial");
         Ipv4RoutingProtocol::UnicastForwardCallback ucb2 =
-            MakeCallback(&QueueEntryTest::Unicast2, this);
-        Ipv4RoutingProtocol::ErrorCallback ecb2 = MakeCallback(&QueueEntryTest::Error2, this);
+            MakeCallback(&LesapAodvQueueEntryTest::Unicast2, this);
+        Ipv4RoutingProtocol::ErrorCallback ecb2 = MakeCallback(&LesapAodvQueueEntryTest::Error2, this);
         entry.SetErrorCallback(ecb2);
         NS_TEST_EXPECT_MSG_EQ(ecb2.IsEqual(entry.GetErrorCallback()), true, "trivial");
         entry.SetUnicastForwardCallback(ucb2);
@@ -442,6 +454,16 @@ struct LesapAodvRqueueTest : public TestCase
      * \param header the IPv4 header
      */
     void Unicast(Ptr<Ipv4Route> route, Ptr<const Packet> packet, const Ipv4Header& header)
+    {
+    }
+
+    /**
+     * Loacl test function
+     * \param packet the packet
+     * \param header the IPv4 header
+     * \param iif the interface device
+     */
+    void Local(Ptr<const Packet> packet, const Ipv4Header& header, uint32_t iif)
     {
     }
 
@@ -478,9 +500,11 @@ LesapAodvRqueueTest::DoRun()
     Ipv4Header h;
     h.SetDestination(Ipv4Address("1.2.3.4"));
     h.SetSource(Ipv4Address("4.3.2.1"));
+    Ptr<const NetDevice> idev;
     Ipv4RoutingProtocol::UnicastForwardCallback ucb = MakeCallback(&LesapAodvRqueueTest::Unicast, this);
     Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&LesapAodvRqueueTest::Error, this);
-    QueueEntry e1(packet, h, ucb, ecb, Seconds(1));
+    Ipv4RoutingProtocol::LocalDeliverCallback lcb = MakeCallback(&LesapAodvRqueueTest::Local, this);
+    QueueEntry e1(packet, h, idev, ucb, ecb, lcb, Seconds(1));
     q.Enqueue(e1);
     q.Enqueue(e1);
     q.Enqueue(e1);
@@ -492,11 +516,11 @@ LesapAodvRqueueTest::DoRun()
     NS_TEST_EXPECT_MSG_EQ(q.GetSize(), 0, "trivial");
 
     h.SetDestination(Ipv4Address("2.2.2.2"));
-    QueueEntry e2(packet, h, ucb, ecb, Seconds(1));
+    QueueEntry e2(packet, h, nullptr, ucb, ecb, lcb, Seconds(1));
     q.Enqueue(e1);
     q.Enqueue(e2);
     Ptr<Packet> packet2 = Create<Packet>();
-    QueueEntry e3(packet2, h, ucb, ecb, Seconds(1));
+    QueueEntry e3(packet2, h, nullptr, ucb, ecb, lcb, Seconds(1));
     NS_TEST_EXPECT_MSG_EQ(q.Dequeue(Ipv4Address("3.3.3.3"), e3), false, "trivial");
     NS_TEST_EXPECT_MSG_EQ(q.Dequeue(Ipv4Address("2.2.2.2"), e3), true, "trivial");
     NS_TEST_EXPECT_MSG_EQ(q.Find(Ipv4Address("2.2.2.2")), false, "trivial");
@@ -505,7 +529,7 @@ LesapAodvRqueueTest::DoRun()
     NS_TEST_EXPECT_MSG_EQ(q.GetSize(), 2, "trivial");
     Ptr<Packet> packet4 = Create<Packet>();
     h.SetDestination(Ipv4Address("1.2.3.4"));
-    QueueEntry e4(packet4, h, ucb, ecb, Seconds(20));
+    QueueEntry e4(packet4, h, nullptr, ucb, ecb, lcb, Seconds(20));
     q.Enqueue(e4);
     NS_TEST_EXPECT_MSG_EQ(q.GetSize(), 3, "trivial");
     q.DropPacketWithDst(Ipv4Address("1.2.3.4"));
@@ -528,9 +552,11 @@ LesapAodvRqueueTest::CheckSizeLimit()
 {
     Ptr<Packet> packet = Create<Packet>();
     Ipv4Header header;
+    Ptr<const NetDevice> idev;
     Ipv4RoutingProtocol::UnicastForwardCallback ucb = MakeCallback(&LesapAodvRqueueTest::Unicast, this);
     Ipv4RoutingProtocol::ErrorCallback ecb = MakeCallback(&LesapAodvRqueueTest::Error, this);
-    QueueEntry e1(packet, header, ucb, ecb, Seconds(1));
+    Ipv4RoutingProtocol::LocalDeliverCallback lcb = MakeCallback(&LesapAodvRqueueTest::Local, this);
+    QueueEntry e1(packet, header, idev, ucb, ecb, lcb, Seconds(1));
 
     for (uint32_t i = 0; i < q.GetMaxQueueLen(); ++i)
     {
@@ -748,7 +774,7 @@ class LesapAodvTestSuite : public TestSuite
         AddTestCase(new RrepHeaderTest, TestCase::QUICK);
         AddTestCase(new RrepAckHeaderTest, TestCase::QUICK);
         AddTestCase(new RerrHeaderTest, TestCase::QUICK);
-        AddTestCase(new QueueEntryTest, TestCase::QUICK);
+        AddTestCase(new LesapAodvQueueEntryTest, TestCase::QUICK);
         AddTestCase(new LesapAodvRqueueTest, TestCase::QUICK);
         AddTestCase(new LesapAodvRtableEntryTest, TestCase::QUICK);
         AddTestCase(new LesapAodvRtableTest, TestCase::QUICK);
