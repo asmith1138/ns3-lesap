@@ -21,7 +21,7 @@ The source code for the AODV model lives in the directory `src/aodv`.
 Design
 ++++++
 
-Class ``ns3::aodv::RoutingProtocol`` implements all functionality of
+Class ``ns3::lesapAodv::RoutingProtocol`` implements all functionality of
 service packet exchange and inherits from ``ns3::Ipv4RoutingProtocol``.
 The base class defines two virtual functions for packet routing and
 forwarding.  The first one, ``ns3::aodv::RouteOutput``, is used for
@@ -29,7 +29,7 @@ locally originated packets, and the second one, ``ns3::aodv::RouteInput``,
 is used for forwarding and/or delivering received packets.
 
 Protocol operation depends on many adjustable parameters. Parameters for
-this functionality are attributes of ``ns3::aodv::RoutingProtocol``.
+this functionality are attributes of ``ns3::lesapAodv::RoutingProtocol``.
 Parameter default values are drawn from the RFC and allow the
 enabling/disabling protocol features, such as broadcasting HELLO messages,
 broadcasting data packets and so on.

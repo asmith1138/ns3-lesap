@@ -572,6 +572,7 @@ GetTypicalAggregations()
     info.RecordAggregationInfo("ns3::Node", "ns3::RipNg");
     info.RecordAggregationInfo("ns3::Node", "ns3::GlobalRouter");
     info.RecordAggregationInfo("ns3::Node", "ns3::aodv::RoutingProtocol");
+    info.RecordAggregationInfo("ns3::Node", "ns3::lesapAodv::RoutingProtocol");
     info.RecordAggregationInfo("ns3::Node", "ns3::dsdv::RoutingProtocol");
     info.RecordAggregationInfo("ns3::Node", "ns3::dsr::DsrRouting");
     info.RecordAggregationInfo("ns3::Node", "ns3::olsr::RoutingProtocol");

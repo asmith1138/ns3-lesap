@@ -53,11 +53,11 @@ class LesapAodvRegressionTestSuite : public TestSuite
 {
   public:
     LesapAodvRegressionTestSuite()
-        : TestSuite("routing-aodv-regression", SYSTEM)
+        : TestSuite("routing-lesap-aodv-regression", SYSTEM)
     {
         SetDataDir(NS_TEST_SOURCEDIR);
         // General RREQ-RREP-RRER test case
-        AddTestCase(new LesapAodvChainRegressionTest("aodv-chain-regression-test"), TestCase::QUICK);
+        AddTestCase(new LesapAodvChainRegressionTest("lesap-aodv-chain-regression-test"), TestCase::QUICK);
         // \bugid{606} test case, should crash if bug is not fixed
         AddTestCase(new LesapAodvChainRegressionTest("bug-606-test", Seconds(10), 3, Seconds(1)),
                     TestCase::QUICK);

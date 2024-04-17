@@ -51,7 +51,7 @@ enum WifiMacDropReason : uint8_t; // opaque enum declaration
 namespace aodv
 {
 /**
- * \ingroup lesapAodv
+ * \ingroup aodv
  * \brief NodeType enumeration
  */
 enum NodeType

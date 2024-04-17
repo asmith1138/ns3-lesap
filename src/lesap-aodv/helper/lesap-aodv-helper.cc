@@ -31,7 +31,7 @@ namespace ns3
 LesapAodvHelper::LesapAodvHelper()
     : Ipv4RoutingHelper()
 {
-    m_agentFactory.SetTypeId("ns3::lesap-aodv::RoutingProtocol");
+    m_agentFactory.SetTypeId("ns3::lesapAodv::RoutingProtocol");
 }
 
 LesapAodvHelper*

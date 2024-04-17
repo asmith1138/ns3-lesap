@@ -38,7 +38,7 @@
 namespace ns3
 {
 
-NS_LOG_COMPONENT_DEFINE("LesapAodvNeighbors");
+NS_LOG_COMPONENT_DEFINE("LesapAodvLidarNeighbors");
 
 namespace lesapAodv
 {
