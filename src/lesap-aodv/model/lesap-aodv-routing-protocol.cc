@@ -1341,6 +1341,7 @@ RoutingProtocol::GetVelocity(){
 double
 RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
 {
+
     //This should work better
     uint32_t interface = m_ipv4->GetInterfaceForAddress(ipv4);
     Ptr<NetDevice> s_netdevice = m_ipv4->GetNetDevice(interface);
