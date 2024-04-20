@@ -17,6 +17,7 @@ gnuplot
 
 Sumo
 sumo-gui
+netconvert --osm-files berlin.osm.xml -o berlin.net.xml
 
 
 
