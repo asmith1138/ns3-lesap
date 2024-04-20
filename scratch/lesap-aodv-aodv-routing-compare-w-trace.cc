@@ -128,6 +128,7 @@ class RoutingExperiment
 
     std::string m_CSVfileName{"manet-routing.output.csv"}; //!< CSV filename.
     int m_nSinks{10};                                      //!< Number of sink nodes.
+    int m_nWifis{50};                                      //!< Number of nodes.
     std::string m_protocolName{"AODV"};                    //!< Protocol name.
     double m_txp{7.5};                                     //!< Tx power.
     bool m_traceMobility{false};                           //!< Enable mobility tracing.
@@ -234,6 +235,7 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("protocol", "Routing protocol (AODV, LESAP-AODV)", m_protocolName);
     cmd.AddValue("flowMonitor", "enable FlowMonitor", m_flowMonitor);
     cmd.AddValue("tracefile", "Trace File to use", m_traceFile);
+    cmd.AddValue("nNodes", "Number of nodes to use", m_nWifis);
     cmd.Parse(argc, argv);
 
     std::vector<std::string> allowedProtocols{"AODV", "LESAP-AODV"};
@@ -278,7 +280,7 @@ RoutingExperiment::Run()
         << "TransmissionPower" << std::endl;
     out.close();
 
-    int nWifis = 50;
+    int nWifis = m_nWifis;
 
     double TotalTime = 200.0;
     std::string rate("2048bps");
