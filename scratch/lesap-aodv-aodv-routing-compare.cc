@@ -112,6 +112,7 @@ class RoutingExperiment
      * \return the socket.
      */
     Ptr<Socket> SetupPacketReceive(Ipv4Address addr, Ptr<Node> node);
+    //double DistanceFromNode(Ipv4Address dest, Ipv4Address own);
     /**
      * Receive a packet.
      * \param socket The receiving socket.
@@ -137,6 +138,8 @@ class RoutingExperiment
 RoutingExperiment::RoutingExperiment()
 {
 }
+
+
 
 static inline std::string
 PrintReceivedPacket(Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddress)
@@ -331,6 +334,13 @@ RoutingExperiment::Run()
     mobilityAdhoc.Install(adhocNodes);
     streamIndex += mobilityAdhoc.AssignStreams(adhocNodes, streamIndex);
 
+    NS_LOG_INFO("assigning ip address");
+
+    Ipv4AddressHelper addressAdhoc;
+    addressAdhoc.SetBase("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer adhocInterfaces;
+    adhocInterfaces = addressAdhoc.Assign(adhocDevices);
+
     AodvHelper aodv;
     LesapAodvHelper lesapAodv;
     Ipv4ListRoutingHelper list;
@@ -344,6 +354,8 @@ RoutingExperiment::Run()
     }
     else if (m_protocolName == "LESAP-AODV")
     {
+        lesapAodv.SetNodeContainer(adhocNodes);
+        lesapAodv.SetInterfaceContainer(adhocInterfaces);
         list.Add(lesapAodv, 100);
         internet.SetRoutingHelper(list);
         internet.Install(adhocNodes);
@@ -353,12 +365,6 @@ RoutingExperiment::Run()
         NS_FATAL_ERROR("No such protocol:" << m_protocolName);
     }
 
-    NS_LOG_INFO("assigning ip address");
-
-    Ipv4AddressHelper addressAdhoc;
-    addressAdhoc.SetBase("10.1.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer adhocInterfaces;
-    adhocInterfaces = addressAdhoc.Assign(adhocDevices);
 
     OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
     onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));

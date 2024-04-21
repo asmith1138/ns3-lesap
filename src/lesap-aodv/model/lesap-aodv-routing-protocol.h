@@ -230,6 +230,15 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     }
 
     /**
+     * Set distance function
+     * \param
+     */
+    void SetDistanceFunction()
+    {
+
+    }
+
+    /**
      * Assign a fixed random variable stream number to the random variables
      * used by this model.  Return the number of streams (possibly zero) that
      * have been assigned.

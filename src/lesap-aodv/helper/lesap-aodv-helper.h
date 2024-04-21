@@ -21,6 +21,8 @@
 #ifndef LESAP_AODV_HELPER_H
 #define LESAP_AODV_HELPER_H
 
+#include "../../internet/helper/ipv4-interface-container.h"
+
 #include "ns3/ipv4-routing-helper.h"
 #include "ns3/node-container.h"
 #include "ns3/node.h"
@@ -75,9 +77,15 @@ class LesapAodvHelper : public Ipv4RoutingHelper
      */
     int64_t AssignStreams(NodeContainer c, int64_t stream);
 
+    void SetNodeContainer(NodeContainer container);
+    void SetInterfaceContainer(Ipv4InterfaceContainer container);
+    double DistanceFromNode(Ipv4Address dest, Ipv4Address own);
+
   private:
     /** the factory to create LESAP-AODV routing object */
     ObjectFactory m_agentFactory;
+    NodeContainer nodes;
+    Ipv4InterfaceContainer interfaces;
 };
 
 } // namespace ns3

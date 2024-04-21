@@ -19,8 +19,10 @@
  */
 #include "lesap-aodv-helper.h"
 
-#include "ns3/lesap-aodv-routing-protocol.h"
+#include "../../mobility/model/mobility-model.h"
+
 #include "ns3/ipv4-list-routing.h"
+#include "ns3/lesap-aodv-routing-protocol.h"
 #include "ns3/names.h"
 #include "ns3/node-list.h"
 #include "ns3/ptr.h"
@@ -44,6 +46,7 @@ Ptr<Ipv4RoutingProtocol>
 LesapAodvHelper::Create(Ptr<Node> node) const
 {
     Ptr<lesapAodv::RoutingProtocol> agent = m_agentFactory.Create<lesapAodv::RoutingProtocol>();
+    agent->SetDistanceFunction(&LesapAodvHelper::DistanceFromNode);
     node->AggregateObject(agent);
     return agent;
 }
@@ -92,6 +95,65 @@ LesapAodvHelper::AssignStreams(NodeContainer c, int64_t stream)
         }
     }
     return (currentStream - stream);
+}
+
+double
+LesapAodvHelper::DistanceFromNode(Ipv4Address dest, Ipv4Address own)
+{
+    //Interface design
+    Ptr<Node> ownNode;
+    Ptr<Node> destNode;
+    for (auto i = interfaces.Begin(); i != interfaces.End(); ++i)
+    {
+        if((*i).first->GetInterfaceForAddress(dest) != -1){
+            ownNode = (*i).first->GetObject<Node>();
+        }
+        if((*i).first->GetInterfaceForAddress(own) != -1){
+            destNode = (*i).first->GetObject<Node>();
+        }
+    }
+    //Node design
+    Ptr<Node> node;
+    for (auto i = nodes.Begin(); i != nodes.End(); ++i)
+    {
+        node = (*i);
+        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        NS_ASSERT_MSG(ipv4, "Ipv4 not installed on node");
+
+        if(ipv4->GetInterfaceForAddress(own) != -1){
+            ownNode = node;
+        }
+
+        if(ipv4->GetInterfaceForAddress(dest) != -1){
+            destNode = node;
+        }
+    }
+    // Maybe this should be in the helper class
+    // and use the new method I created to get the nodecontainer
+    // therefore I can inject this as a callback into the node/routingproto class
+    // with the nodecontainer already specified in the class.
+    //uint32_t interface = m_ipv4->GetInterfaceForAddress(ipv4);
+    //Ptr<NetDevice> s_netdevice = m_ipv4->GetNetDevice(interface);
+    //Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
+
+    //Ptr<Node> m_node = m_netdevice->GetNode();
+    //Ptr<Node> s_node = s_netdevice->GetNode();
+
+    Ptr<MobilityModel> m_Mobility = ownNode->GetObject<MobilityModel>();
+    Ptr<MobilityModel> s_Mobility = destNode->GetObject<MobilityModel>();
+
+    return m_Mobility->GetDistanceFrom(s_Mobility);
+}
+
+void
+LesapAodvHelper::SetNodeContainer(ns3::NodeContainer container)
+{
+    nodes = container;
+}
+
+void
+LesapAodvHelper::SetInterfaceContainer(ns3::Ipv4InterfaceContainer container){
+    interfaces = container;
 }
 
 } // namespace ns3
