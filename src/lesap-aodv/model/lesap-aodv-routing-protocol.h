@@ -233,9 +233,9 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      * Set distance function
      * \param
      */
-    void SetDistanceFunction()
+    void SetDistanceFunction(double (*distFunc)(Ipv4Address, Ipv4Address))
     {
-
+        DistanceToNode=distFunc;
     }
 
     /**
@@ -354,6 +354,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint64_t m_key3;
     uint64_t m_key4;
     NodeType m_nodeType;
+    double (*DistanceToNode)(Ipv4Address, Ipv4Address);
 
   private:
     /// Start protocol operation
