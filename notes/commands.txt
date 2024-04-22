@@ -18,11 +18,18 @@ gnuplot
 Sumo
 sumo-gui
 netconvert --osm-files berlin.osm.xml -o berlin.net.xml
+netconvert --osm-files 475.osm -o 475.net.xml --geometry.remove --ramps.guess --junctions.join --tls.guess-signals --tls.discard-simple --tls.join --tls.default-type actuated
 
+
+ns3 build and debug
+./ns3 configure --enable-examples --enable-tests
+./ns3 build
+./ns3 run --gdb scratch/lesap-aodv-aodv-routing-compare.cc 
 
 
 Examples
 ./ns3 run hello-simulator
 ./ns3 run first
 ./ns3 run second
+
 
