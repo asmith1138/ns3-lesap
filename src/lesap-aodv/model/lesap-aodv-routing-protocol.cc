@@ -34,6 +34,8 @@
 
 #include "lesap-aodv-routing-protocol.h"
 
+#include "../../network/helper/node-container.h"
+
 #include "ns3/adhoc-wifi-mac.h"
 #include "ns3/boolean.h"
 #include "ns3/inet-socket-address.h"
@@ -48,6 +50,7 @@
 #include "ns3/udp-socket-factory.h"
 #include "ns3/wifi-mpdu.h"
 #include "ns3/wifi-net-device.h"
+#include <ns3/ipv4-interface-container.h>
 
 #include <algorithm>
 #include <limits>
@@ -1307,21 +1310,6 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
     NS_LOG_LOGIC("Scheduled RREQ retry in " << retry.As(Time::S));
 }
 
-double
-RoutingProtocol::DistanceFromNode(Ptr<Socket> socket)
-{
-    Ptr<NetDevice> s_netdevice = socket->GetBoundNetDevice();
-    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
-
-    Ptr<Node> m_node = m_netdevice->GetNode();
-    Ptr<Node> s_node = s_netdevice->GetNode();
-
-    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
-    Ptr<MobilityModel> s_Mobility = s_node->GetObject<MobilityModel>();
-
-    return m_Mobility->GetDistanceFrom(s_Mobility);
-}
-
 Vector
 RoutingProtocol::GetPosition(){
     Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
@@ -1339,21 +1327,32 @@ RoutingProtocol::GetVelocity(){
 }
 
 double
-RoutingProtocol::DistanceFromNode(Ipv4Address ipv4)
+RoutingProtocol::DistanceFromNode(Ipv4Address dest)
 {
+    NodeContainer nodes = NodeContainer::GetGlobal();
+    Ipv4Address own = m_ipv4->GetAddress(1,0).GetLocal();
+    Ptr<Node> node;
+    Ptr<Node> ownNode;
+    Ptr<Node> destNode;
+    for (auto i = nodes.Begin(); i != nodes.End(); ++i)
+    {
+        node = (*i);
+        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        NS_ASSERT_MSG(ipv4, "Ipv4 not installed on node");
 
-    //This should work better
-    uint32_t interface = m_ipv4->GetInterfaceForAddress(ipv4);
-    Ptr<NetDevice> s_netdevice = m_ipv4->GetNetDevice(interface);
-    Ptr<NetDevice> m_netdevice = m_ipv4->GetNetDevice(1);
+        if(ipv4->GetInterfaceForAddress(own) != -1){
+            ownNode = node;
+        }
 
-    Ptr<Node> m_node = m_netdevice->GetNode();
-    Ptr<Node> s_node = s_netdevice->GetNode();
+        if(ipv4->GetInterfaceForAddress(dest) != -1){
+            destNode = node;
+        }
+    }
 
-    Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
-    Ptr<MobilityModel> s_Mobility = s_node->GetObject<MobilityModel>();
+    Ptr<MobilityModel> ownMobility = ownNode->GetObject<MobilityModel>();
+    Ptr<MobilityModel> destMobility = destNode->GetObject<MobilityModel>();
 
-    return m_Mobility->GetDistanceFrom(s_Mobility);
+    return ownMobility->GetDistanceFrom(destMobility);
 
     //Rather than this
     //for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)

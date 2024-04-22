@@ -230,15 +230,6 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     }
 
     /**
-     * Set distance function
-     * \param
-     */
-    void SetDistanceFunction(double (*distFunc)(Ipv4Address, Ipv4Address))
-    {
-        DistanceToNode=distFunc;
-    }
-
-    /**
      * Assign a fixed random variable stream number to the random variables
      * used by this model.  Return the number of streams (possibly zero) that
      * have been assigned.
@@ -260,7 +251,6 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      */
     void NotifyTxError(WifiMacDropReason reason, Ptr<const WifiMpdu> mpdu);
 
-    double DistanceFromNode(Ptr<Socket> socket);
     double DistanceFromNode(Ipv4Address ipv4);
     bool IsNodeWithinLidar(double distance);
     Vector GetPosition();
@@ -354,7 +344,6 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint64_t m_key3;
     uint64_t m_key4;
     NodeType m_nodeType;
-    double (*DistanceToNode)(Ipv4Address, Ipv4Address);
 
   private:
     /// Start protocol operation
