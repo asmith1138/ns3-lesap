@@ -1407,20 +1407,24 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                                      << tHeader.Get() << ". Drop");
         return; // drop
     }
+
     // Checking if sender is lidar neighbor here (or Hello message, or send/need key)
     // If they are close enough go ahead and send a NEEDKEY msg
     if(!m_lnb.IsNeighbor(sender)){
-        if(!(tHeader.Get() == LESAPAODVTYPE_NEEDKEY) && !(tHeader.Get() == LESAPAODVTYPE_SENDKEY)){
+        if(!(tHeader.Get() == LESAPAODVTYPE_NEEDKEY) &&
+            !(tHeader.Get() == LESAPAODVTYPE_SENDKEY) &&
+            !(tHeader.Get() == LESAPAODVTYPE_RREP)){
             //double distance = DistanceFromNode(socket);
             double distance = DistanceFromNode(sender);
-            if (!(tHeader.Get() == LESAPAODVTYPE_RREP))
+            if(IsNodeWithinLidar(distance))
             {
-                if(IsNodeWithinLidar(distance)){
-                    SendNeedKey(sender);
-                    SendHello(sender);
-                }
-                return; // drop
+                SendNeedKey(sender);
+                SendHello(sender);
             }
+            return; // drop
+
+            //Can only be rrep and not a neighbor
+            /*
             RrepHeader rrepHeader;
             packet->RemoveHeader(rrepHeader);
             Ipv4Address dst = rrepHeader.GetDst();
@@ -1433,6 +1437,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                 }
                 return; // drop
             }
+            */
         }
     }
     // msg is either from lidar neighbor or a hello msg
@@ -1984,6 +1989,19 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     {
         ProcessHello(rrepHeader, receiver);
         return;
+    }
+    else
+    {
+        //We need to check neighbor again
+        //since we let the RREP through
+        if(!m_lnb.IsNeighbor(sender)){
+            double distance = DistanceFromNode(sender);
+            if(IsNodeWithinLidar(distance)){
+                SendNeedKey(sender);
+                SendHello(sender);
+            }
+            return; // drop
+        }
     }
 
     /*
