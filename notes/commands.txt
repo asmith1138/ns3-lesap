@@ -32,4 +32,10 @@ Examples
 ./ns3 run first
 ./ns3 run second
 
-
+sumo random trips and trace
+netconvert --osm-files map.osm --output-file map.net.xml --geometry.remove --roundabout.guess --ramps.guess --junctions.join --tls.guess-signals --tls.discard-simple --tls.join
+randomtrips.py -n map.net.xml -e 100 -o map.trips.xml
+duarouter -n map.net.xml --route-files map.trips.xml -o map.routes.xml --ignore-errors
+sumo-gui map.sumo.cfg
+sumo -c map.sumo.cfg --step-length 0.1 --fcd-output map.trace.xml
+traceExporter.py --fcd-input map.trace.xml --ns2mobility-output map.ns2mobility.tcl
