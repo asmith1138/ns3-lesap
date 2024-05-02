@@ -547,6 +547,9 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
 
     Ipv4Address dst = header.GetDestination();
     Ipv4Address origin = header.GetSource();
+    Ptr<Packet> pack = p->Copy();
+    Ipv4Header head;
+    pack->RemoveHeader(head);
 
     // idev is neighbor check
     Ipv4InterfaceAddress ifa = m_ipv4->GetAddress(iif,0);
@@ -564,8 +567,12 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     }
 
     if(!m_lnb.IsNeighbor(senderAddr)){
-        SendHello(senderAddr);
-        SendNeedKey(senderAddr);
+        if(IsNodeWithinLidar(DistanceFromNode(senderAddr))){
+            //add route TODO: Fix this
+            AddDirectRoute(senderAddr, idev);
+            SendHello(senderAddr);
+            SendNeedKey(senderAddr);
+        }
         //Defer until verified sender
         DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
         return true;
@@ -674,6 +681,8 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 }
                 else{
                  // SendNeedKey and defer msg
+                 //add route
+                 AddDirectRoute(toOrigin.GetNextHop(), idev);
                  SendNeedKey(toOrigin.GetNextHop());
                  SendHello(toOrigin.GetNextHop());
                  DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
@@ -756,6 +765,8 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 {
                     m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
                 }else{
+                    //add route
+                    AddDirectRoute(route->GetGateway(), idev);
                     SendNeedKey(route->GetGateway());
                     SendHello(route->GetGateway());
                     //Defer until verified sender
@@ -768,6 +779,8 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }else{
+                    //add route
+                    AddDirectRoute(toOrigin.GetNextHop(), idev);
                     SendNeedKey(toOrigin.GetNextHop());
                     SendHello(toOrigin.GetNextHop());
                     //Defer until verified sender
@@ -1359,7 +1372,7 @@ RoutingProtocol::DistanceFromNode(Ipv4Address dest)
     //{
     //    Ptr<Socket> socket = j->first;
     //    Ipv4InterfaceAddress iface = j->second;
-    //    if(iface.GetLocal() == ipv4){ //TODO: GetAddress()?
+    //    if(iface.GetLocal() == ipv4){ //GetAddress()?
     //        return DistanceFromNode(socket);
     //    }
     //}
@@ -1418,6 +1431,8 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
             double distance = DistanceFromNode(sender);
             if(IsNodeWithinLidar(distance))
             {
+                //add route
+                AddDirectRoute(sender, receiver);
                 SendNeedKey(sender);
                 SendHello(sender);
             }
@@ -1464,7 +1479,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         break;
     }
     case LESAPAODVTYPE_NEEDKEY: {
-        RecvNeedKey(sender);
+        RecvNeedKey(sender, receiver);
         break;
     }
     case LESAPAODVTYPE_SENDKEY: {
@@ -1997,6 +2012,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
         if(!m_lnb.IsNeighbor(sender)){
             double distance = DistanceFromNode(sender);
             if(IsNodeWithinLidar(distance)){
+                //add route
+                AddDirectRoute(sender, receiver);
                 SendNeedKey(sender);
                 SendHello(sender);
             }
@@ -2190,7 +2207,9 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
         if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
             m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
         }else{
-         SendNeedKey(rrepHeader.GetDst());
+            //add route
+            AddDirectRoute(rrepHeader.GetDst(), receiver);
+            SendNeedKey(rrepHeader.GetDst());
         }
     }
 
@@ -2526,6 +2545,7 @@ RoutingProtocol::SendHello(Ipv4Address dst)
      *   Hop Count                      0
      *   Lifetime                       AllowedHelloLoss * HelloInterval
      */
+    //TODO: Fix this method
     for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
         Ptr<Socket> socket = j->first;
@@ -2852,8 +2872,9 @@ RoutingProtocol::DoInitialize()
 }
 
 void
-RoutingProtocol::RecvNeedKey(Ipv4Address address)
+RoutingProtocol::RecvNeedKey(Ipv4Address address, Ipv4Address receiver)
 {
+    AddDirectRoute(address, receiver);
     SendSendKey(address);
 }
 void
@@ -2900,6 +2921,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
               sendKeyHeader.GetKey3(), sendKeyHeader.GetKey4(),
               sendKeyHeader.GetVelX(),sendKeyHeader.GetVelY(),sendKeyHeader.GetVelZ(),
               sendKeyHeader.GetX(),sendKeyHeader.GetY(),sendKeyHeader.GetZ());
+    AddDirectRoute(address, idev);
     //Dequeue packets based on netdevice idev
     SendPacketFromQueueBySender(idev);
 }
@@ -2964,6 +2986,36 @@ bool
 RoutingProtocol::IsGrayhole()
 {
     return m_nodeType == LESAPAODVGRAYHOLE;
+}
+
+void
+RoutingProtocol::AddDirectRoute(Ipv4Address address, Ipv4Address receiver){
+    Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
+    RoutingTableEntry newEntry(
+        /*dev=*/dev,
+        /*dst=*/address,
+        /*vSeqNo=*/false,
+        /*seqNo=*/0,
+        /*iface=*/m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0),
+        /*hops=*/1,
+        /*nextHop=*/address,
+        /*lifetime=*/m_activeRouteTimeout);
+    m_routingTable.AddRoute(newEntry);
+}
+
+void
+RoutingProtocol::AddDirectRoute(Ipv4Address address, Ptr<const NetDevice> idev){
+    Ptr<NetDevice> dev = m_ipv4->GetNetDevice(idev->GetIfIndex());
+    RoutingTableEntry newEntry(
+        /*dev=*/dev,
+        /*dst=*/address,
+        /*vSeqNo=*/false,
+        /*seqNo=*/0,
+        /*iface=*/m_ipv4->GetAddress(idev->GetIfIndex(), 0),
+        /*hops=*/1,
+        /*nextHop=*/address,
+        /*lifetime=*/m_activeRouteTimeout);
+    m_routingTable.AddRoute(newEntry);
 }
 
 } // namespace lesapAodv

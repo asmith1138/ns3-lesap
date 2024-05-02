@@ -236,11 +236,11 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
 int
 main(int argc, char* argv[])
 {
-    std::cout << "**AODV**" << std::endl;
+    //std::cout << "**AODV**" << std::endl;
     RoutingExperiment experimentAODV;
     experimentAODV.SetProtocol("AODV");
     experimentAODV.CommandSetup(argc, argv);
-    experimentAODV.Run();
+    //experimentAODV.Run();
 
     std::cout << "**LESAP-AODV**" << std::endl;
     RoutingExperiment experimentLESAPAODV;

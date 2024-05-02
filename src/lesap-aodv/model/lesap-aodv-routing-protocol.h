@@ -580,8 +580,10 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     /// Keep track of the last bcast time
     Time m_lastBcastTime;
     void RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev);
-    void RecvNeedKey(Ipv4Address address);
+    void RecvNeedKey(Ipv4Address address, Ipv4Address receiver);
     void RecvReport(Ptr<Packet> p, Ipv4Address address);
+    void AddDirectRoute(Ipv4Address address, Ipv4Address receiver);
+    void AddDirectRoute(Ipv4Address address, Ptr<const NetDevice> idev);
     /**
      * Determine whether malicious
      * \returns true if the node is malicious
