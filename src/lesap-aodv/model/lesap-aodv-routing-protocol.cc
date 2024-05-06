@@ -552,8 +552,8 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     pack->RemoveHeader(head);
 
     // idev is neighbor check
-    Ipv4InterfaceAddress ifa = m_ipv4->GetAddress(iif,0);
-    Ipv4Address senderAddr = ifa.GetLocal();
+    //Ipv4InterfaceAddress ifa = m_ipv4->GetAddress(iif,0);
+    //Ipv4Address senderAddr = ifa.GetLocal();
     if(IsBlackhole()){
         // Drop packets, blackhole node
         return true;
@@ -566,17 +566,41 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         }
     }
 
-    if(!m_lnb.IsNeighbor(senderAddr)){
-        if(IsNodeWithinLidar(DistanceFromNode(senderAddr))){
-            //add route TODO: Fix this
-            AddDirectRoute(senderAddr, idev);
-            SendHello(senderAddr);
-            SendNeedKey(senderAddr);
+    RoutingTableEntry toOrigin;
+    if (m_routingTable.LookupValidRoute(origin, toOrigin))
+    {
+        if(!m_lnb.IsNeighbor(toOrigin.GetNextHop())){
+            if(IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop()))){
+                //add route TODO: Fix this
+                for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+                {
+                    Ptr<Socket> socket = j->first;
+                    //Ipv4InterfaceAddress iface = j->second;
+                    Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
+                    if(netdev==idev){
+                        Address address;
+                        socket->GetPeerName(address);
+                        InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
+                        Ipv4Address sender = inetSourceAddr.GetIpv4();
+                        AddDirectRoute(sender, idev);
+                        SendHello(sender);
+                        SendNeedKey(sender);
+                    }
+                }
+
+                AddDirectRoute(toOrigin.GetNextHop(), idev);
+                SendHello(toOrigin.GetNextHop());
+                SendNeedKey(toOrigin.GetNextHop());
+            }
+            //Defer until verified sender
+            DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+            return true;
         }
-        //Defer until verified sender
-        DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
-        return true;
     }
+    else{
+        return false;
+    }
+
     // Deferred route request
     if (idev == m_lo)
     {
@@ -681,7 +705,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 }
                 else{
                  // SendNeedKey and defer msg
-                 //add route
+                 //add route TODO: Fix this
                  AddDirectRoute(toOrigin.GetNextHop(), idev);
                  SendNeedKey(toOrigin.GetNextHop());
                  SendHello(toOrigin.GetNextHop());
@@ -766,6 +790,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                     m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
                 }else{
                     //add route
+                    //TODO: Fix this
                     AddDirectRoute(route->GetGateway(), idev);
                     SendNeedKey(route->GetGateway());
                     SendHello(route->GetGateway());
@@ -780,6 +805,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }else{
                     //add route
+                    // TODO: Fix this
                     AddDirectRoute(toOrigin.GetNextHop(), idev);
                     SendNeedKey(toOrigin.GetNextHop());
                     SendHello(toOrigin.GetNextHop());
@@ -2565,8 +2591,13 @@ RoutingProtocol::SendHello(Ipv4Address dst)
         TypeHeader tHeader(LESAPAODVTYPE_RREP);
         packet->AddHeader(tHeader);
         // Send to address passed in
-        Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
-        Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, dst);
+        Ipv4InterfaceAddress interfaceAddress = m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(dst), 0);
+        Ptr<Socket> socket = FindSocketWithInterfaceAddress(interfaceAddress);
+        NS_ASSERT(socket);
+        socket->SendTo(packet, 0, InetSocketAddress(dst, LESAP_AODV_PORT));
+
+        //Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
+        //Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, dst);
     }
 }
 
