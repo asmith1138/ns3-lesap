@@ -566,40 +566,68 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         }
     }
 
-    RoutingTableEntry toOrigin;
-    if (m_routingTable.LookupValidRoute(origin, toOrigin))
+    //RoutingTableEntry toOrigin;
+    //add route TODO: Fix this
+    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
-        if(!m_lnb.IsNeighbor(toOrigin.GetNextHop())){
-            if(IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop()))){
-                //add route TODO: Fix this
-                for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
-                {
-                    Ptr<Socket> socket = j->first;
-                    //Ipv4InterfaceAddress iface = j->second;
-                    Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
-                    if(netdev==idev){
-                        Address address;
-                        socket->GetPeerName(address);
-                        InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
-                        Ipv4Address sender = inetSourceAddr.GetIpv4();
-                        AddDirectRoute(sender, idev);
-                        SendHello(sender);
-                        SendNeedKey(sender);
-                    }
-                }
 
-                AddDirectRoute(toOrigin.GetNextHop(), idev);
-                SendHello(toOrigin.GetNextHop());
-                SendNeedKey(toOrigin.GetNextHop());
+        Ptr<Socket> socket = j->first;
+        //Ipv4InterfaceAddress iface = j->second;
+        Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
+        if(netdev==idev){
+            Address address;
+            socket->GetPeerName(address);
+            InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
+            Ipv4Address sender = inetSourceAddr.GetIpv4();
+            if(!m_lnb.IsNeighbor(sender)){
+                if(IsNodeWithinLidar(DistanceFromNode(sender)))
+                {
+                    AddDirectRoute(sender, idev);
+                    SendHello(sender);
+                    SendNeedKey(sender);
+                }
+                //Defer until verified sender
+                DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+                return true;
+            }else{
+                return false;
             }
-            //Defer until verified sender
-            DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
-            return true;
+
         }
     }
-    else{
-        return false;
-    }
+    //if (m_routingTable.LookupValidRoute(origin, toOrigin))
+    //{
+    //    if(!m_lnb.IsNeighbor(toOrigin.GetNextHop())){
+    //        if(IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop()))){
+    //            //add route TODO: Fix this
+    //            for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    //            {
+    //                Ptr<Socket> socket = j->first;
+    //                //Ipv4InterfaceAddress iface = j->second;
+    //                Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
+    //                if(netdev==idev){
+    //                    Address address;
+    //                    socket->GetPeerName(address);
+    //                    InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
+    //                    Ipv4Address sender = inetSourceAddr.GetIpv4();
+    //                    AddDirectRoute(sender, idev);
+    //                    SendHello(sender);
+    //                    SendNeedKey(sender);
+    //                }
+    //            }
+    //
+    //            AddDirectRoute(toOrigin.GetNextHop(), idev);
+    //            SendHello(toOrigin.GetNextHop());
+    //            SendNeedKey(toOrigin.GetNextHop());
+    //        }
+    //        //Defer until verified sender
+    //        DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+    //        return true;
+    //    }
+    //}
+    //else{
+    //    return false;
+    //}
 
     // Deferred route request
     if (idev == m_lo)
@@ -2571,34 +2599,39 @@ RoutingProtocol::SendHello(Ipv4Address dst)
      *   Hop Count                      0
      *   Lifetime                       AllowedHelloLoss * HelloInterval
      */
-    //TODO: Fix this method
-    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
-    {
-        Ptr<Socket> socket = j->first;
-        Ipv4InterfaceAddress iface = j->second;
+    //for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    //{
+    //Ptr<Socket> socket = j->first;
+    //Ipv4InterfaceAddress iface = j->second;
+    RoutingTableEntry toDst;
+    m_routingTable.LookupRoute(dst, toDst);
 
-        RrepHeader helloHeader(/*prefixSize=*/0,
-                               /*hopCount=*/0,
-                               /*dst=*/iface.GetLocal(),
-                               /*dstSeqNo=*/m_seqNo,
-                               /*origin=*/iface.GetLocal(),
-                               /*lifetime=*/Time(m_allowedHelloLoss * m_helloInterval));
-        Ptr<Packet> packet = Create<Packet>();
-        SocketIpTtlTag tag;
-        tag.SetTtl(1);
-        packet->AddPacketTag(tag);
-        packet->AddHeader(helloHeader);
-        TypeHeader tHeader(LESAPAODVTYPE_RREP);
-        packet->AddHeader(tHeader);
-        // Send to address passed in
-        Ipv4InterfaceAddress interfaceAddress = m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(dst), 0);
-        Ptr<Socket> socket = FindSocketWithInterfaceAddress(interfaceAddress);
-        NS_ASSERT(socket);
-        socket->SendTo(packet, 0, InetSocketAddress(dst, LESAP_AODV_PORT));
+    //int32_t interface = m_ipv4->GetInterfaceForAddress(dst);
+    //Ipv4InterfaceAddress interfaceAddress = m_ipv4->GetAddress(interface, 0);
+    Ptr<Socket> socket = FindSocketWithInterfaceAddress(toDst.GetInterface());
+    NS_ASSERT(socket);
 
-        //Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
+    Ipv4Address receiver = m_socketAddresses[socket].GetLocal();
+
+    RrepHeader helloHeader(/*prefixSize=*/0,
+                           /*hopCount=*/0,
+                           /*dst=*/receiver,
+                           /*dstSeqNo=*/m_seqNo,
+                           /*origin=*/receiver,
+                           /*lifetime=*/Time(m_allowedHelloLoss * m_helloInterval));
+    Ptr<Packet> packet = Create<Packet>();
+    SocketIpTtlTag tag;
+    tag.SetTtl(1);
+    packet->AddPacketTag(tag);
+    packet->AddHeader(helloHeader);
+    TypeHeader tHeader(LESAPAODVTYPE_RREP);
+    packet->AddHeader(tHeader);
+    // Send to address passed in
+    socket->SendTo(packet, 0, InetSocketAddress(dst, LESAP_AODV_PORT));
+
+    // Time jitter = Time(MilliSeconds(m_uniformRandomVariable->GetInteger(0, 10)));
         //Simulator::Schedule(jitter, &RoutingProtocol::SendTo, this, socket, packet, dst);
-    }
+    //}
 }
 
 void
