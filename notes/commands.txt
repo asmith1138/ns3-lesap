@@ -6,6 +6,10 @@ Run script
 (cd .. &&./ns3 run scratch/manet-routing-compare.cc &> results/manet.data)
 ../ns3 run /../scratch/manet-routing-compare.cc &> temp.data
 
+(cd .. &&./ns3 run scratch/lesap-aodv-aodv-routing-compare.cc &> results/lesap-test.data)
+/ns3 run --gdb scratch/lesap-aodv-aodv-routing-compare.cc 
+
+
 
 Metrics
 java -jar ../../../tracemetrics-1.4.0/tracemetrics.jar 
