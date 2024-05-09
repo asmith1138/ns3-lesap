@@ -551,9 +551,6 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     Ipv4Header head;
     pack->RemoveHeader(head);
 
-    // idev is neighbor check
-    //Ipv4InterfaceAddress ifa = m_ipv4->GetAddress(iif,0);
-    //Ipv4Address senderAddr = ifa.GetLocal();
     if(IsBlackhole()){
         // Drop packets, blackhole node
         return true;
@@ -566,13 +563,11 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         }
     }
 
-    //RoutingTableEntry toOrigin;
     //add route TODO: Fix this
     for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
 
         Ptr<Socket> socket = j->first;
-        //Ipv4InterfaceAddress iface = j->second;
         Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
         if(netdev==idev){
             Address address;
@@ -595,39 +590,6 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
 
         }
     }
-    //if (m_routingTable.LookupValidRoute(origin, toOrigin))
-    //{
-    //    if(!m_lnb.IsNeighbor(toOrigin.GetNextHop())){
-    //        if(IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop()))){
-    //            //add route TODO: Fix this
-    //            for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
-    //            {
-    //                Ptr<Socket> socket = j->first;
-    //                //Ipv4InterfaceAddress iface = j->second;
-    //                Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
-    //                if(netdev==idev){
-    //                    Address address;
-    //                    socket->GetPeerName(address);
-    //                    InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
-    //                    Ipv4Address sender = inetSourceAddr.GetIpv4();
-    //                    AddDirectRoute(sender, idev);
-    //                    SendHello(sender);
-    //                    SendNeedKey(sender);
-    //                }
-    //            }
-    //
-    //            AddDirectRoute(toOrigin.GetNextHop(), idev);
-    //            SendHello(toOrigin.GetNextHop());
-    //            SendNeedKey(toOrigin.GetNextHop());
-    //        }
-    //        //Defer until verified sender
-    //        DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
-    //        return true;
-    //    }
-    //}
-    //else{
-    //    return false;
-    //}
 
     // Deferred route request
     if (idev == m_lo)
