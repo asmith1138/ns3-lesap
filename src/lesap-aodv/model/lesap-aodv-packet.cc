@@ -83,6 +83,9 @@ TypeHeader::Deserialize(Buffer::Iterator start)
     case LESAPAODVTYPE_RREQ:
     case LESAPAODVTYPE_RREP:
     case LESAPAODVTYPE_RERR:
+    case LESAPAODVTYPE_NEEDKEY:
+    case LESAPAODVTYPE_SENDKEY:
+    case LESAPAODVTYPE_REPORT:
     case LESAPAODVTYPE_RREP_ACK: {
         m_type = (MessageType)type;
         break;
