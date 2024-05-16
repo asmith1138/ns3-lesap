@@ -579,7 +579,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     Ptr<UniformRandomVariable> m_uniformRandomVariable;
     /// Keep track of the last bcast time
     Time m_lastBcastTime;
-    void RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev);
+    void RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev, Ipv4Address receiver);
     void RecvNeedKey(Ipv4Address address, Ipv4Address receiver);
     void RecvReport(Ptr<Packet> p, Ipv4Address address);
     void AddDirectRoute(Ipv4Address address, Ipv4Address receiver);

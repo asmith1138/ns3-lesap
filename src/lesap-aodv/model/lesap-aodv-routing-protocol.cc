@@ -562,22 +562,34 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
             return true;
         }
     }
-
-    //add route TODO: Fix this
+    RoutingTableEntry toOri;
+    RoutingTableEntry toDest;
+    m_routingTable.LookupValidRoute(origin, toOri);
+    m_routingTable.LookupValidRoute(dst, toDest);
+    //toOri.GetRoute()->GetGateway();
+    //header.GetSource();
+    //add route TODO: Fix this/Clean up
     for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
-
         Ptr<Socket> socket = j->first;
         Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
         if(netdev==idev){
             Address address;
-            socket->GetPeerName(address);
-            InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
-            Ipv4Address sender = inetSourceAddr.GetIpv4();
+            //Ipv4Address sender = idev->GetNode()->GetObject<Ipv4>()->GetAddress(1,0).GetLocal();
+            Ipv4Address local = j->second.GetLocal();
+            Ipv4Address sender = toOri.GetNextHop();
+            //int sock = socket->GetPeerName(address);
+            //if(local == nullptr){}
+            if(toOri.GetHop()>1){
+                toOri.GetRoute()->GetGateway();
+            }
+            //InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
+            //Ipv4Address sender = inetSourceAddr.GetIpv4();
+            //Ipv4Address ipv4Sender = header.GetSource();
             if(!m_lnb.IsNeighbor(sender)){
                 if(IsNodeWithinLidar(DistanceFromNode(sender)))
                 {
-                    AddDirectRoute(sender, idev);
+                    AddDirectRoute(sender, local);
                     SendHello(sender);
                     SendNeedKey(sender);
                 }
@@ -696,7 +708,8 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 else{
                  // SendNeedKey and defer msg
                  //add route TODO: Fix this
-                 AddDirectRoute(toOrigin.GetNextHop(), idev);
+                 Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
+                 AddDirectRoute(toOrigin.GetNextHop(), receiver);
                  SendNeedKey(toOrigin.GetNextHop());
                  SendHello(toOrigin.GetNextHop());
                  DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
@@ -781,7 +794,8 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 }else{
                     //add route
                     //TODO: Fix this
-                    AddDirectRoute(route->GetGateway(), idev);
+                    Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
+                    AddDirectRoute(route->GetGateway(), receiver);
                     SendNeedKey(route->GetGateway());
                     SendHello(route->GetGateway());
                     //Defer until verified sender
@@ -796,7 +810,8 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 }else{
                     //add route
                     // TODO: Fix this
-                    AddDirectRoute(toOrigin.GetNextHop(), idev);
+                    Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
+                    AddDirectRoute(toOrigin.GetNextHop(), receiver);
                     SendNeedKey(toOrigin.GetNextHop());
                     SendHello(toOrigin.GetNextHop());
                     //Defer until verified sender
@@ -1499,7 +1514,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         break;
     }
     case LESAPAODVTYPE_SENDKEY: {
-        RecvSendKey(packet, sender, socket->GetBoundNetDevice());
+        RecvSendKey(packet, sender, socket->GetBoundNetDevice(), receiver);
         break;
     }
     case LESAPAODVTYPE_REPORT: {
@@ -2904,7 +2919,7 @@ RoutingProtocol::RecvNeedKey(Ipv4Address address, Ipv4Address receiver)
     SendSendKey(address);
 }
 void
-RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev)
+RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev, Ipv4Address receiver)
 {
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
@@ -2947,8 +2962,9 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
               sendKeyHeader.GetKey3(), sendKeyHeader.GetKey4(),
               sendKeyHeader.GetVelX(),sendKeyHeader.GetVelY(),sendKeyHeader.GetVelZ(),
               sendKeyHeader.GetX(),sendKeyHeader.GetY(),sendKeyHeader.GetZ());
-    AddDirectRoute(address, idev);
+    AddDirectRoute(address, receiver);
     //Dequeue packets based on netdevice idev
+    //TODO: This is broken
     SendPacketFromQueueBySender(idev);
 }
 
@@ -3032,6 +3048,7 @@ RoutingProtocol::AddDirectRoute(Ipv4Address address, Ipv4Address receiver){
 void
 RoutingProtocol::AddDirectRoute(Ipv4Address address, Ptr<const NetDevice> idev){
     Ptr<NetDevice> dev = m_ipv4->GetNetDevice(idev->GetIfIndex());
+    //Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
     RoutingTableEntry newEntry(
         /*dev=*/dev,
         /*dst=*/address,
