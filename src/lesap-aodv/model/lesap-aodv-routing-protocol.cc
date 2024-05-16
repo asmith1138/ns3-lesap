@@ -509,6 +509,11 @@ RoutingProtocol::DeferredRouteOutput(Ptr<const Packet> p,
     NS_ASSERT(p && p != Ptr<Packet>());
 
     QueueEntry newEntry(p, header, idev, ucb, ecb, lcb);
+    //TODO: if route to origin send in the ipv4address of the nexthop
+    RoutingTableEntry route;
+    if(m_routingTable.LookupRoute(header.GetSource(), route)){
+        newEntry.SetNextHopToOrigin(route.GetNextHop());
+    }
     bool result = m_queue.Enqueue(newEntry);
     if (result)
     {
@@ -2636,7 +2641,7 @@ RoutingProtocol::SendPacketFromQueue(Ipv4Address dst, Ptr<Ipv4Route> route)
 }
 
 void
-RoutingProtocol::SendPacketFromQueueBySender(Ptr<NetDevice> sender)
+RoutingProtocol::SendPacketFromQueueBySender(Ipv4Address sender)
 {
     NS_LOG_FUNCTION(this);
     QueueEntry queueEntry;
@@ -2663,8 +2668,9 @@ RoutingProtocol::SendPacketFromQueueBySender(Ptr<NetDevice> sender)
         ErrorCallback ecb = queueEntry.GetErrorCallback();
         LocalDeliverCallback lcb = queueEntry.GetLocalDeliverCallback();
         MulticastForwardCallback mcb;
+        Ptr<const NetDevice> idev = queueEntry.GetNetDeviceSender();
         //Rerun RouteInput now that the sender is validated
-        RouteInput(p,header,sender,ucb,mcb,lcb,ecb);
+        RouteInput(p,header,idev,ucb,mcb,lcb,ecb);
         //ucb(route, p, header);
     }
 }
@@ -2965,7 +2971,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     AddDirectRoute(address, receiver);
     //Dequeue packets based on netdevice idev
     //TODO: This is broken
-    SendPacketFromQueueBySender(idev);
+    SendPacketFromQueueBySender(address);
 }
 
 void

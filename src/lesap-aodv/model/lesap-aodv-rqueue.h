@@ -219,11 +219,23 @@ class QueueEntry
         return m_expire - Simulator::Now();
     }
 
+    void SetNextHopToOrigin(Ipv4Address address)
+    {
+        m_nextHop = address;
+    }
+
+    Ipv4Address GetNextHopToOrigin() const
+    {
+        return m_nextHop;
+    }
+
   private:
     /// Data packet
     Ptr<const Packet> m_packet;
     /// IP header
     Ipv4Header m_header;
+    /// IP next hop to origin
+    Ipv4Address m_nextHop;
     /// NetDevice
     Ptr<const NetDevice> m_idev;
     /// Unicast forward callback
@@ -279,7 +291,7 @@ class RequestQueue
      * \param entry the queue entry
      * \returns true if the entry is dequeued
      */
-    bool DequeueSecured(Ptr<NetDevice> sender, QueueEntry& entry);
+    bool DequeueSecured(Ipv4Address sender, QueueEntry& entry);
     /**
      * Remove all packets with destination IP address dst
      * \param dst the destination IP address

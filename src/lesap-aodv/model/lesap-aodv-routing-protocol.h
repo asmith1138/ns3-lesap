@@ -483,7 +483,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     /** Forward packet from route request queue
      * \param sender netdevice of the sender
      */
-    void SendPacketFromQueueBySender(Ptr<NetDevice> sender);
+    void SendPacketFromQueueBySender(Ipv4Address sender);
     /// Send hello
     void SendHello();
     /// Send hello to one node

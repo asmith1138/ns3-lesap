@@ -106,13 +106,13 @@ RequestQueue::Dequeue(Ipv4Address dst, QueueEntry& entry)
 }
 
 bool
-RequestQueue::DequeueSecured(Ptr<NetDevice> sender, QueueEntry& entry)
+RequestQueue::DequeueSecured(Ipv4Address sender, QueueEntry& entry)
 {
     // pull off queue based on the most recent sender
     Purge();
     for (auto i = m_queue.begin(); i != m_queue.end(); ++i)
     {
-        if (i->GetNetDeviceSender() == sender)
+        if (i->GetNextHopToOrigin() == sender)
         {
             entry = *i;
             m_queue.erase(i);
