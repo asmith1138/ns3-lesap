@@ -144,15 +144,17 @@ ReportTableEntry::PurgePrecursors()
     {
         if (i->second < Simulator::Now())
         {
-            DeletePrecursor(i->first);
+            //DeletePrecursor(i->first);
+            i = m_precursorList.erase(i);
             DecrementRepCnt();
 
             if (IsPrecursorListEmpty())
             {
                 Invalidate(Seconds(0));
             }
+        }else{
+            ++i;
         }
-        ++i;
     }
 
 }

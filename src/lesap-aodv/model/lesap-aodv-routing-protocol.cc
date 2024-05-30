@@ -574,39 +574,54 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     //toOri.GetRoute()->GetGateway();
     //header.GetSource();
     //add route TODO: Fix this/Clean up
-    for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+    bool checkLidar = true;
+    if (header.GetProtocol() == UdpL4Protocol::PROT_NUMBER)
     {
-        Ptr<Socket> socket = j->first;
-        Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
-        if(netdev==idev){
-            Address address;
-            //Ipv4Address sender = idev->GetNode()->GetObject<Ipv4>()->GetAddress(1,0).GetLocal();
-            Ipv4Address local = j->second.GetLocal();
-            Ipv4Address sender = toOri.GetNextHop();
-            //int sock = socket->GetPeerName(address);
-            //if(local == nullptr){}
-            if(toOri.GetHop()>1){
-                toOri.GetRoute()->GetGateway();
-            }
-            //InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
-            //Ipv4Address sender = inetSourceAddr.GetIpv4();
-            //Ipv4Address ipv4Sender = header.GetSource();
-            if(!m_lnb.IsNeighbor(sender)){
-                if(IsNodeWithinLidar(DistanceFromNode(sender)))
-                {
-                    AddDirectRoute(sender, local);
-                    SendHello(sender);
-                    SendNeedKey(sender);
-                }
-                //Defer until verified sender
-                DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
-                return true;
-            }else{
-                return false;
-            }
-
+        UdpHeader udpHeader;
+        p->PeekHeader(udpHeader);
+        if (udpHeader.GetDestinationPort() == LESAP_AODV_PORT)
+        {
+            // LESAP-AODV packets are being handled later
+            checkLidar = false;
         }
     }
+
+    if(checkLidar){
+        for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
+        {
+            Ptr<Socket> socket = j->first;
+            Ptr<NetDevice> netdev = socket->GetBoundNetDevice();
+            if(netdev==idev){
+                Address address;
+                //Ipv4Address sender = idev->GetNode()->GetObject<Ipv4>()->GetAddress(1,0).GetLocal();
+                Ipv4Address local = j->second.GetLocal();
+                Ipv4Address sender = toOri.GetNextHop();
+                //int sock = socket->GetPeerName(address);
+                //if(local == nullptr){}
+                if(toOri.GetHop()>1){
+                    toOri.GetRoute()->GetGateway();
+                }
+                //InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(address);
+                //Ipv4Address sender = inetSourceAddr.GetIpv4();
+                //Ipv4Address ipv4Sender = header.GetSource();
+                if(!m_lnb.IsNeighbor(sender)){
+                    if(IsNodeWithinLidar(DistanceFromNode(sender)))
+                    {
+                        AddDirectRoute(sender, local);
+                        SendHello(sender);
+                        SendNeedKey(sender);
+                    }
+                    //Defer until verified sender
+                    DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+                    return true;
+                }else{
+                    return false;
+                }
+
+            }
+        }
+    }
+
 
     // Deferred route request
     if (idev == m_lo)
@@ -697,6 +712,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     }
 
     // Unicast local delivery
+    // TODO: allow when unknown sender
     if (m_ipv4->IsDestinationAddress(dst, iif))
     {
         UpdateRouteLifeTime(origin, m_activeRouteTimeout);
@@ -1353,6 +1369,10 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
         NS_ABORT_MSG_UNLESS(rt.GetRreqCnt() > 0, "Unexpected value for GetRreqCount ()");
         uint16_t backoffFactor = rt.GetRreqCnt() - 1;
         NS_LOG_LOGIC("Applying binary exponential backoff factor " << backoffFactor);
+        NS_LOG_DEBUG("Applying binary exponential backoff factor " << backoffFactor);
+        NS_LOG_DEBUG("Multiplying " << m_netTraversalTime << " by " << (1 << backoffFactor));
+        NS_LOG_DEBUG("Which is 1 shifted left by " << backoffFactor);
+
         retry = m_netTraversalTime * (1 << backoffFactor);
     }
     m_addressReqTimer[dst].Schedule(retry);
@@ -1361,6 +1381,7 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
 
 Vector
 RoutingProtocol::GetPosition(){
+    NS_LOG_FUNCTION(this);
     Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
     // Unit: meters
@@ -1369,6 +1390,7 @@ RoutingProtocol::GetPosition(){
 
 Vector
 RoutingProtocol::GetVelocity(){
+    NS_LOG_FUNCTION(this);
     Ptr<Node> m_node = m_ipv4->GetNetDevice(1)->GetNode();
     Ptr<MobilityModel> m_Mobility = m_node->GetObject<MobilityModel>();
     // Unit: meters/s
@@ -1378,6 +1400,7 @@ RoutingProtocol::GetVelocity(){
 double
 RoutingProtocol::DistanceFromNode(Ipv4Address dest)
 {
+    NS_LOG_FUNCTION(this << dest);
     NodeContainer nodes = NodeContainer::GetGlobal();
     Ipv4Address own = m_ipv4->GetAddress(1,0).GetLocal();
     Ptr<Node> node;
@@ -1390,16 +1413,25 @@ RoutingProtocol::DistanceFromNode(Ipv4Address dest)
         NS_ASSERT_MSG(ipv4, "Ipv4 not installed on node");
 
         if(ipv4->GetInterfaceForAddress(own) != -1){
+            NS_LOG_DEBUG("Found ownNode");
+            NS_LOG_DEBUG(node);
             ownNode = node;
         }
 
         if(ipv4->GetInterfaceForAddress(dest) != -1){
+            NS_LOG_DEBUG("Found destNode");
+            NS_LOG_DEBUG(node);
             destNode = node;
         }
     }
 
+    NS_LOG_DEBUG("Getting Mobility");
+
     Ptr<MobilityModel> ownMobility = ownNode->GetObject<MobilityModel>();
+    NS_LOG_DEBUG(ownMobility);
     Ptr<MobilityModel> destMobility = destNode->GetObject<MobilityModel>();
+    NS_LOG_DEBUG(destMobility);
+    NS_LOG_DEBUG("Got Mobility");
 
     return ownMobility->GetDistanceFrom(destMobility);
 
@@ -1418,6 +1450,7 @@ RoutingProtocol::DistanceFromNode(Ipv4Address dest)
 bool
 RoutingProtocol::IsNodeWithinLidar(double distance)
 {
+    NS_LOG_FUNCTION(this << distance);
     return distance <= m_lidarDistance;
 }
 
@@ -2670,6 +2703,11 @@ RoutingProtocol::SendPacketFromQueueBySender(Ipv4Address sender)
         MulticastForwardCallback mcb;
         Ptr<const NetDevice> idev = queueEntry.GetNetDeviceSender();
         //Rerun RouteInput now that the sender is validated
+        NS_LOG_DEBUG("Reentering RouteInput from queue send by sender");
+        NS_LOG_DEBUG(p->ToString());
+        NS_LOG_DEBUG(header.GetDestination());
+        NS_LOG_DEBUG(header.GetSource());
+        NS_LOG_DEBUG(idev);
         RouteInput(p,header,idev,ucb,mcb,lcb,ecb);
         //ucb(route, p, header);
     }
@@ -2971,6 +3009,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     AddDirectRoute(address, receiver);
     //Dequeue packets based on netdevice idev
     //TODO: This is broken
+    NS_LOG_DEBUG("Entering SendPackFromQueueBySender");
     SendPacketFromQueueBySender(address);
 }
 
