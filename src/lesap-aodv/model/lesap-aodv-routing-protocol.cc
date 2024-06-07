@@ -1368,6 +1368,10 @@ RoutingProtocol::ScheduleRreqRetry(Ipv4Address dst)
     {
         NS_ABORT_MSG_UNLESS(rt.GetRreqCnt() > 0, "Unexpected value for GetRreqCount ()");
         uint16_t backoffFactor = rt.GetRreqCnt() - 1;
+        if (backoffFactor > 30)
+        {
+            backoffFactor = 30;
+        }
         NS_LOG_LOGIC("Applying binary exponential backoff factor " << backoffFactor);
         NS_LOG_DEBUG("Applying binary exponential backoff factor " << backoffFactor);
         NS_LOG_DEBUG("Multiplying " << m_netTraversalTime << " by " << (1 << backoffFactor));
@@ -1425,8 +1429,10 @@ RoutingProtocol::DistanceFromNode(Ipv4Address dest)
         }
     }
 
+    if(destNode == nullptr){
+        return 10000;
+    }
     NS_LOG_DEBUG("Getting Mobility");
-
     Ptr<MobilityModel> ownMobility = ownNode->GetObject<MobilityModel>();
     NS_LOG_DEBUG(ownMobility);
     Ptr<MobilityModel> destMobility = destNode->GetObject<MobilityModel>();
@@ -2050,8 +2056,17 @@ RoutingProtocol::SendNeedKey(Ipv4Address neighbor)
     packet->AddHeader(h);
     packet->AddHeader(typeHeader);
     RoutingTableEntry toNeighbor;
-    m_routingTable.LookupRoute(neighbor, toNeighbor);
+    bool routeexists = m_routingTable.LookupRoute(neighbor, toNeighbor);
     Ptr<Socket> socket = FindSocketWithInterfaceAddress(toNeighbor.GetInterface());
+    NS_LOG_DEBUG("Number of socket addresses: " << m_socketAddresses.size());
+    NS_LOG_DEBUG("Interface to neighbor: " << toNeighbor.GetInterface());
+    NS_LOG_DEBUG("NetDevice: " << toNeighbor.GetOutputDevice());
+    NS_LOG_DEBUG("NetDevice Address: " << toNeighbor.GetOutputDevice()->GetAddress());
+    NS_LOG_DEBUG("NetDevice Node: " << toNeighbor.GetOutputDevice()->GetNode());
+    NS_LOG_DEBUG("NetDevice If index: " << toNeighbor.GetOutputDevice()->GetIfIndex());
+    NS_LOG_DEBUG("Neighbor: " << neighbor);
+    NS_LOG_DEBUG("Neighbor is local: " << neighbor.IsLocalhost());
+    NS_LOG_DEBUG("Route to neighbor: " << routeexists);
     NS_ASSERT(socket);
     socket->SendTo(packet, 0, InetSocketAddress(neighbor, LESAP_AODV_PORT));
 }
@@ -2959,12 +2974,14 @@ RoutingProtocol::DoInitialize()
 void
 RoutingProtocol::RecvNeedKey(Ipv4Address address, Ipv4Address receiver)
 {
+    NS_LOG_FUNCTION(this << address);
     AddDirectRoute(address, receiver);
     SendSendKey(address);
 }
 void
 RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> idev, Ipv4Address receiver)
 {
+    NS_LOG_FUNCTION(this << p);
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
     // Check for lidar collisions based on position and velocity
@@ -3016,6 +3033,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
 void
 RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
 {
+    NS_LOG_FUNCTION(this << p);
     ReportHeader reportHeader;
     p->RemoveHeader(reportHeader);
     //m_reportTable.Purge();
@@ -3048,50 +3066,65 @@ RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
 bool
 RoutingProtocol::IsMalicious()
 {
+    NS_LOG_FUNCTION(this);
     return m_nodeType != LESAPAODVNODE;
 }
 
 bool
 RoutingProtocol::IsSybil()
 {
+    NS_LOG_FUNCTION(this);
     return m_nodeType == LESAPAODVSYBIL;
 }
 
 bool
 RoutingProtocol::IsReportSybil()
 {
+    NS_LOG_FUNCTION(this);
     return m_nodeType == LESAPAODVREPORTSYBIL;
 }
 
 bool
 RoutingProtocol::IsBlackhole()
 {
+    NS_LOG_FUNCTION(this);
     return m_nodeType == LESAPAODVBLACKHOLE;
 }
 
 bool
 RoutingProtocol::IsGrayhole()
 {
+    NS_LOG_FUNCTION(this);
     return m_nodeType == LESAPAODVGRAYHOLE;
 }
 
 void
 RoutingProtocol::AddDirectRoute(Ipv4Address address, Ipv4Address receiver){
+    NS_LOG_FUNCTION(this << address);
     Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
+    Ipv4InterfaceAddress iface = m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0);
+    NS_LOG_DEBUG("Adding route with netdev: " << dev);
+    NS_LOG_DEBUG("Adding route with iface: " << iface);
     RoutingTableEntry newEntry(
         /*dev=*/dev,
         /*dst=*/address,
         /*vSeqNo=*/false,
         /*seqNo=*/0,
-        /*iface=*/m_ipv4->GetAddress(m_ipv4->GetInterfaceForAddress(receiver), 0),
+        /*iface=*/iface,
         /*hops=*/1,
         /*nextHop=*/address,
         /*lifetime=*/m_activeRouteTimeout);
-    m_routingTable.AddRoute(newEntry);
+    bool route = m_routingTable.AddRoute(newEntry);
+    if(!route)
+    {
+        route = m_routingTable.Update(newEntry);
+    }
+    NS_LOG_DEBUG("Route status: " << route);
 }
 
 void
 RoutingProtocol::AddDirectRoute(Ipv4Address address, Ptr<const NetDevice> idev){
+    NS_LOG_FUNCTION(this << address);
     Ptr<NetDevice> dev = m_ipv4->GetNetDevice(idev->GetIfIndex());
     //Ptr<NetDevice> dev = m_ipv4->GetNetDevice(m_ipv4->GetInterfaceForAddress(receiver));
     RoutingTableEntry newEntry(

@@ -287,6 +287,7 @@ RoutingTable::AddRoute(RoutingTableEntry& rt)
     Purge();
     if (rt.GetFlag() != IN_SEARCH)
     {
+        NS_LOG_DEBUG("Route not in search");
         rt.SetRreqCnt(0);
     }
     auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetDestination(), rt));
