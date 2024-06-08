@@ -33,6 +33,85 @@
 
 namespace ns3
 {
+NS_LOG_COMPONENT_DEFINE("LesapAodvPacket");
+
+void
+WriteCertTo(Buffer::Iterator& i, uint64_t cert)
+{
+    NS_LOG_FUNCTION(&i << cert);
+    i.WriteU64(cert);//1
+    i.WriteU64(cert);//2
+    i.WriteU64(cert);//3
+    i.WriteU64(cert);//4
+    i.WriteU64(cert);//5
+    i.WriteU64(cert);//6
+    i.WriteU64(cert);//7
+    i.WriteU64(cert);//8
+    i.WriteU64(cert);//9
+    i.WriteU64(cert);//10
+    i.WriteU64(cert);//11
+    i.WriteU64(cert);//12
+    i.WriteU64(cert);//13
+    i.WriteU64(cert);//14
+    i.WriteU64(cert);//15
+    i.WriteU64(cert);//16
+    i.WriteU64(cert);//17
+    i.WriteU64(cert);//18
+    i.WriteU64(cert);//19
+    i.WriteU64(cert);//20
+    i.WriteU64(cert);//21
+    i.WriteU64(cert);//22
+    i.WriteU64(cert);//23
+    i.WriteU64(cert);//24
+    i.WriteU64(cert);//25
+    i.WriteU64(cert);//26
+    i.WriteU64(cert);//27
+    i.WriteU64(cert);//28
+    i.WriteU64(cert);//29
+    i.WriteU64(cert);//30
+    i.WriteU64(cert);//31
+    i.WriteU64(cert);//32
+}
+
+void
+ReadCertFrom(Buffer::Iterator& i, uint64_t& cert)
+{
+    NS_LOG_FUNCTION(&i << &cert);
+    cert = i.ReadU64();//1
+    cert = i.ReadU64();//2
+    cert = i.ReadU64();//3
+    cert = i.ReadU64();//4
+    cert = i.ReadU64();//5
+    cert = i.ReadU64();//6
+    cert = i.ReadU64();//7
+    cert = i.ReadU64();//8
+    cert = i.ReadU64();//9
+    cert = i.ReadU64();//10
+    cert = i.ReadU64();//11
+    cert = i.ReadU64();//12
+    cert = i.ReadU64();//13
+    cert = i.ReadU64();//14
+    cert = i.ReadU64();//15
+    cert = i.ReadU64();//16
+    cert = i.ReadU64();//17
+    cert = i.ReadU64();//18
+    cert = i.ReadU64();//19
+    cert = i.ReadU64();//20
+    cert = i.ReadU64();//21
+    cert = i.ReadU64();//22
+    cert = i.ReadU64();//23
+    cert = i.ReadU64();//24
+    cert = i.ReadU64();//25
+    cert = i.ReadU64();//26
+    cert = i.ReadU64();//27
+    cert = i.ReadU64();//28
+    cert = i.ReadU64();//29
+    cert = i.ReadU64();//30
+    cert = i.ReadU64();//31
+    cert = i.ReadU64();//32
+}
+
+
 namespace lesapAodv
 {
 
@@ -80,12 +159,12 @@ TypeHeader::Deserialize(Buffer::Iterator start)
     m_valid = true;
     switch (type)
     {
-    case LESAPAODVTYPE_RREQ:
-    case LESAPAODVTYPE_RREP:
-    case LESAPAODVTYPE_RERR:
+    case LESAPAODVTYPE_RREQ:// add cert
+    case LESAPAODVTYPE_RREP:// add cert
+    case LESAPAODVTYPE_RERR:// add cert
     case LESAPAODVTYPE_NEEDKEY:
     case LESAPAODVTYPE_SENDKEY:
-    case LESAPAODVTYPE_REPORT:
+    case LESAPAODVTYPE_REPORT:// add cert
     case LESAPAODVTYPE_RREP_ACK: {
         m_type = (MessageType)type;
         break;
@@ -160,7 +239,8 @@ RreqHeader::RreqHeader(uint8_t flags,
                        uint32_t dstSeqNo,
                        Ipv4Address origin,
                        uint32_t originSeqNo)
-    : m_flags(flags),
+    : m_Cert(0),
+      m_flags(flags),
       m_reserved(reserved),
       m_hopCount(hopCount),
       m_requestID(requestID),
@@ -192,7 +272,7 @@ RreqHeader::GetInstanceTypeId() const
 uint32_t
 RreqHeader::GetSerializedSize() const
 {
-    return 23;
+    return 23 + 256;
 }
 
 void
@@ -206,6 +286,7 @@ RreqHeader::Serialize(Buffer::Iterator i) const
     i.WriteHtonU32(m_dstSeqNo);
     WriteTo(i, m_origin);
     i.WriteHtonU32(m_originSeqNo);
+    WriteCertTo(i,m_Cert);//+256
 }
 
 uint32_t
@@ -220,7 +301,7 @@ RreqHeader::Deserialize(Buffer::Iterator start)
     m_dstSeqNo = i.ReadNtohU32();
     ReadFrom(i, m_origin);
     m_originSeqNo = i.ReadNtohU32();
-
+    ReadCertFrom(i,m_Cert);
     uint32_t dist = i.GetDistanceFrom(start);
     NS_ASSERT(dist == GetSerializedSize());
     return dist;
@@ -318,7 +399,8 @@ RrepHeader::RrepHeader(uint8_t prefixSize,
                        uint32_t dstSeqNo,
                        Ipv4Address origin,
                        Time lifeTime)
-    : m_flags(0),
+    : m_Cert(0),
+      m_flags(0),
       m_prefixSize(prefixSize),
       m_hopCount(hopCount),
       m_dst(dst),
@@ -349,7 +431,17 @@ RrepHeader::GetInstanceTypeId() const
 uint32_t
 RrepHeader::GetSerializedSize() const
 {
+    if (IsHello())
+    {
+        return 19 + 256;
+    }
     return 19;
+}
+
+bool
+RrepHeader::IsHello() const
+{
+    return m_dst == m_origin;
 }
 
 void
@@ -362,6 +454,10 @@ RrepHeader::Serialize(Buffer::Iterator i) const
     i.WriteHtonU32(m_dstSeqNo);
     WriteTo(i, m_origin);
     i.WriteHtonU32(m_lifeTime);
+    if (IsHello())
+    {
+        WriteCertTo(i, m_Cert);
+    }
 }
 
 uint32_t
@@ -376,6 +472,10 @@ RrepHeader::Deserialize(Buffer::Iterator start)
     m_dstSeqNo = i.ReadNtohU32();
     ReadFrom(i, m_origin);
     m_lifeTime = i.ReadNtohU32();
+    if (IsHello())
+    {
+        ReadCertFrom(i, m_Cert);
+    }
 
     uint32_t dist = i.GetDistanceFrom(start);
     NS_ASSERT(dist == GetSerializedSize());
@@ -582,7 +682,7 @@ SendKeyHeader::GetInstanceTypeId() const
 uint32_t
 SendKeyHeader::GetSerializedSize() const
 {
-    return 60;
+    return 28 + 256;
 }
 
 
@@ -601,6 +701,34 @@ SendKeyHeader::Serialize(Buffer::Iterator i) const
     i.WriteU64(m_key2);//8 - 44
     i.WriteU64(m_key3);//8 - 52
     i.WriteU64(m_key4);//8 - 60
+    i.WriteU64(m_key1);//8 - 68
+    i.WriteU64(m_key2);//8 - 76
+    i.WriteU64(m_key3);//8 - 84
+    i.WriteU64(m_key4);//8 - 92
+    i.WriteU64(m_key1);//8 - 100
+    i.WriteU64(m_key2);//8 - 108
+    i.WriteU64(m_key3);//8 - 116
+    i.WriteU64(m_key4);//8 - 124
+    i.WriteU64(m_key1);//8 - 132
+    i.WriteU64(m_key2);//8 - 140
+    i.WriteU64(m_key3);//8 - 148
+    i.WriteU64(m_key4);//8 - 156
+    i.WriteU64(m_key1);//8 - 164
+    i.WriteU64(m_key2);//8 - 172
+    i.WriteU64(m_key3);//8 - 180
+    i.WriteU64(m_key4);//8 - 188
+    i.WriteU64(m_key1);//8 - 196
+    i.WriteU64(m_key2);//8 - 204
+    i.WriteU64(m_key3);//8 - 212
+    i.WriteU64(m_key4);//8 - 220
+    i.WriteU64(m_key1);//8 - 228
+    i.WriteU64(m_key2);//8 - 236
+    i.WriteU64(m_key3);//8 - 244
+    i.WriteU64(m_key4);//8 - 252
+    i.WriteU64(m_key1);//8 - 260
+    i.WriteU64(m_key2);//8 - 268
+    i.WriteU64(m_key3);//8 - 276
+    i.WriteU64(m_key4);//8 - 284
 }
 
 
@@ -616,6 +744,34 @@ SendKeyHeader::Deserialize(Buffer::Iterator start)
     m_yPosition = i.ReadNtohU32();
     m_zPosition = i.ReadNtohU32();
     m_lifeTime = i.ReadNtohU32();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
+    m_key1 = i.ReadU64();
+    m_key2 = i.ReadU64();
+    m_key3 = i.ReadU64();
+    m_key4 = i.ReadU64();
     m_key1 = i.ReadU64();
     m_key2 = i.ReadU64();
     m_key3 = i.ReadU64();
@@ -673,7 +829,8 @@ ReportHeader::ReportHeader(Ipv4Address mal,
                        uint32_t malSeqNo,
                        Ipv4Address origin,
                        Time lifeTime)
-    : m_mal(mal),
+    : m_Cert(0),
+      m_mal(mal),
       m_malSeqNo(malSeqNo),
       m_origin(origin)
 {
@@ -701,7 +858,7 @@ ReportHeader::GetInstanceTypeId() const
 uint32_t
 ReportHeader::GetSerializedSize() const
 {
-    return 16;
+    return 16 + 256;
 }
 
 void
@@ -711,6 +868,7 @@ ReportHeader::Serialize(Buffer::Iterator i) const
     i.WriteHtonU32(m_malSeqNo);//4 - 8
     WriteTo(i, m_origin);//4 - 12
     i.WriteHtonU32(m_lifeTime);//4 - 16
+    WriteCertTo(i, m_Cert);// + 256
 }
 
 uint32_t
@@ -721,6 +879,7 @@ ReportHeader::Deserialize(Buffer::Iterator start)
     m_malSeqNo = i.ReadNtohU32();
     ReadFrom(i, m_origin);
     m_lifeTime = i.ReadNtohU32();
+    ReadCertFrom(i, m_Cert);
 
     uint32_t dist = i.GetDistanceFrom(start);
     NS_ASSERT(dist == GetSerializedSize());
@@ -832,7 +991,8 @@ operator<<(std::ostream& os, const RrepAckHeader& h)
 // RERR
 //-----------------------------------------------------------------------------
 RerrHeader::RerrHeader()
-    : m_flag(0),
+    : m_Cert(0),
+      m_flag(0),
       m_reserved(0)
 {
 }
@@ -858,7 +1018,7 @@ RerrHeader::GetInstanceTypeId() const
 uint32_t
 RerrHeader::GetSerializedSize() const
 {
-    return (3 + 8 * GetDestCount());
+    return (3 + 8 * GetDestCount()) + 256;
 }
 
 void
@@ -872,6 +1032,7 @@ RerrHeader::Serialize(Buffer::Iterator i) const
         WriteTo(i, (*j).first);
         i.WriteHtonU32((*j).second);
     }
+    WriteCertTo(i, m_Cert);
 }
 
 uint32_t
@@ -890,6 +1051,7 @@ RerrHeader::Deserialize(Buffer::Iterator start)
         seqNo = i.ReadNtohU32();
         m_unreachableDstSeqNo.insert(std::make_pair(address, seqNo));
     }
+    ReadCertFrom(i, m_Cert);
 
     uint32_t dist = i.GetDistanceFrom(start);
     NS_ASSERT(dist == GetSerializedSize());

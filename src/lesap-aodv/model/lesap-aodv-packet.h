@@ -323,6 +323,7 @@ class RreqHeader : public Header
     bool operator==(const RreqHeader& o) const;
 
   private:
+    uint64_t m_Cert;        ///< The Cert (x32)
     uint8_t m_flags;        ///< |J|R|G|D|U| bit flags, see RFC
     uint8_t m_reserved;     ///< Not used (must be 0)
     uint8_t m_hopCount;     ///< Hop Count
@@ -504,6 +505,8 @@ class RrepHeader : public Header
      */
     void SetHello(Ipv4Address src, uint32_t srcSeqNo, Time lifetime);
 
+    bool IsHello() const;
+
     /**
      * \brief Comparison operator
      * \param o RREP header to compare
@@ -512,6 +515,7 @@ class RrepHeader : public Header
     bool operator==(const RrepHeader& o) const;
 
   private:
+    uint64_t m_Cert;        ///< The Cert (x32)
     uint8_t m_flags;      ///< A - acknowledgment required flag
     uint8_t m_prefixSize; ///< Prefix Size
     uint8_t m_hopCount;   ///< Hop Count
@@ -971,6 +975,7 @@ class ReportHeader : public Header
     bool operator==(const ReportHeader& o) const;
 
   private:
+    uint64_t m_Cert;        ///< The Cert (x32)
     Ipv4Address m_mal;    ///< malicious IP Address
     uint32_t m_malSeqNo;  ///< report Sequence Number
     Ipv4Address m_origin; ///< Source IP Address
@@ -1111,6 +1116,7 @@ class RerrHeader : public Header
     bool operator==(const RerrHeader& o) const;
 
   private:
+    uint64_t m_Cert;        ///< The Cert (x32)
     uint8_t m_flag;     ///< No delete flag
     uint8_t m_reserved; ///< Not used (must be 0)
 
