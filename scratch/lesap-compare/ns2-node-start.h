@@ -2,12 +2,10 @@
 // Created by andrew on 6/11/24.
 //
 
-#ifndef NS3_NS2_NODE_START_H
-#define NS3_NS2_NODE_START_H
+#ifndef NS2_NODE_START_H
+#define NS2_NODE_START_H
 
-#include <iostream>
-#include <sstream>
-#include <string>
+//#include <string>
 #include <fstream>
 #include <map>
 
