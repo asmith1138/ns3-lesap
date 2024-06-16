@@ -539,7 +539,7 @@ RoutingExperiment::Run()
                         protocol->SetNodeType(ns3::lesapAodv::LESAPAODVBLACKHOLE);
                     }
                 }
-                //TODO: set malicious nodes and starting reports
+                //TODO: set starting reports
             }
         }
     }
@@ -559,14 +559,20 @@ RoutingExperiment::Run()
     onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
     onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
 
-    //TODO: Add applications
+    //Add applications
     for (int i = 0; i < m_nWifis; i++)
     {
         if (i % 5 != 0)
         {
-            //TODO: Address should be the reciever not sender
-            //TODO: Add multiple with new setuppacketrecieve that takes the socket rather than creating a new one
-            Ptr<Socket> sink = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i), ns2Start.GetStartTimeForNode(i), ns2Start.GetEndTimeForNode(i));
+            // Address should be the reciever not sender
+            int j = i + 5;
+            int k = i + 10;
+            j = (j >= m_nWifis) ? (j - m_nWifis) : j;
+            k = (k >= m_nWifis) ? (k - m_nWifis) : k;
+
+            // Add multiple with new setuppacketrecieve
+            Ptr<Socket> socket1 = SetupPacketReceive(adhocInterfaces.GetAddress(j), adhocNodes.Get(i), ns2Start.GetStartTimeForNode(i), ns2Start.GetEndTimeForNode(i));
+            Ptr<Socket> socket2 = SetupPacketReceive(adhocInterfaces.GetAddress(k), adhocNodes.Get(i), ns2Start.GetStartTimeForNode(i), ns2Start.GetEndTimeForNode(i));
 
             //Address sinkAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
 
