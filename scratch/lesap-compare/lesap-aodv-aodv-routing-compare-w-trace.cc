@@ -563,7 +563,7 @@ RoutingExperiment::Run()
                 }
                 if (addReport && (i % 5 == 1 || i % 5 == 2))
                 {
-                    //TODO: set starting reports
+                    // set starting reports
 
                     lesapAodv::ReportTableEntry newEntry(adhocInterfaces.GetAddress((i - (i % 5))),
                                               adhocInterfaces.GetAddress(i),
