@@ -501,6 +501,29 @@ RoutingExperiment::Run()
         list.Add(aodv, 100);
         internet.SetRoutingHelper(list);
         internet.Install(adhocNodes);
+    }
+    else if (m_protocolName == "LESAP-AODV")
+    {
+        list.Add(lesapAodv, 100);
+        internet.SetRoutingHelper(list);
+        internet.Install(adhocNodes);
+
+    }
+    else
+    {
+        NS_FATAL_ERROR("No such protocol:" << m_protocolName);
+    }
+
+    NS_LOG_INFO("assigning ip address");
+
+    Ipv4AddressHelper addressAdhoc;
+    addressAdhoc.SetBase("10.1.1.0", "255.255.255.0");
+    Ipv4InterfaceContainer adhocInterfaces;
+    adhocInterfaces = addressAdhoc.Assign(adhocDevices);
+
+    // Setting up Malicious nodes and starting reports
+    if (m_protocolName == "AODV")
+    {
         if(m_enableMalicious){
             for (int i = 0; i < m_nWifis; i++)
             {
@@ -521,10 +544,8 @@ RoutingExperiment::Run()
     }
     else if (m_protocolName == "LESAP-AODV")
     {
-        list.Add(lesapAodv, 100);
-        internet.SetRoutingHelper(list);
-        internet.Install(adhocNodes);
         if(m_enableMalicious){
+            bool addReport = false;
             for (int i = 0; i < m_nWifis; i++)
             {
                 Ptr<lesapAodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
@@ -538,26 +559,26 @@ RoutingExperiment::Run()
                     {
                         protocol->SetNodeType(ns3::lesapAodv::LESAPAODVBLACKHOLE);
                     }
+                    addReport = true;
                 }
-                //TODO: set starting reports
+                if (addReport && (i % 5 == 1 || i % 5 == 2))
+                {
+                    //TODO: set starting reports
+
+                    lesapAodv::ReportTableEntry newEntry(adhocInterfaces.GetAddress((i - (i % 5))),
+                                              adhocInterfaces.GetAddress(i),
+                                              Time(Seconds(ns2Start.GetSimTime())));
+                    protocol->AddToBlacklist(newEntry);
+                    addReport = i % 5 != 2;
+                }
             }
         }
     }
-    else
-    {
-        NS_FATAL_ERROR("No such protocol:" << m_protocolName);
-    }
 
-    NS_LOG_INFO("assigning ip address");
 
-    Ipv4AddressHelper addressAdhoc;
-    addressAdhoc.SetBase("10.1.1.0", "255.255.255.0");
-    Ipv4InterfaceContainer adhocInterfaces;
-    adhocInterfaces = addressAdhoc.Assign(adhocDevices);
-
-    OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
-    onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
-    onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+    //OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+    //onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+    //onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
 
     //Add applications
     for (int i = 0; i < m_nWifis; i++)

@@ -11,20 +11,21 @@
 
 namespace ns3
 {
-    class Ns2NodeStart{
-      public:
-        Ns2NodeStart(std::string file_name);
+class Ns2NodeStart
+{
+  public:
+    Ns2NodeStart(std::string file_name);
 
-        uint32_t GetNumNodes();
+    uint32_t GetNumNodes();
 
-        double GetStartTimeForNode(uint32_t nodeId);
-        double GetEndTimeForNode(uint32_t nodeId);
-        double GetSimTime();
+    double GetStartTimeForNode(uint32_t nodeId);
+    double GetEndTimeForNode(uint32_t nodeId);
+    double GetSimTime();
 
-      private:
-        std::map<uint32_t, std::pair<double, double>> m_nodeTimes;
-        double m_simTime;
-    };
-}
+  private:
+    std::map<uint32_t, std::pair<double, double>> m_nodeTimes;
+    double m_simTime;
+};
+} // namespace ns3
 
-#endif // NS3_NS2_NODE_START_H
+#endif // NS2_NODE_START_H

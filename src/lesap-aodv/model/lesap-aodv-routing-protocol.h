@@ -229,6 +229,11 @@ class RoutingProtocol : public Ipv4RoutingProtocol
         return m_enableBroadcast;
     }
 
+    void AddToBlacklist(ReportTableEntry rpt)
+    {
+        m_reportTable.AddReportToBlacklist(rpt);
+    }
+
     /**
      * Assign a fixed random variable stream number to the random variables
      * used by this model.  Return the number of streams (possibly zero) that
