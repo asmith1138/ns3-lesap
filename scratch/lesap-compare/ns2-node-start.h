@@ -5,7 +5,9 @@
 #ifndef NS2_NODE_START_H
 #define NS2_NODE_START_H
 
-//#include <string>
+#include <string>
+#include <iostream>
+#include <sstream>
 #include <fstream>
 #include <map>
 

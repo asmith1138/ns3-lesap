@@ -154,6 +154,7 @@ class RoutingExperiment
     bool m_enableMalicious{false};                           //!< Enable malicious nodes.
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
+    std::string m_filePath{"/home/andrew/ns-3-dev/scratch/maps-trace/Final-Trace/"};                           //!< Start file for mobility.
     bool m_flowMonitor{true};                             //!< Enable FlowMonitor.
 };
 
@@ -257,7 +258,8 @@ RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node, double s
     ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
     Ptr<BsmApp> app = CreateObject<BsmApp>();
-    app->Setup(ns3UdpSocket, sinkAddress, 1040, 1000, DataRate("1Mbps"));
+    app->Setup(ns3UdpSocket, sinkAddress, 64, 1000, DataRate("2048bps"));
+    ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
     node->AddApplication(app);
     app->SetStartTime(Seconds(start));
     app->SetStopTime(Seconds(end));
@@ -265,8 +267,8 @@ RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node, double s
     //TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
     //Ptr<Socket> sink = Socket::CreateSocket(node, tid);
     //InetSocketAddress local = InetSocketAddress(addr, port);
-    //sink->Bind(local);
-    //sink->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
+    //ns3UdpSocket->Bind(local);
+    //ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
 
     return ns3UdpSocket;
 }
@@ -280,7 +282,9 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("protocol", "Routing protocol (AODV, LESAP-AODV)", m_protocolName);
     cmd.AddValue("flowMonitor", "enable FlowMonitor", m_flowMonitor);
     cmd.AddValue("tracefile", "Trace File to use", m_traceFile);
+    cmd.AddValue("startfile", "start File to use", m_startFile);
     cmd.AddValue("nNodes", "Number of nodes to use", m_nWifis);
+    cmd.AddValue("filedirectory", "Path to directory of files to use", m_filePath);
     cmd.Parse(argc, argv);
 
     std::vector<std::string> allowedProtocols{"AODV", "LESAP-AODV"};
@@ -302,7 +306,7 @@ main(int argc, char* argv[])
     experimentAODV25.SetProtocol("AODV");
     experimentAODV25.SetNNodeWTrace("25");
     experimentAODV25.SetMalicious(false);
-    experimentAODV25.Run();
+    //experimentAODV25.Run();
 
     std::cout << "**25 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV25Mal;
@@ -310,7 +314,7 @@ main(int argc, char* argv[])
     experimentAODV25Mal.SetProtocol("AODV");
     experimentAODV25Mal.SetNNodeWTrace("25");
     experimentAODV25Mal.SetMalicious(true);
-    experimentAODV25Mal.Run();
+    //experimentAODV25Mal.Run();
 
     std::cout << "**50 Nodes**" << std::endl;
     RoutingExperiment experimentAODV50;
@@ -318,7 +322,7 @@ main(int argc, char* argv[])
     experimentAODV50.SetProtocol("AODV");
     experimentAODV50.SetNNodeWTrace("50");
     experimentAODV50.SetMalicious(false);
-    experimentAODV50.Run();
+    //experimentAODV50.Run();
 
     std::cout << "**50 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV50Mal;
@@ -326,7 +330,7 @@ main(int argc, char* argv[])
     experimentAODV50Mal.SetProtocol("AODV");
     experimentAODV50Mal.SetNNodeWTrace("50");
     experimentAODV50Mal.SetMalicious(true);
-    experimentAODV50Mal.Run();
+    //experimentAODV50Mal.Run();
 
     std::cout << "**100 Nodes**" << std::endl;
     RoutingExperiment experimentAODV100;
@@ -334,7 +338,7 @@ main(int argc, char* argv[])
     experimentAODV100.SetProtocol("AODV");
     experimentAODV100.SetNNodeWTrace("100");
     experimentAODV100.SetMalicious(false);
-    experimentAODV100.Run();
+    //experimentAODV100.Run();
 
     std::cout << "**100 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV100Mal;
@@ -342,7 +346,7 @@ main(int argc, char* argv[])
     experimentAODV100Mal.SetProtocol("AODV");
     experimentAODV100Mal.SetNNodeWTrace("100");
     experimentAODV100Mal.SetMalicious(true);
-    experimentAODV100Mal.Run();
+    //experimentAODV100Mal.Run();
 
     std::cout << "**LESAP-AODV**" << std::endl;
     std::cout << "**25 Nodes**" << std::endl;
@@ -351,7 +355,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV25.SetProtocol("LESAP-AODV");
     experimentLESAPAODV25.SetNNodeWTrace("25");
     experimentLESAPAODV25.SetMalicious(false);
-    experimentLESAPAODV25.Run();
+    //experimentLESAPAODV25.Run();
 
     std::cout << "**25 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV25Mal;
@@ -359,7 +363,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV25Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV25Mal.SetNNodeWTrace("25");
     experimentLESAPAODV25Mal.SetMalicious(true);
-    experimentLESAPAODV25Mal.Run();
+    //experimentLESAPAODV25Mal.Run();
 
     std::cout << "**50 Nodes**" << std::endl;
     RoutingExperiment experimentLESAPAODV50;
@@ -375,7 +379,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV50Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV50Mal.SetNNodeWTrace("50");
     experimentLESAPAODV50Mal.SetMalicious(true);
-    experimentLESAPAODV50Mal.Run();
+    //experimentLESAPAODV50Mal.Run();
 
     std::cout << "**100 Nodes**" << std::endl;
     RoutingExperiment experimentLESAPAODV100;
@@ -383,7 +387,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV100.SetProtocol("LESAP-AODV");
     experimentLESAPAODV100.SetNNodeWTrace("100");
     experimentLESAPAODV100.SetMalicious(false);
-    experimentLESAPAODV100.Run();
+    //experimentLESAPAODV100.Run();
 
     std::cout << "**100 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV100Mal;
@@ -391,7 +395,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV100Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV100Mal.SetNNodeWTrace("100");
     experimentLESAPAODV100Mal.SetMalicious(true);
-    experimentLESAPAODV100Mal.Run();
+    //experimentLESAPAODV100Mal.Run();
 
     return 0;
 }
@@ -414,7 +418,7 @@ RoutingExperiment::Run()
 
     int nWifis = m_nWifis;
 
-    double TotalTime = 200.0;
+    //double TotalTime = 200.0;
     std::string rate("2048bps");
     std::string phyMode("DsssRate11Mbps");
 
@@ -423,8 +427,8 @@ RoutingExperiment::Run()
     //int nodeSpeed = 20; // in m/s
     //int nodePause = 0;  // in s
 
-    Config::SetDefault("ns3::OnOffApplication::PacketSize", StringValue("64"));
-    Config::SetDefault("ns3::OnOffApplication::DataRate", StringValue(rate));
+    //Config::SetDefault("ns3::OnOffApplication::PacketSize", StringValue("64"));
+    //Config::SetDefault("ns3::OnOffApplication::DataRate", StringValue(rate));
 
     // Set Non-unicastMode rate to unicast mode
     Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue(phyMode));
@@ -457,8 +461,8 @@ RoutingExperiment::Run()
     NetDeviceContainer adhocDevices = wifi.Install(wifiPhy, wifiMac, adhocNodes);
 
     //NS2 Trace file mobility
-    Ns2NodeStart ns2Start = Ns2NodeStart(m_startFile);
-    Ns2MobilityHelper ns2 = Ns2MobilityHelper(m_traceFile);
+    Ns2NodeStart ns2Start = Ns2NodeStart(m_filePath + m_startFile);
+    Ns2MobilityHelper ns2 = Ns2MobilityHelper(m_filePath + m_traceFile);
     ns2.Install();
     // Configure callback for logging
     Config::Connect("/NodeList/*/$ns3::MobilityModel/CourseChange",
@@ -655,7 +659,7 @@ RoutingExperiment::Run()
 
     CheckThroughput();
 
-    Simulator::Stop(Seconds(TotalTime));
+    Simulator::Stop(Seconds(ns2Start.GetSimTime()));
     Simulator::Run();
 
     if (m_flowMonitor)
