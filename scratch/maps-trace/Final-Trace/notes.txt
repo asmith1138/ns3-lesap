@@ -1,6 +1,0 @@
-Malicious nodes will be every 5th node
-so 0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95
-
-One sim will run without malicious nodes and another will run with them
-
-Initial reports will be on the nodes on n+1 and n+2 of the malicious node
