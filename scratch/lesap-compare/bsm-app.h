@@ -75,6 +75,29 @@ class BsmApp : public Application
     EventId m_sendEvent;    //!< Send event.
     bool m_running;         //!< True if the application is running.
     uint32_t m_packetsSent; //!< The number of packets sent.
+
+    inline std::string
+    PrintSentPacket(Ptr<Packet> packet)
+    {
+        std::ostringstream oss;
+
+        oss << "Time: " << Simulator::Now().GetSeconds() << " Node: " << m_socket->GetNode()->GetId();
+        InetSocketAddress addr = InetSocketAddress::ConvertFrom(m_peer);
+        oss << " sent one packet to " << addr.GetIpv4();
+        return oss.str();
+    }
+
+    inline std::string
+    PrintSchedulePacket(Time next)
+    {
+        std::ostringstream oss;
+
+        oss << "Time: " << Simulator::Now().GetSeconds() << " Node: " << m_socket->GetNode()->GetId();
+        InetSocketAddress addr = InetSocketAddress::ConvertFrom(m_peer);
+        oss << " is sending one packet to " << addr.GetIpv4();
+        oss << " at " << next.GetSeconds();
+        return oss.str();
+    }
 };
 
 } // namespace ns3

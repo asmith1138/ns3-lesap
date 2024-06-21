@@ -130,7 +130,8 @@ class RoutingExperiment
      * \param end The end time.
      * \return the socket.
      */
-    Ptr<Socket> SetupPacketReceive(Ipv4Address addr, Ptr<Node> node, double start, double end);
+    Ptr<Socket> SetupPacketReceive(Ipv4Address addr, Ptr<Node> node);
+    Ptr<BsmApp> SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node);
     /**
      * Receive a packet.
      * \param socket The receiving socket.
@@ -154,7 +155,7 @@ class RoutingExperiment
     bool m_enableMalicious{false};                           //!< Enable malicious nodes.
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
-    std::string m_filePath{"/home/andrew/ns-3-dev/scratch/maps-trace/Final-Trace/"};                           //!< Start file for mobility.
+    std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
     bool m_flowMonitor{true};                             //!< Enable FlowMonitor.
 };
 
@@ -250,27 +251,50 @@ RoutingExperiment::CheckThroughput()
 }
 
 Ptr<Socket>
-RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node, double start, double end)
+RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node)
 {
-    Address sinkAddress(InetSocketAddress(addr, port));
+    InetSocketAddress local(InetSocketAddress(addr, port));
 
     Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
     ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
-    Ptr<BsmApp> app = CreateObject<BsmApp>();
-    app->Setup(ns3UdpSocket, sinkAddress, 64, 1000, DataRate("2048bps"));
-    ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
-    node->AddApplication(app);
-    app->SetStartTime(Seconds(start));
-    app->SetStopTime(Seconds(end));
 
-    //TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
-    //Ptr<Socket> sink = Socket::CreateSocket(node, tid);
-    //InetSocketAddress local = InetSocketAddress(addr, port);
-    //ns3UdpSocket->Bind(local);
+        //InetSocketAddress local = InetSocketAddress(addr, port);
+        ns3UdpSocket->Bind(local);
+        ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
+    //Ptr<BsmApp> app = CreateObject<BsmApp>();
+    //app->Setup(ns3UdpSocket, local, 64, 1000, DataRate("2048bps"));
     //ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
+    //node->AddApplication(app);
+    //app->SetStartTime(Seconds(start));
+    //app->SetStopTime(Seconds(end));
+
 
     return ns3UdpSocket;
+}
+
+Ptr<BsmApp>
+RoutingExperiment::SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node)
+{
+    InetSocketAddress local(InetSocketAddress(addr, port));
+
+    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
+    ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
+
+
+        Ptr<BsmApp> app = CreateObject<BsmApp>();
+        app->Setup(ns3UdpSocket, local, 64, 1000, DataRate("2048bps"));
+        ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
+
+    //Ptr<BsmApp> app = CreateObject<BsmApp>();
+    //app->Setup(ns3UdpSocket, local, 64, 1000, DataRate("2048bps"));
+    //ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
+    //node->AddApplication(app);
+    //app->SetStartTime(Seconds(start));
+    //app->SetStopTime(Seconds(end));
+
+
+    return app;
 }
 
 void
@@ -306,7 +330,7 @@ main(int argc, char* argv[])
     experimentAODV25.SetProtocol("AODV");
     experimentAODV25.SetNNodeWTrace("25");
     experimentAODV25.SetMalicious(false);
-    //experimentAODV25.Run();
+    experimentAODV25.Run();
 
     std::cout << "**25 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV25Mal;
@@ -314,7 +338,7 @@ main(int argc, char* argv[])
     experimentAODV25Mal.SetProtocol("AODV");
     experimentAODV25Mal.SetNNodeWTrace("25");
     experimentAODV25Mal.SetMalicious(true);
-    //experimentAODV25Mal.Run();
+    experimentAODV25Mal.Run();
 
     std::cout << "**50 Nodes**" << std::endl;
     RoutingExperiment experimentAODV50;
@@ -322,7 +346,7 @@ main(int argc, char* argv[])
     experimentAODV50.SetProtocol("AODV");
     experimentAODV50.SetNNodeWTrace("50");
     experimentAODV50.SetMalicious(false);
-    //experimentAODV50.Run();
+    experimentAODV50.Run();
 
     std::cout << "**50 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV50Mal;
@@ -330,7 +354,7 @@ main(int argc, char* argv[])
     experimentAODV50Mal.SetProtocol("AODV");
     experimentAODV50Mal.SetNNodeWTrace("50");
     experimentAODV50Mal.SetMalicious(true);
-    //experimentAODV50Mal.Run();
+    experimentAODV50Mal.Run();
 
     std::cout << "**100 Nodes**" << std::endl;
     RoutingExperiment experimentAODV100;
@@ -338,7 +362,7 @@ main(int argc, char* argv[])
     experimentAODV100.SetProtocol("AODV");
     experimentAODV100.SetNNodeWTrace("100");
     experimentAODV100.SetMalicious(false);
-    //experimentAODV100.Run();
+    experimentAODV100.Run();
 
     std::cout << "**100 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV100Mal;
@@ -346,7 +370,7 @@ main(int argc, char* argv[])
     experimentAODV100Mal.SetProtocol("AODV");
     experimentAODV100Mal.SetNNodeWTrace("100");
     experimentAODV100Mal.SetMalicious(true);
-    //experimentAODV100Mal.Run();
+    experimentAODV100Mal.Run();
 
     std::cout << "**LESAP-AODV**" << std::endl;
     std::cout << "**25 Nodes**" << std::endl;
@@ -355,7 +379,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV25.SetProtocol("LESAP-AODV");
     experimentLESAPAODV25.SetNNodeWTrace("25");
     experimentLESAPAODV25.SetMalicious(false);
-    //experimentLESAPAODV25.Run();
+    experimentLESAPAODV25.Run();
 
     std::cout << "**25 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV25Mal;
@@ -363,7 +387,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV25Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV25Mal.SetNNodeWTrace("25");
     experimentLESAPAODV25Mal.SetMalicious(true);
-    //experimentLESAPAODV25Mal.Run();
+    experimentLESAPAODV25Mal.Run();
 
     std::cout << "**50 Nodes**" << std::endl;
     RoutingExperiment experimentLESAPAODV50;
@@ -379,7 +403,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV50Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV50Mal.SetNNodeWTrace("50");
     experimentLESAPAODV50Mal.SetMalicious(true);
-    //experimentLESAPAODV50Mal.Run();
+    experimentLESAPAODV50Mal.Run();
 
     std::cout << "**100 Nodes**" << std::endl;
     RoutingExperiment experimentLESAPAODV100;
@@ -387,7 +411,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV100.SetProtocol("LESAP-AODV");
     experimentLESAPAODV100.SetNNodeWTrace("100");
     experimentLESAPAODV100.SetMalicious(false);
-    //experimentLESAPAODV100.Run();
+    experimentLESAPAODV100.Run();
 
     std::cout << "**100 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV100Mal;
@@ -395,7 +419,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV100Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV100Mal.SetNNodeWTrace("100");
     experimentLESAPAODV100Mal.SetMalicious(true);
-    //experimentLESAPAODV100Mal.Run();
+    experimentLESAPAODV100Mal.Run();
 
     return 0;
 }
@@ -528,6 +552,7 @@ RoutingExperiment::Run()
     // Setting up Malicious nodes and starting reports
     if (m_protocolName == "AODV")
     {
+        NS_LOG_UNCOND("AODV MAL");
         if(m_enableMalicious){
             for (int i = 0; i < m_nWifis; i++)
             {
@@ -548,6 +573,7 @@ RoutingExperiment::Run()
     }
     else if (m_protocolName == "LESAP-AODV")
     {
+        NS_LOG_UNCOND("LESAP-AODV MAL");
         if(m_enableMalicious){
             bool addReport = false;
             for (int i = 0; i < m_nWifis; i++)
@@ -580,24 +606,23 @@ RoutingExperiment::Run()
     }
 
 
-    //OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
-    //onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
-    //onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+    bool useCustomApp = false;
 
     //Add applications
     for (int i = 0; i < m_nWifis; i++)
     {
-        if (i % 5 != 0)
-        {
+        int j = i + 5;
+        int k = i + 10;
+        j = (j >= m_nWifis) ? (j - m_nWifis) : j;
+        k = (k >= m_nWifis) ? (k - m_nWifis) : k;
+        NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for "  << k << " and " << j);
+
+        if(useCustomApp){
             // Address should be the reciever not sender
-            int j = i + 5;
-            int k = i + 10;
-            j = (j >= m_nWifis) ? (j - m_nWifis) : j;
-            k = (k >= m_nWifis) ? (k - m_nWifis) : k;
 
             // Add multiple with new setuppacketrecieve
-            Ptr<Socket> socket1 = SetupPacketReceive(adhocInterfaces.GetAddress(j), adhocNodes.Get(i), ns2Start.GetStartTimeForNode(i), ns2Start.GetEndTimeForNode(i));
-            Ptr<Socket> socket2 = SetupPacketReceive(adhocInterfaces.GetAddress(k), adhocNodes.Get(i), ns2Start.GetStartTimeForNode(i), ns2Start.GetEndTimeForNode(i));
+            Ptr<BsmApp> app1 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+            Ptr<BsmApp> app2 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
             //Address sinkAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
 
@@ -606,20 +631,30 @@ RoutingExperiment::Run()
 
             //Ptr<BsmApp> app = CreateObject<BsmApp>();
             //app->Setup(ns3UdpSocket, sinkAddress, 1040, 1000, DataRate("1Mbps"));
-            //adhocNodes.Get(i)->AddApplication(app);
-            //app->SetStartTime(Seconds(1.));
-            //app->SetStopTime(Seconds(20.));
+            adhocNodes.Get(j)->AddApplication(app1);
+            adhocNodes.Get(k)->AddApplication(app2);
+            app1->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(j)));
+            app2->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(k)));
+            app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(j)));
+            app2->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(k)));
+        }else{
+            OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+            onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+            onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+            onoff1.SetConstantRate(DataRate("1280bps"),128);
 
+            Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+
+            AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+            onoff1.SetAttribute("Remote", remoteAddress);
+
+            ApplicationContainer temp = onoff1.Install(adhocNodes.Get(j));
+            ApplicationContainer temp2 = onoff1.Install(adhocNodes.Get(k));
+            temp.Start(Seconds(ns2Start.GetStartTimeForNode(j)));
+            temp2.Start(Seconds(ns2Start.GetStartTimeForNode(k)));
+            temp.Stop(Seconds(ns2Start.GetEndTimeForNode(j)));
+            temp2.Stop(Seconds(ns2Start.GetEndTimeForNode(k)));
         }
-        //Ptr<Socket> sink = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
-
-        //AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
-        //onoff1.SetAttribute("Remote", remoteAddress);
-
-        //Ptr<UniformRandomVariable> var = CreateObject<UniformRandomVariable>();
-        //ApplicationContainer temp = onoff1.Install(adhocNodes.Get(i + m_nSinks));
-        //temp.Start(Seconds(var->GetValue(100.0, 101.0)));
-        //temp.Stop(Seconds(TotalTime));
     }
 
     std::stringstream ss;

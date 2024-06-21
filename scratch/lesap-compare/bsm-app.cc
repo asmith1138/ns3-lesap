@@ -62,6 +62,7 @@ BsmApp::Setup(Ptr<Socket> socket,
     m_packetSize = packetSize;
     m_nPackets = nPackets;
     m_dataRate = dataRate;
+    m_socket->Bind(m_peer);
 }
 
 void
@@ -69,8 +70,8 @@ BsmApp::StartApplication()
 {
     m_running = true;
     m_packetsSent = 0;
-    m_socket->Bind();
-    m_socket->Connect(m_peer);
+    //m_socket->Bind(m_peer);
+    //m_socket->Connect(m_peer);
     SendPacket();
 }
 
@@ -94,6 +95,7 @@ void
 BsmApp::SendPacket()
 {
     Ptr<Packet> packet = Create<Packet>(m_packetSize);
+    NS_LOG_UNCOND(PrintSentPacket(packet));
     m_socket->Send(packet);
 
     if (++m_packetsSent < m_nPackets)
@@ -108,6 +110,7 @@ BsmApp::ScheduleTx()
     if (m_running)
     {
         Time tNext(Seconds(m_packetSize * 8 / static_cast<double>(m_dataRate.GetBitRate())));
+        NS_LOG_UNCOND(PrintSchedulePacket(tNext));
         m_sendEvent = Simulator::Schedule(tNext, &BsmApp::SendPacket, this);
     }
 }
