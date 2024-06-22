@@ -156,6 +156,7 @@ class RoutingExperiment
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
+    std::string m_filePathResults{"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
     bool m_flowMonitor{true};                             //!< Enable FlowMonitor.
 };
 
@@ -240,10 +241,10 @@ RoutingExperiment::CheckThroughput()
     double kbs = (bytesTotal * 8.0) / 1000;
     bytesTotal = 0;
 
-    std::ofstream out(m_CSVfileName, std::ios::app);
+    std::ofstream out(m_filePathResults + m_CSVfileName, std::ios::app);
 
     out << (Simulator::Now()).GetSeconds() << "," << kbs << "," << packetsReceived << ","
-        << m_nSinks << "," << m_protocolName << "," << m_txp << "" << std::endl;
+        << m_protocolName << "," << m_txp << "" << std::endl;
 
     out.close();
     packetsReceived = 0;
@@ -330,7 +331,7 @@ main(int argc, char* argv[])
     experimentAODV25.SetProtocol("AODV");
     experimentAODV25.SetNNodeWTrace("25");
     experimentAODV25.SetMalicious(false);
-    experimentAODV25.Run();
+    //experimentAODV25.Run();
 
     std::cout << "**25 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV25Mal;
@@ -338,7 +339,7 @@ main(int argc, char* argv[])
     experimentAODV25Mal.SetProtocol("AODV");
     experimentAODV25Mal.SetNNodeWTrace("25");
     experimentAODV25Mal.SetMalicious(true);
-    experimentAODV25Mal.Run();
+    //experimentAODV25Mal.Run();
 
     std::cout << "**50 Nodes**" << std::endl;
     RoutingExperiment experimentAODV50;
@@ -346,7 +347,7 @@ main(int argc, char* argv[])
     experimentAODV50.SetProtocol("AODV");
     experimentAODV50.SetNNodeWTrace("50");
     experimentAODV50.SetMalicious(false);
-    experimentAODV50.Run();
+    //experimentAODV50.Run();
 
     std::cout << "**50 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV50Mal;
@@ -354,7 +355,7 @@ main(int argc, char* argv[])
     experimentAODV50Mal.SetProtocol("AODV");
     experimentAODV50Mal.SetNNodeWTrace("50");
     experimentAODV50Mal.SetMalicious(true);
-    experimentAODV50Mal.Run();
+    //experimentAODV50Mal.Run();
 
     std::cout << "**100 Nodes**" << std::endl;
     RoutingExperiment experimentAODV100;
@@ -362,7 +363,7 @@ main(int argc, char* argv[])
     experimentAODV100.SetProtocol("AODV");
     experimentAODV100.SetNNodeWTrace("100");
     experimentAODV100.SetMalicious(false);
-    experimentAODV100.Run();
+    //experimentAODV100.Run();
 
     std::cout << "**100 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentAODV100Mal;
@@ -370,7 +371,7 @@ main(int argc, char* argv[])
     experimentAODV100Mal.SetProtocol("AODV");
     experimentAODV100Mal.SetNNodeWTrace("100");
     experimentAODV100Mal.SetMalicious(true);
-    experimentAODV100Mal.Run();
+    //experimentAODV100Mal.Run();
 
     std::cout << "**LESAP-AODV**" << std::endl;
     std::cout << "**25 Nodes**" << std::endl;
@@ -379,7 +380,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV25.SetProtocol("LESAP-AODV");
     experimentLESAPAODV25.SetNNodeWTrace("25");
     experimentLESAPAODV25.SetMalicious(false);
-    experimentLESAPAODV25.Run();
+    //experimentLESAPAODV25.Run();
 
     std::cout << "**25 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV25Mal;
@@ -387,7 +388,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV25Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV25Mal.SetNNodeWTrace("25");
     experimentLESAPAODV25Mal.SetMalicious(true);
-    experimentLESAPAODV25Mal.Run();
+    //experimentLESAPAODV25Mal.Run();
 
     std::cout << "**50 Nodes**" << std::endl;
     RoutingExperiment experimentLESAPAODV50;
@@ -395,7 +396,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV50.SetProtocol("LESAP-AODV");
     experimentLESAPAODV50.SetNNodeWTrace("50");
     experimentLESAPAODV50.SetMalicious(false);
-    experimentLESAPAODV50.Run();
+    //experimentLESAPAODV50.Run();
 
     std::cout << "**50 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV50Mal;
@@ -403,7 +404,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV50Mal.SetProtocol("LESAP-AODV");
     experimentLESAPAODV50Mal.SetNNodeWTrace("50");
     experimentLESAPAODV50Mal.SetMalicious(true);
-    experimentLESAPAODV50Mal.Run();
+    //experimentLESAPAODV50Mal.Run();
 
     std::cout << "**100 Nodes**" << std::endl;
     RoutingExperiment experimentLESAPAODV100;
@@ -411,7 +412,7 @@ main(int argc, char* argv[])
     experimentLESAPAODV100.SetProtocol("LESAP-AODV");
     experimentLESAPAODV100.SetNNodeWTrace("100");
     experimentLESAPAODV100.SetMalicious(false);
-    experimentLESAPAODV100.Run();
+    //experimentLESAPAODV100.Run();
 
     std::cout << "**100 Nodes w/malicious**" << std::endl;
     RoutingExperiment experimentLESAPAODV100Mal;
@@ -431,11 +432,10 @@ RoutingExperiment::Run()
 
     // blank out the last output file and write the column headers
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
-    std::ofstream out(m_CSVfileName);
+    std::ofstream out(m_filePathResults + m_CSVfileName);
     out << "SimulationSecond,"
         << "ReceiveRate,"
         << "PacketsReceived,"
-        << "NumberOfSinks,"
         << "RoutingProtocol,"
         << "TransmissionPower" << std::endl;
     out.close();
@@ -552,7 +552,6 @@ RoutingExperiment::Run()
     // Setting up Malicious nodes and starting reports
     if (m_protocolName == "AODV")
     {
-        NS_LOG_UNCOND("AODV MAL");
         if(m_enableMalicious){
             for (int i = 0; i < m_nWifis; i++)
             {
@@ -573,7 +572,6 @@ RoutingExperiment::Run()
     }
     else if (m_protocolName == "LESAP-AODV")
     {
-        NS_LOG_UNCOND("LESAP-AODV MAL");
         if(m_enableMalicious){
             bool addReport = false;
             for (int i = 0; i < m_nWifis; i++)
@@ -678,10 +676,14 @@ RoutingExperiment::Run()
     // sNodePause + "pause_" + sRate + "rate";
 
     AsciiTraceHelper ascii;
-    Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(tr_name + ".tr");
+    Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(m_filePathResults + tr_name + ".tr");
     wifiPhy.EnableAsciiAll(osw);
     // AsciiTraceHelper ascii;
-    MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(tr_name + ".mob"));
+    MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(m_filePathResults + tr_name + ".mob"));
+
+    internet.EnableAsciiIpv4All(m_filePathResults + "ipv4pcap/" + tr_name + ".ipv4");
+    internet.EnablePcapIpv4All(m_filePathResults + "ipv4pcap/" + tr_name + ".ipv4");
+    wifiPhy.EnablePcapAll(m_filePathResults + "pcap/" + tr_name, true);
 
     FlowMonitorHelper flowmonHelper;
     Ptr<FlowMonitor> flowmon;
@@ -699,7 +701,7 @@ RoutingExperiment::Run()
 
     if (m_flowMonitor)
     {
-        flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
+        flowmon->SerializeToXmlFile(m_filePathResults + tr_name + ".flowmon", false, false);
     }
 
     Simulator::Destroy();

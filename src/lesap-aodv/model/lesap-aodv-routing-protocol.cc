@@ -1013,6 +1013,7 @@ void
 RoutingProtocol::NotifyAddAddress(uint32_t i, Ipv4InterfaceAddress address)
 {
     NS_LOG_FUNCTION(this << " interface " << i << " address " << address);
+    NS_LOG_UNCOND(this << " interface " << i << " address " << address);
     Ptr<Ipv4L3Protocol> l3 = m_ipv4->GetObject<Ipv4L3Protocol>();
     if (!l3->IsUp(i))
     {
