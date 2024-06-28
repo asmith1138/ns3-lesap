@@ -156,7 +156,8 @@ class RoutingExperiment
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
-    std::string m_filePathResults{"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
+    std::string m_filePathResults{"/media/andrew/Secondary/thesis/results/lesap-compare/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
+    std::string m_simsToRun{"aodv-all"};                           //!< Start file for mobility.
     bool m_flowMonitor{true};                             //!< Enable FlowMonitor.
 };
 
@@ -310,6 +311,7 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("startfile", "start File to use", m_startFile);
     cmd.AddValue("nNodes", "Number of nodes to use", m_nWifis);
     cmd.AddValue("filedirectory", "Path to directory of files to use", m_filePath);
+    cmd.AddValue("sims", "Simulations to run", m_simsToRun);
     cmd.Parse(argc, argv);
 
     std::vector<std::string> allowedProtocols{"AODV", "LESAP-AODV"};
@@ -324,103 +326,144 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
 int
 main(int argc, char* argv[])
 {
-    std::cout << "**AODV**" << std::endl;
-    std::cout << "**25 Nodes**" << std::endl;
-    RoutingExperiment experimentAODV25;
-    experimentAODV25.CommandSetup(argc, argv);
-    experimentAODV25.SetProtocol("AODV");
-    experimentAODV25.SetNNodeWTrace("25");
-    experimentAODV25.SetMalicious(false);
-    //experimentAODV25.Run();
+    std::string simsToRun;
+    CommandLine cmd(__FILE__);
+    cmd.AddValue("sims", "Simulations to run", simsToRun);
+    cmd.Parse(argc, argv);
 
-    std::cout << "**25 Nodes w/malicious**" << std::endl;
-    RoutingExperiment experimentAODV25Mal;
-    experimentAODV25Mal.CommandSetup(argc, argv);
-    experimentAODV25Mal.SetProtocol("AODV");
-    experimentAODV25Mal.SetNNodeWTrace("25");
-    experimentAODV25Mal.SetMalicious(true);
-    //experimentAODV25Mal.Run();
+    if(simsToRun.find("aodv") != std::string::npos)
+    {
+        std::cout << "**AODV**" << std::endl;
 
-    std::cout << "**50 Nodes**" << std::endl;
-    RoutingExperiment experimentAODV50;
-    experimentAODV50.CommandSetup(argc, argv);
-    experimentAODV50.SetProtocol("AODV");
-    experimentAODV50.SetNNodeWTrace("50");
-    experimentAODV50.SetMalicious(false);
-    //experimentAODV50.Run();
+        if(simsToRun.find("all") != std::string::npos || simsToRun.find("25") != std::string::npos)
+        {
+            std::cout << "**25 Nodes**" << std::endl;
+            RoutingExperiment experimentAODV25;
+            experimentAODV25.CommandSetup(argc, argv);
+            experimentAODV25.SetProtocol("AODV");
+            experimentAODV25.SetNNodeWTrace("25");
+            experimentAODV25.SetMalicious(false);
+            experimentAODV25.Run();
 
-    std::cout << "**50 Nodes w/malicious**" << std::endl;
-    RoutingExperiment experimentAODV50Mal;
-    experimentAODV50Mal.CommandSetup(argc, argv);
-    experimentAODV50Mal.SetProtocol("AODV");
-    experimentAODV50Mal.SetNNodeWTrace("50");
-    experimentAODV50Mal.SetMalicious(true);
-    //experimentAODV50Mal.Run();
+            std::cout << "**25 Nodes w/malicious**" << std::endl;
+            RoutingExperiment experimentAODV25Mal;
+            experimentAODV25Mal.CommandSetup(argc, argv);
+            experimentAODV25Mal.SetProtocol("AODV");
+            experimentAODV25Mal.SetNNodeWTrace("25");
+            experimentAODV25Mal.SetMalicious(true);
+            experimentAODV25Mal.Run();
+        }
+        if(simsToRun.find("all") != std::string::npos || simsToRun.find("50") != std::string::npos)
+        {
+            std::cout << "**50 Nodes**" << std::endl;
+            RoutingExperiment experimentAODV50;
+            experimentAODV50.CommandSetup(argc, argv);
+            experimentAODV50.SetProtocol("AODV");
+            experimentAODV50.SetNNodeWTrace("50");
+            experimentAODV50.SetMalicious(false);
+            experimentAODV50.Run();
 
-    std::cout << "**100 Nodes**" << std::endl;
-    RoutingExperiment experimentAODV100;
-    experimentAODV100.CommandSetup(argc, argv);
-    experimentAODV100.SetProtocol("AODV");
-    experimentAODV100.SetNNodeWTrace("100");
-    experimentAODV100.SetMalicious(false);
-    //experimentAODV100.Run();
+            std::cout << "**50 Nodes w/malicious**" << std::endl;
+            RoutingExperiment experimentAODV50Mal;
+            experimentAODV50Mal.CommandSetup(argc, argv);
+            experimentAODV50Mal.SetProtocol("AODV");
+            experimentAODV50Mal.SetNNodeWTrace("50");
+            experimentAODV50Mal.SetMalicious(true);
+            experimentAODV50Mal.Run();
+        }
+        if(simsToRun.find("all") != std::string::npos || simsToRun.find("100") != std::string::npos)
+        {
+            std::cout << "**100 Nodes**" << std::endl;
+            RoutingExperiment experimentAODV100;
+            experimentAODV100.CommandSetup(argc, argv);
+            experimentAODV100.SetProtocol("AODV");
+            experimentAODV100.SetNNodeWTrace("100");
+            experimentAODV100.SetMalicious(false);
+            experimentAODV100.Run();
 
-    std::cout << "**100 Nodes w/malicious**" << std::endl;
-    RoutingExperiment experimentAODV100Mal;
-    experimentAODV100Mal.CommandSetup(argc, argv);
-    experimentAODV100Mal.SetProtocol("AODV");
-    experimentAODV100Mal.SetNNodeWTrace("100");
-    experimentAODV100Mal.SetMalicious(true);
-    //experimentAODV100Mal.Run();
+            std::cout << "**100 Nodes w/malicious**" << std::endl;
+            RoutingExperiment experimentAODV100Mal;
+            experimentAODV100Mal.CommandSetup(argc, argv);
+            experimentAODV100Mal.SetProtocol("AODV");
+            experimentAODV100Mal.SetNNodeWTrace("100");
+            experimentAODV100Mal.SetMalicious(true);
+            experimentAODV100Mal.Run();
+        }
+    }
 
-    std::cout << "**LESAP-AODV**" << std::endl;
-    std::cout << "**25 Nodes**" << std::endl;
-    RoutingExperiment experimentLESAPAODV25;
-    experimentLESAPAODV25.CommandSetup(argc, argv);
-    experimentLESAPAODV25.SetProtocol("LESAP-AODV");
-    experimentLESAPAODV25.SetNNodeWTrace("25");
-    experimentLESAPAODV25.SetMalicious(false);
-    //experimentLESAPAODV25.Run();
+    if(simsToRun.find("lesap") != std::string::npos)
+    {
+        std::cout << "**LESAP-AODV**" << std::endl;
 
-    std::cout << "**25 Nodes w/malicious**" << std::endl;
-    RoutingExperiment experimentLESAPAODV25Mal;
-    experimentLESAPAODV25Mal.CommandSetup(argc, argv);
-    experimentLESAPAODV25Mal.SetProtocol("LESAP-AODV");
-    experimentLESAPAODV25Mal.SetNNodeWTrace("25");
-    experimentLESAPAODV25Mal.SetMalicious(true);
-    //experimentLESAPAODV25Mal.Run();
-
-    std::cout << "**50 Nodes**" << std::endl;
-    RoutingExperiment experimentLESAPAODV50;
-    experimentLESAPAODV50.CommandSetup(argc, argv);
-    experimentLESAPAODV50.SetProtocol("LESAP-AODV");
-    experimentLESAPAODV50.SetNNodeWTrace("50");
-    experimentLESAPAODV50.SetMalicious(false);
-    //experimentLESAPAODV50.Run();
-
-    std::cout << "**50 Nodes w/malicious**" << std::endl;
-    RoutingExperiment experimentLESAPAODV50Mal;
-    experimentLESAPAODV50Mal.CommandSetup(argc, argv);
-    experimentLESAPAODV50Mal.SetProtocol("LESAP-AODV");
-    experimentLESAPAODV50Mal.SetNNodeWTrace("50");
-    experimentLESAPAODV50Mal.SetMalicious(true);
-    //experimentLESAPAODV50Mal.Run();
-
-    std::cout << "**100 Nodes**" << std::endl;
-    RoutingExperiment experimentLESAPAODV100;
-    experimentLESAPAODV100.CommandSetup(argc, argv);
-    experimentLESAPAODV100.SetProtocol("LESAP-AODV");
-    experimentLESAPAODV100.SetNNodeWTrace("100");
-    experimentLESAPAODV100.SetMalicious(false);
-    //experimentLESAPAODV100.Run();
-
-    std::cout << "**100 Nodes w/malicious**" << std::endl;
-    RoutingExperiment experimentLESAPAODV100Mal;
-    experimentLESAPAODV100Mal.CommandSetup(argc, argv);
-    experimentLESAPAODV100Mal.SetProtocol("LESAP-AODV");
-    experimentLESAPAODV100Mal.SetNNodeWTrace("100");
-    experimentLESAPAODV100Mal.SetMalicious(true);
-    experimentLESAPAODV100Mal.Run();
+        if (simsToRun.find("all") != std::string::npos || simsToRun.find("25") != std::string::npos)
+        {
+            if (simsToRun.find("norm") != std::string::npos)
+            {
+                std::cout << "**25 Nodes**" << std::endl;
+                RoutingExperiment experimentLESAPAODV25;
+                experimentLESAPAODV25.CommandSetup(argc, argv);
+                experimentLESAPAODV25.SetProtocol("LESAP-AODV");
+                experimentLESAPAODV25.SetNNodeWTrace("25");
+                experimentLESAPAODV25.SetMalicious(false);
+                experimentLESAPAODV25.Run();
+            }
+            if(simsToRun.find("mal") != std::string::npos){
+                std::cout << "**25 Nodes w/malicious**" << std::endl;
+                RoutingExperiment experimentLESAPAODV25Mal;
+                experimentLESAPAODV25Mal.CommandSetup(argc, argv);
+                experimentLESAPAODV25Mal.SetProtocol("LESAP-AODV");
+                experimentLESAPAODV25Mal.SetNNodeWTrace("25");
+                experimentLESAPAODV25Mal.SetMalicious(true);
+                experimentLESAPAODV25Mal.Run();
+            }
+        }
+        if (simsToRun.find("all") != std::string::npos || simsToRun.find("50") != std::string::npos)
+        {
+            if (simsToRun.find("norm") != std::string::npos)
+            {
+                std::cout << "**50 Nodes**" << std::endl;
+                RoutingExperiment experimentLESAPAODV50;
+                experimentLESAPAODV50.CommandSetup(argc, argv);
+                experimentLESAPAODV50.SetProtocol("LESAP-AODV");
+                experimentLESAPAODV50.SetNNodeWTrace("50");
+                experimentLESAPAODV50.SetMalicious(false);
+                experimentLESAPAODV50.Run();
+            }
+            if (simsToRun.find("mal") != std::string::npos)
+            {
+                std::cout << "**50 Nodes w/malicious**" << std::endl;
+                RoutingExperiment experimentLESAPAODV50Mal;
+                experimentLESAPAODV50Mal.CommandSetup(argc, argv);
+                experimentLESAPAODV50Mal.SetProtocol("LESAP-AODV");
+                experimentLESAPAODV50Mal.SetNNodeWTrace("50");
+                experimentLESAPAODV50Mal.SetMalicious(true);
+                experimentLESAPAODV50Mal.Run();
+            }
+        }
+        if (simsToRun.find("all") != std::string::npos || simsToRun.find("100") != std::string::npos)
+        {
+            if (simsToRun.find("norm") != std::string::npos)
+            {
+                std::cout << "**100 Nodes**" << std::endl;
+                RoutingExperiment experimentLESAPAODV100;
+                experimentLESAPAODV100.CommandSetup(argc, argv);
+                experimentLESAPAODV100.SetProtocol("LESAP-AODV");
+                experimentLESAPAODV100.SetNNodeWTrace("100");
+                experimentLESAPAODV100.SetMalicious(false);
+                experimentLESAPAODV100.Run();
+            }
+            if (simsToRun.find("mal") != std::string::npos)
+            {
+                std::cout << "**100 Nodes w/malicious**" << std::endl;
+                RoutingExperiment experimentLESAPAODV100Mal;
+                experimentLESAPAODV100Mal.CommandSetup(argc, argv);
+                experimentLESAPAODV100Mal.SetProtocol("LESAP-AODV");
+                experimentLESAPAODV100Mal.SetNNodeWTrace("100");
+                experimentLESAPAODV100Mal.SetMalicious(true);
+                experimentLESAPAODV100Mal.Run();
+            }
+        }
+    }
 
     return 0;
 }
