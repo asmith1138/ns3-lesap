@@ -212,6 +212,24 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     }
 
     /**
+     * Set csv file name
+     * \param csv the csv file name
+     */
+    void SetCsvFileName(std::string csv)
+    {
+        m_csvLogFile = csv;
+    }
+
+    /**
+     * Get csv file name
+     * \returns the csv file name
+     */
+    std::string GetCsvFileName() const
+    {
+        return m_csvLogFile;
+    }
+
+    /**
      * Set broadcast enable flag
      * \param f enable broadcast flag
      */
@@ -349,6 +367,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint64_t m_key3;
     uint64_t m_key4;
     NodeType m_nodeType;
+    std::string m_csvLogFile;
 
   private:
     /// Start protocol operation

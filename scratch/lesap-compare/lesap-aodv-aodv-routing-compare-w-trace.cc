@@ -156,6 +156,7 @@ class RoutingExperiment
     bool m_enableMalicious{false};                           //!< Enable malicious nodes.
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
+    std::string m_csvLogFile{"manet-routing.output.log.csv"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_filePathResults{"/media/andrew/Secondary/thesis/results/lesap-compare/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_simsToRun{"aodv-all"};                           //!< Start file for mobility.
@@ -202,12 +203,15 @@ void
 RoutingExperiment::SetProtocol(std::string protocol)
 {
     m_protocolName = protocol;
-    m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";}
+    m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
+    m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
+}
 
 void
 RoutingExperiment::SetMalicious(bool mal)
 {
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
+    m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
     m_enableMalicious = mal;
 }
 
@@ -216,6 +220,7 @@ void RoutingExperiment::SetNNodeWTrace(std::string nNodes){
     m_traceFile = nNodes + ".ns2";
     m_startFile = nNodes + ".init";
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
+    m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
 }
 
 void 
@@ -258,7 +263,7 @@ RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node)
 {
     InetSocketAddress local(InetSocketAddress(addr, port));
 
-    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, TcpSocketFactory::GetTypeId());
+    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
     ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
 
@@ -281,7 +286,7 @@ RoutingExperiment::SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node)
 {
     InetSocketAddress local(InetSocketAddress(addr, port));
 
-    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, TcpSocketFactory::GetTypeId());
+    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
     ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
 
@@ -477,6 +482,7 @@ RoutingExperiment::Run()
 
     // blank out the last output file and write the column headers
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
+    m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
     std::ofstream out(m_filePathResults + m_CSVfileName);
     out << "SimulationSecond,"
         << "ReceiveRate,"
@@ -524,7 +530,7 @@ RoutingExperiment::Run()
                                  StringValue(phyMode));
 
     wifiPhy.Set("TxPowerStart", DoubleValue(m_txp));
-    wifiPhy.Set("TxPowerEnd", DoubleValue(m_txp));
+    wifiPhy.Set("TxPowerEnAODVd", DoubleValue(m_txp));
 
     wifiMac.SetType("ns3::AdhocWifiMac");
     NetDeviceContainer adhocDevices = wifi.Install(wifiPhy, wifiMac, adhocNodes);
@@ -681,7 +687,7 @@ RoutingExperiment::Run()
             app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(j)));
             app2->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(k)));
         }else{
-            OnOffHelper onoff1("ns3::TcpSocketFactory", Address());
+            OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
             onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
             onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
             onoff1.SetConstantRate(DataRate("1280bps"),128);
@@ -697,6 +703,20 @@ RoutingExperiment::Run()
             temp2.Start(Seconds(ns2Start.GetStartTimeForNode(k)));
             temp.Stop(Seconds(ns2Start.GetEndTimeForNode(j)));
             temp2.Stop(Seconds(ns2Start.GetEndTimeForNode(k)));
+        }
+    }
+
+    if(m_protocolName == "AODV"){
+        for (int i = 0; i < m_nWifis; i++)
+        {
+            Ptr<aodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<aodv::RoutingProtocol>();
+            protocol->SetCsvFileName(m_csvLogFile);
+        }
+    }else if (m_protocolName == "LESAP-AODV"){
+        for (int i = 0; i < m_nWifis; i++)
+        {
+            Ptr<lesapAodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
+            protocol->SetCsvFileName(m_csvLogFile);
         }
     }
 

@@ -542,6 +542,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     if (m_socketAddresses.empty())
     {
         NS_LOG_LOGIC("No lesap-aodv interfaces");
+        //TODO: Log Dropped packet
         return false;
     }
     NS_ASSERT(m_ipv4);
@@ -558,12 +559,14 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
 
     if(IsBlackhole()){
         // Drop packets, blackhole node
+        //TODO: Log Dropped packet
         return true;
     }
     if(IsGrayhole() || IsSybil()){
         // Drop packets sometimes, grayhole node
         uint8_t randomNum = rand() % 10;
         if (randomNum < 2){
+            //TODO: Log Dropped packet
             return true;
         }
     }
@@ -573,7 +576,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     m_routingTable.LookupValidRoute(dst, toDest);
     //toOri.GetRoute()->GetGateway();
     //header.GetSource();
-    //add route TODO: Fix this/Clean up
+    //add route
     bool checkLidar = true;
     if (header.GetProtocol() == UdpL4Protocol::PROT_NUMBER)
     {
@@ -613,8 +616,10 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     }
                     //Defer until verified sender
                     DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+                    //TODO: Log deferred packet
                     return true;
                 }else{
+                    //TODO: Log Dropped packet
                     return false;
                 }
 
@@ -630,6 +635,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         if (p->PeekPacketTag(tag))
         {
             DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+            //TODO: Log deferred packet
             return true;
         }
     }
@@ -637,12 +643,14 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     // Duplicate of own packet
     if (IsMyOwnAddress(origin))
     {
+        //TODO: Log duplicate packet
         return true;
     }
 
     // LESAP-AODV is not a multicast routing protocol
     if (dst.IsMulticast())
     {
+        //TODO: Log Dropped packet
         return false;
     }
 
@@ -658,6 +666,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 {
                     NS_LOG_DEBUG("Duplicated packet " << p->GetUid() << " from " << origin
                                                       << ". Drop.");
+                    //TODO: Log duplicated packet
                     return true;
                 }
                 UpdateRouteLifeTime(origin, m_activeRouteTimeout);
@@ -667,15 +676,18 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     NS_LOG_LOGIC("Broadcast local delivery to " << iface.GetLocal());
                     lcb(p, header, iif);
                     // Fall through to additional processing
+                    //TODO: Log managed packet not returned
                 }
                 else
                 {
                     NS_LOG_ERROR("Unable to deliver packet locally due to null callback "
                                  << p->GetUid() << " from " << origin);
                     ecb(p, header, Socket::ERROR_NOROUTETOHOST);
+                    //TODO: Log Dropped packet not returned
                 }
                 if (!m_enableBroadcast)
                 {
+                    //TODO: Log Dropped packet
                     return true;
                 }
                 if (header.GetProtocol() == UdpL4Protocol::PROT_NUMBER)
@@ -685,6 +697,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     if (udpHeader.GetDestinationPort() == LESAP_AODV_PORT)
                     {
                         // LESAP-AODV packets sent in broadcast are already managed
+                        //TODO: Log managed packet
                         return true;
                     }
                 }
@@ -696,15 +709,18 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     {
                         Ptr<Ipv4Route> route = toBroadcast.GetRoute();
                         ucb(route, packet, header);
+                        //TODO: Log managed packet
                     }
                     else
                     {
                         NS_LOG_DEBUG("No route to forward broadcast. Drop packet " << p->GetUid());
+                        //TODO: Log Dropped packet
                     }
                 }
                 else
                 {
                     NS_LOG_DEBUG("TTL exceeded. Drop packet " << p->GetUid());
+                    //TODO: Log Dropped packet
                 }
                 return true;
             }
@@ -728,12 +744,13 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 }
                 else{
                  // SendNeedKey and defer msg
-                 //add route TODO: Fix this
+                 //add route
                  Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
                  AddDirectRoute(toOrigin.GetNextHop(), receiver);
                  SendNeedKey(toOrigin.GetNextHop());
                  SendHello(toOrigin.GetNextHop());
                  DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
+                 //TODO: Log deferred packet
                  return true;
                 }
             }
@@ -742,12 +759,14 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         {
             NS_LOG_LOGIC("Unicast local delivery to " << dst);
             lcb(p, header, iif);
+            //TODO: Log managed packet
         }
         else
         {
             NS_LOG_ERROR("Unable to deliver packet locally due to null callback "
                          << p->GetUid() << " from " << origin);
             ecb(p, header, Socket::ERROR_NOROUTETOHOST);
+            //TODO: Log Dropped packet
         }
         return true;
     }
@@ -757,10 +776,12 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     {
         NS_LOG_LOGIC("Forwarding disabled for this interface");
         ecb(p, header, Socket::ERROR_NOROUTETOHOST);
+        //TODO: Log Dropped packet
         return true;
     }
 
     // Forwarding
+    //TODO: Log forward packet
     return Forwarding(p, header, idev, ucb, ecb);
 }
 
@@ -814,7 +835,6 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                     m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
                 }else{
                     //add route
-                    //TODO: Fix this
                     Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
                     AddDirectRoute(route->GetGateway(), receiver);
                     SendNeedKey(route->GetGateway());
@@ -830,7 +850,6 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                     m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
                 }else{
                     //add route
-                    // TODO: Fix this
                     Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
                     AddDirectRoute(toOrigin.GetNextHop(), receiver);
                     SendNeedKey(toOrigin.GetNextHop());
@@ -842,6 +861,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
             }
 
             ucb(route, p, header);
+            //TODO: Log managed packet
             return true;
         }
         else
@@ -850,6 +870,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
             {
                 SendRerrWhenNoRouteToForward(dst, toDst.GetSeqNo(), origin);
                 NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
+                //TODO: Log Dropped packet
                 return false;
             }
         }
@@ -857,6 +878,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
     NS_LOG_LOGIC("route not found to " << dst << ". Send RERR message.");
     NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
     SendRerrWhenNoRouteToForward(dst, 0, origin);
+    //TODO: Log Dropped packet
     return false;
 }
 

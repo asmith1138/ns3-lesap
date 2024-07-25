@@ -206,6 +206,24 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     }
 
     /**
+     * Set csv file name
+     * \param csv the csv file name
+     */
+    void SetCsvFileName(std::string csv)
+    {
+        m_csvLogFile = csv;
+    }
+
+    /**m_CsvFileName
+     * Get csv file name
+     * \returns the csv file name
+     */
+    std::string GetCsvFileName() const
+    {
+        return m_csvLogFile;
+    }
+
+    /**
      * Set broadcast enable flag
      * \param f enable broadcast flag
      */
@@ -321,6 +339,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     /// Number of RERRs used for RERR rate control
     uint16_t m_rerrCount;
     NodeType m_nodeType;
+    std::string m_csvLogFile;
 
   private:
     /// Start protocol operation
