@@ -111,6 +111,7 @@ main(int argc, char* argv[])
 
     //Network animation
     AnimationInterface anim("second.xml");
+    anim.SetMobilityPollInterval(Seconds(1));
     anim.SetConstantPosition(p2pNodes.Get(0),10.0,10.0);
     anim.SetConstantPosition(csmaNodes.Get(0),20.0,20.0);
     anim.SetConstantPosition(csmaNodes.Get(1),30.0,30.0);

@@ -152,6 +152,7 @@ class RoutingExperiment
     std::string m_protocolName{"AODV"};                    //!< Protocol name.
     double m_txp{7.5};                                     //!< Tx power.
     bool m_traceMobility{false};                           //!< Enable mobility tracing.
+    bool m_netAnim{false};                           //!< Enable mobility tracing.
     bool m_enableMalicious{false};                           //!< Enable malicious nodes.
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
@@ -257,7 +258,7 @@ RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node)
 {
     InetSocketAddress local(InetSocketAddress(addr, port));
 
-    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
+    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, TcpSocketFactory::GetTypeId());
     ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
 
@@ -280,7 +281,7 @@ RoutingExperiment::SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node)
 {
     InetSocketAddress local(InetSocketAddress(addr, port));
 
-    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
+    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, TcpSocketFactory::GetTypeId());
     ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
 
@@ -305,6 +306,7 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     CommandLine cmd(__FILE__);
     cmd.AddValue("CSVfileName", "The name of the CSV output file name", m_CSVfileName);
     cmd.AddValue("traceMobility", "Enable mobility tracing", m_traceMobility);
+    cmd.AddValue("netAnim", "Enable mobility tracing", m_netAnim);
     cmd.AddValue("protocol", "Routing protocol (AODV, LESAP-AODV)", m_protocolName);
     cmd.AddValue("flowMonitor", "enable FlowMonitor", m_flowMonitor);
     cmd.AddValue("tracefile", "Trace File to use", m_traceFile);
@@ -679,7 +681,7 @@ RoutingExperiment::Run()
             app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(j)));
             app2->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(k)));
         }else{
-            OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+            OnOffHelper onoff1("ns3::TcpSocketFactory", Address());
             onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
             onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
             onoff1.SetConstantRate(DataRate("1280bps"),128);
