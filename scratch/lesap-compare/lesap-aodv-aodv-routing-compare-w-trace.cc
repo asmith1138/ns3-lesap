@@ -147,7 +147,7 @@ class RoutingExperiment
     uint32_t packetsReceived{0}; //!< Total received packets.
 
     std::string m_CSVfileName{"manet-routing.output.csv"}; //!< CSV filename.
-    int m_nSinks{10};                                      //!< Number of sink nodes.
+    //int m_nSinks{10};                                      //!< Number of sink nodes.
     int m_nWifis{50};                                      //!< Number of nodes.
     std::string m_protocolName{"AODV"};                    //!< Protocol name.
     double m_txp{7.5};                                     //!< Tx power.
@@ -491,6 +491,16 @@ RoutingExperiment::Run()
         << "TransmissionPower" << std::endl;
     out.close();
 
+    std::ofstream finalOut(m_filePathResults + m_csvLogFile);
+    finalOut << "SimulationTime,"
+        << "PacketID,"
+        << "PacketStatus,"
+        << "PacketSize,"
+        << "NodeIP,"
+        << "SenderIP,"
+        << "Reason" << std::endl;
+    finalOut.close();
+
     int nWifis = m_nWifis;
 
     //double TotalTime = 200.0;
@@ -530,7 +540,7 @@ RoutingExperiment::Run()
                                  StringValue(phyMode));
 
     wifiPhy.Set("TxPowerStart", DoubleValue(m_txp));
-    wifiPhy.Set("TxPowerEnAODVd", DoubleValue(m_txp));
+    wifiPhy.Set("TxPowerEnd", DoubleValue(m_txp));
 
     wifiMac.SetType("ns3::AdhocWifiMac");
     NetDeviceContainer adhocDevices = wifi.Install(wifiPhy, wifiMac, adhocNodes);
@@ -710,13 +720,13 @@ RoutingExperiment::Run()
         for (int i = 0; i < m_nWifis; i++)
         {
             Ptr<aodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<aodv::RoutingProtocol>();
-            protocol->SetCsvFileName(m_csvLogFile);
+            protocol->SetCsvFileName(m_filePathResults + m_csvLogFile);
         }
     }else if (m_protocolName == "LESAP-AODV"){
         for (int i = 0; i < m_nWifis; i++)
         {
             Ptr<lesapAodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
-            protocol->SetCsvFileName(m_csvLogFile);
+            protocol->SetCsvFileName(m_filePathResults + m_csvLogFile);
         }
     }
 

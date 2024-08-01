@@ -276,6 +276,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
 
     double DistanceFromNode(Ipv4Address ipv4);
     bool IsNodeWithinLidar(double distance);
+    Ipv4Address GetOwnAddress();
+    void PrintPacketToCSV(uint64_t packetId, uint32_t packetSize, std::string status, std::string reason, Ipv4Address sender);
     Vector GetPosition();
     Vector GetVelocity();
 

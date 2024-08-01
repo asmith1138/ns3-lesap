@@ -263,6 +263,9 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      */
     void NotifyTxError(WifiMacDropReason reason, Ptr<const WifiMpdu> mpdu);
 
+    Ipv4Address GetOwnAddress();
+    void PrintPacketToCSV(uint64_t packetId, uint32_t packetSize, std::string status, std::string reason, Ipv4Address sender);
+
     // Protocol parameters.
     uint32_t m_rreqRetries; ///< Maximum number of retransmissions of RREQ with TTL = NetDiameter to
                             ///< discover a route
@@ -367,6 +370,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
      */
     bool Forwarding(Ptr<const Packet> p,
                     const Ipv4Header& header,
+                    Ptr<const NetDevice> idev,
                     UnicastForwardCallback ucb,
                     ErrorCallback ecb);
     /**
