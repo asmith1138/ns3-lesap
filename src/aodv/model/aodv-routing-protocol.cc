@@ -639,7 +639,8 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 }
                 if (!m_enableBroadcast)
                 {
-                    //TODO: Log Dropped packet
+                    //Log Dropped packet
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Broadcast disabled",senderAddr);
                     return true;
                 }
                 if (header.GetProtocol() == UdpL4Protocol::PROT_NUMBER)
@@ -1345,6 +1346,8 @@ RoutingProtocol::RecvAodv(Ptr<Socket> socket)
     {
         NS_LOG_DEBUG("AODV message " << packet->GetUid() << " with unknown type received: "
                                      << tHeader.Get() << ". Drop");
+        //control drop unknown
+        PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Message Type Unknown",sender);
         return; // drop
     }
     switch (tHeader.Get())
@@ -1366,6 +1369,8 @@ RoutingProtocol::RecvAodv(Ptr<Socket> socket)
         break;
     }
     }
+    //Control handled
+    PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Handled","LESAPAODV message was handled successfully",sender);
 }
 
 bool
@@ -1444,6 +1449,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         if (toPrev.IsUnidirectional())
         {
             NS_LOG_DEBUG("Ignoring RREQ from node in blacklist");
+            //control blacklisted
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src);
             return;
         }
     }
@@ -1459,6 +1466,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     if (m_rreqIdCache.IsDuplicate(origin, id))
     {
         NS_LOG_DEBUG("Ignoring RREQ due to duplicate");
+        //control duplicate
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Duplicate",src);
         return;
     }
 
@@ -1579,6 +1588,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         if (toDst.GetNextHop() == src)
         {
             NS_LOG_DEBUG("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop());
+            //control drop loop
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Loop",src);
             return;
         }
         /*
@@ -1609,6 +1620,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     if (tag.GetTtl() < 2)
     {
         NS_LOG_DEBUG("TTL exceeded. Drop RREQ origin " << src << " destination " << dst);
+        //control drop
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",src);
         return;
     }
 
@@ -1868,6 +1881,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     if (!m_routingTable.LookupRoute(rrepHeader.GetOrigin(), toOrigin) ||
         toOrigin.GetFlag() == IN_SEARCH)
     {
+        //control drop impossible
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Impossible",sender);
         return; // Impossible! drop.
     }
     toOrigin.SetLifeTime(std::max(m_activeRouteTimeout, toOrigin.GetLifeTime()));
@@ -1898,6 +1913,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     {
         NS_LOG_DEBUG("TTL exceeded. Drop RREP destination " << dst << " origin "
                                                             << rrepHeader.GetOrigin());
+        //control drop ttl exceeded
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",sender);
         return;
     }
 

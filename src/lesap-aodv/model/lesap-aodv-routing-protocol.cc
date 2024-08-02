@@ -1589,6 +1589,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     {
         NS_LOG_DEBUG("LESAP-AODV message " << packet->GetUid() << " with unknown type received: "
                                      << tHeader.Get() << ". Drop");
+        PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Message Type Unknown",sender);
         return; // drop
     }
 
@@ -1607,6 +1608,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                 SendNeedKey(sender);
                 SendHello(sender);
             }
+            PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Sender not within Lidar range",sender);
             return; // drop
 
             //Can only be rrep and not a neighbor
@@ -1662,6 +1664,8 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
         break;
     }
     }
+    //Control handled
+    PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Handled","LESAPAODV message was handled successfully",sender);
 }
 
 bool
@@ -1752,6 +1756,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         if (toPrev.IsUnidirectional())
         {
             NS_LOG_DEBUG("Ignoring RREQ from node in blacklist");
+            //control blacklisted
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src);
             return;
         }
     }
@@ -1767,6 +1773,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     if (m_rreqIdCache.IsDuplicate(origin, id))
     {
         NS_LOG_DEBUG("Ignoring RREQ due to duplicate");
+        //control duplicate
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Duplicate",src);
         return;
     }
 
@@ -1891,6 +1899,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     // If the src or origin is blacklisted then we drop the rrep
     if(m_reportTable.LookupValidReport(src, rpSrc) || m_reportTable.LookupValidReport(origin, rp)){
         NS_LOG_DEBUG("Src or Origin is blacklists so we are dropping the rreq");
+        //control drop blacklist
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src);
         return;
     }
     //Always send rrep when malicious
@@ -1923,6 +1933,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         if (toDst.GetNextHop() == src)
         {
             NS_LOG_DEBUG("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop());
+            //control drop loop
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Loop",src);
             return;
         }
         /*
@@ -1953,6 +1965,8 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     if (tag.GetTtl() < 2)
     {
         NS_LOG_DEBUG("TTL exceeded. Drop RREQ origin " << src << " destination " << dst);
+        //control drop
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",src);
         return;
     }
 
@@ -2196,6 +2210,9 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
                 AddDirectRoute(sender, receiver);
                 SendNeedKey(sender);
                 SendHello(sender);
+                //PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Processed","Sender needs verified",sender);
+            }else{
+                PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Sender not within Lidar range",sender);
             }
             return; // drop
         }
@@ -2231,6 +2248,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     ReportTableEntry rpSender;
     if(m_reportTable.LookupValidReport(dst, rpDst) || m_reportTable.LookupValidReport(sender, rpSender)){
         NS_LOG_DEBUG("Sender or destination is blacklisted so we are dropping the rrep");
+        //control drop blacklisted
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",sender);
         return;
     }
 
@@ -2295,6 +2314,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     if (!m_routingTable.LookupRoute(rrepHeader.GetOrigin(), toOrigin) ||
         toOrigin.GetFlag() == IN_SEARCH)
     {
+        //control drop impossible
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Impossible",sender);
         return; // Impossible! drop.
     }
 
@@ -2303,6 +2324,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     ReportTableEntry rpNxtHp;
     if(m_reportTable.LookupValidReport(rrepHeader.GetOrigin(), rpOri) || m_reportTable.LookupValidReport(toOrigin.GetNextHop(), rpNxtHp)){
         NS_LOG_DEBUG("Origin or Next Hop is blacklisted so we are dropping the rrep");
+        //control drop blacklisted
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",sender);
         return;
     }
     toOrigin.SetLifeTime(std::max(m_activeRouteTimeout, toOrigin.GetLifeTime()));
@@ -2333,6 +2356,8 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     {
         NS_LOG_DEBUG("TTL exceeded. Drop RREP destination " << dst << " origin "
                                                             << rrepHeader.GetOrigin());
+        //control drop ttl exceeded
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",sender);
         return;
     }
 
@@ -2356,6 +2381,8 @@ RoutingProtocol::RecvReplyAck(Ipv4Address neighbor)
     ReportTableEntry rp;
     if (m_reportTable.LookupValidReport(neighbor, rp)){
         NS_LOG_DEBUG("Dropping Reply ack from blacklisted node " << neighbor);
+        //control drop blacklisted
+        PrintPacketToCSV(0,1,"Control-Dropped","Blacklisted",neighbor);
         return;
     }
     RoutingTableEntry rt;
@@ -2380,6 +2407,8 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
     ReportTableEntry rp;
     if (m_reportTable.LookupValidReport(rrepHeader.GetDst(), rp)){
         NS_LOG_DEBUG("Dropping hello from blacklisted node " << rrepHeader.GetDst());
+        //control drop blacklisted
+        PrintPacketToCSV(0,19,"Control-Dropped","Blacklisted",rrepHeader.GetDst());
         return;
     }
     // Checking the distance and add/update the lidar neighbor table if within lidar distance
@@ -3107,6 +3136,8 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
                     Simulator::GetMaximumSimulationTime());
             }
         }
+        //control drop and blacklist
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","New Blacklisted",address);
         return;
     }
     // The position is not within 2.5 meters of any other node
