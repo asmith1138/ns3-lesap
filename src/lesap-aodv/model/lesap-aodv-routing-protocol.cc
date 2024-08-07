@@ -534,7 +534,7 @@ RoutingProtocol::PrintPacketToCSV(uint64_t packetId, uint32_t packetSize, std::s
 {
         std::ofstream out(m_csvLogFile, std::ios::app);
 
-        out << Simulator::Now() << "," << packetId << "," << status << "," << packetSize << ","
+        out << Simulator::Now().GetSeconds() << "," << packetId << "," << status << "," << packetSize << ","
             << GetOwnAddress() << "," << sender << "," << reason << "" << std::endl;
 
         out.close();

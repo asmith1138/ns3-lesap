@@ -158,7 +158,8 @@ class RoutingExperiment
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
     std::string m_csvLogFile{"manet-routing.output.log.csv"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
-    std::string m_filePathResults{"/media/andrew/Secondary/thesis/results/lesap-compare/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
+    std::string m_filePathResults{"/home/andrew/Documents/thesis/resultsLogging/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
+    std::string m_filePathResultsPcap{"/media/andrew/Secondary/thesis/pcap/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_simsToRun{"aodv-all"};                           //!< Start file for mobility.
     bool m_flowMonitor{true};                             //!< Enable FlowMonitor.
 };
@@ -754,11 +755,11 @@ RoutingExperiment::Run()
     Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(m_filePathResults + tr_name + ".tr");
     wifiPhy.EnableAsciiAll(osw);
     // AsciiTraceHelper ascii;
-    MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(m_filePathResults + tr_name + ".mob"));
+    //MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(m_filePathResults + tr_name + ".mob"));
 
-    internet.EnableAsciiIpv4All(m_filePathResults + "ipv4pcap/" + tr_name + ".ipv4");
-    internet.EnablePcapIpv4All(m_filePathResults + "ipv4pcap/" + tr_name + ".ipv4");
-    wifiPhy.EnablePcapAll(m_filePathResults + "pcap/" + tr_name, true);
+    //internet.EnableAsciiIpv4All(m_filePathResultsPcap + "ipv4pcap/" + tr_name + ".ipv4");
+    //internet.EnablePcapIpv4All(m_filePathResultsPcap + "ipv4pcap/" + tr_name + ".ipv4");
+    wifiPhy.EnablePcapAll(m_filePathResultsPcap + tr_name, true);
 
     FlowMonitorHelper flowmonHelper;
     Ptr<FlowMonitor> flowmon;
