@@ -176,14 +176,14 @@ LidarNeighbors::Purge()
 }
 
 bool
-LidarNeighbors::CheckCollisions(uint32_t x, uint32_t y, uint32_t z)
+LidarNeighbors::CheckCollisions(uint32_t x, uint32_t y, uint32_t z, Ipv4Address address)
 {
     Time now = Simulator::Now();
     Vector checkPosition(x,y,z);
     for (auto i = m_nb.begin(); i != m_nb.end(); ++i)
     {
         double seconds = now.GetSeconds() - i->m_timeSeen.GetSeconds();
-        if (seconds <= 3)
+        if (seconds <= 3 && i->m_neighborAddress != address)
         {
             // multiply the velocity by seconds (time between now and adding the lidar neighbor) and add to position
             Vector position(i->m_xPosition,i->m_yPosition,i->m_zPosition);
@@ -191,6 +191,10 @@ LidarNeighbors::CheckCollisions(uint32_t x, uint32_t y, uint32_t z)
                             i->m_yVelocity * seconds,
                             i->m_zVelocity * seconds);
             Vector newPosition = position + velocity;
+
+            if(floor(velocity.GetLength()) < 1){
+                continue;
+            }
 
             // determine if that's within 2.5 meters of the parameter position
             double distanceBetween = CalculateDistance(newPosition, checkPosition);

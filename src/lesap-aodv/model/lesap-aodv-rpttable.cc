@@ -210,11 +210,11 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
 
     mal << m_maliciousNodeAddr;
     origin << m_originAddress;
-    expire << std::setprecision(2) << (m_lifeTime - Simulator::Now()).As(unit);
-    reportCount << m_repCount;
+    expire << std::setprecision(12) << m_lifeTime.As(unit);
+    reportCount << unsigned(m_repCount);
     blacklisted << m_blackListState;
-    routeReportTimeout << std::setprecision(2) << (m_routeReportTimeout - Simulator::Now()).As(unit);
-    blacklistTimeout << std::setprecision(2) << (m_blackListTimeout - Simulator::Now()).As(unit);
+    routeReportTimeout << std::setprecision(12) << m_routeReportTimeout.As(unit);
+    blacklistTimeout << std::setprecision(12) << m_blackListTimeout.As(unit);
 
     for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
     {
@@ -247,7 +247,7 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
     *os << std::setw(16) << blacklistTimeout.str();
     *os << std::setw(16) << reportCount.str();
     *os << std::setw(16) << blacklisted.str();
-    *os << std::setw(64) << precursors.str();
+    *os << precursors.str();
     *os << std::endl;
     // Restore the previous ostream state
     (*os).copyfmt(oldState);

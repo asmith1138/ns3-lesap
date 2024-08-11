@@ -3110,7 +3110,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
     // Check for lidar collisions based on position and velocity
-    if(m_lnb.CheckCollisions(sendKeyHeader.GetX(), sendKeyHeader.GetY(), sendKeyHeader.GetZ())){
+    if(m_lnb.CheckCollisions(sendKeyHeader.GetX(), sendKeyHeader.GetY(), sendKeyHeader.GetZ(), address)){
         //report node as malicious and add to blacklist
         Ipv4InterfaceAddress iaddr = m_ipv4->GetAddress (1,0);
         Ipv4Address ipAddr = iaddr.GetLocal();
