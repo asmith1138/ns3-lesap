@@ -96,4 +96,33 @@ LesapAodvHelper::AssignStreams(NodeContainer c, int64_t stream)
     return (currentStream - stream);
 }
 
+void
+LesapAodvHelper::PrintReportTableAllAt(Time printTime,
+                                          Ptr<OutputStreamWrapper> stream,
+                                          Time::Unit unit)
+{
+    for (uint32_t i = 0; i < NodeList::GetNNodes(); i++)
+    {
+        Ptr<Node> node = NodeList::GetNode(i);
+        Simulator::Schedule(printTime, &LesapAodvHelper::Print,this, node, stream, unit);
+    }
+}
+
+void
+LesapAodvHelper::PrintReportTableAt(Time printTime,
+                                    Ptr<Node> node,
+                                       Ptr<OutputStreamWrapper> stream,
+                                       Time::Unit unit)
+{
+        Simulator::Schedule(printTime, &LesapAodvHelper::Print, this,node, stream, unit);
+}
+
+void
+LesapAodvHelper::Print(Ptr<Node> node, Ptr<OutputStreamWrapper> stream, Time::Unit unit)
+{
+    Ptr<lesapAodv::RoutingProtocol> rp  = node->GetObject<lesapAodv::RoutingProtocol>();
+    NS_ASSERT(rp);
+    rp->PrintReports(stream, unit);
+}
+
 } // namespace ns3

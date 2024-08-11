@@ -107,6 +107,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     void SetIpv4(Ptr<Ipv4> ipv4) override;
     void PrintRoutingTable(Ptr<OutputStreamWrapper> stream,
                            Time::Unit unit = Time::S) const override;
+    void PrintReports(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const;
+
 
     // Handle protocol parameters
     /**
@@ -619,6 +621,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     bool IsReportSybil();
     bool IsBlackhole();
     bool IsGrayhole();
+
 };
 
 } // namespace lesapAodv

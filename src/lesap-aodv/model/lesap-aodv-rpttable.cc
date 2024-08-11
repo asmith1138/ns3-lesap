@@ -193,18 +193,36 @@ void
 ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
 {
     std::ostream* os = stream->GetStream();
+
     // Copy the current ostream state
     std::ios oldState(nullptr);
     oldState.copyfmt(*os);
-
     *os << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
 
     std::ostringstream mal;
     std::ostringstream origin;
     std::ostringstream expire;
+    std::ostringstream routeReportTimeout;
+    std::ostringstream reportCount;
+    std::ostringstream blacklisted;
+    std::ostringstream blacklistTimeout;
+    std::ostringstream precursors;
+
     mal << m_maliciousNodeAddr;
     origin << m_originAddress;
     expire << std::setprecision(2) << (m_lifeTime - Simulator::Now()).As(unit);
+    reportCount << m_repCount;
+    blacklisted << m_blackListState;
+    routeReportTimeout << std::setprecision(2) << (m_routeReportTimeout - Simulator::Now()).As(unit);
+    blacklistTimeout << std::setprecision(2) << (m_blackListTimeout - Simulator::Now()).As(unit);
+
+    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
+    {
+        std::ostringstream prec;
+        prec << i->first;
+        precursors << prec.str() << "(" << i->second.As(unit) << ")";
+    }
+
     *os << std::setw(16) << mal.str();
     *os << std::setw(16) << origin.str();
     *os << std::setw(16);
@@ -225,6 +243,11 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
     }
 
     *os << std::setw(16) << expire.str();
+    *os << std::setw(16) << routeReportTimeout.str();
+    *os << std::setw(16) << blacklistTimeout.str();
+    *os << std::setw(16) << reportCount.str();
+    *os << std::setw(16) << blacklisted.str();
+    *os << std::setw(64) << precursors.str();
     *os << std::endl;
     // Restore the previous ostream state
     (*os).copyfmt(oldState);
@@ -538,17 +561,20 @@ ReportTable::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S
 
     *os << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
     *os << "\nLESAP-AODV Routing table\n";
-    *os << std::setw(16) << "Destination";
-    *os << std::setw(16) << "Gateway";
-    *os << std::setw(16) << "Interface";
+    *os << std::setw(16) << "Malicious IP";
+    *os << std::setw(16) << "Origin IP";
     *os << std::setw(16) << "Flag";
     *os << std::setw(16) << "Expire";
-    *os << "Hops" << std::endl;
+    *os << std::setw(16) << "ReportTimeout";
+    *os << std::setw(16) << "BlacklistTimeout";
+    *os << std::setw(16) << "ReportCount";
+    *os << std::setw(16) << "IsBlacklisted";
+    *os << "Precursors" << std::endl;
     for (auto i = table.begin(); i != table.end(); ++i)
     {
         i->second.Print(stream, unit);
     }
-    *stream->GetStream() << "\n";
+    *stream->GetStream() << std::endl;
 }
 
 } // namespace lesapAodv

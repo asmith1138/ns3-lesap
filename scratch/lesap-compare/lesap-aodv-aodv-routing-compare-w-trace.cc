@@ -157,6 +157,7 @@ class RoutingExperiment
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
     std::string m_csvLogFile{"manet-routing.output.log.csv"};                           //!< Start file for mobility.
+    std::string m_reportLogFile{"manet-routing.output.reports.txt"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_filePathResults{"/home/andrew/Documents/thesis/resultsLogging/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_filePathResultsPcap{"/media/andrew/Secondary/thesis/pcap/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
@@ -206,6 +207,7 @@ RoutingExperiment::SetProtocol(std::string protocol)
     m_protocolName = protocol;
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
 }
 
 void
@@ -213,6 +215,7 @@ RoutingExperiment::SetMalicious(bool mal)
 {
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
     m_enableMalicious = mal;
 }
 
@@ -222,6 +225,7 @@ void RoutingExperiment::SetNNodeWTrace(std::string nNodes){
     m_startFile = nNodes + ".init";
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
 }
 
 void 
@@ -484,6 +488,7 @@ RoutingExperiment::Run()
     // blank out the last output file and write the column headers
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
     std::ofstream out(m_filePathResults + m_CSVfileName);
     out << "SimulationSecond,"
         << "ReceiveRate,"
@@ -768,6 +773,21 @@ RoutingExperiment::Run()
         flowmon = flowmonHelper.InstallAll();
     }
 
+    if (m_protocolName == "LESAP-AODV"){
+        //std::ofstream reportsOut(m_filePathResults + m_reportLogFile);
+        Ptr<OutputStreamWrapper> wrapper = Create<OutputStreamWrapper>(m_filePathResults + m_reportLogFile, std::ios::out);
+        for (int i = 0; i < m_nWifis; i++)
+        {
+            //lesapAodv.PrintReportTableAllAt(Simulator::GetMaximumSimulationTime(),wrapper,Time::S);
+            lesapAodv.PrintReportTableAt(Seconds(ns2Start.GetEndTimeForNode(i)), adhocNodes.Get(i),wrapper,Time::S);
+            //lesapAodv.PrintReportTableAllAt(Seconds(ns2Start.GetSimTime()),wrapper,Time::S);
+            //Ptr<lesapAodv::RoutingProtocol> protocol =
+            //    adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
+            //protocol->PrintReports(wrapper, Time::Unit::S);
+        }
+        //wrapper.close();
+    }
+
     NS_LOG_INFO("Run Simulation.");
 
     CheckThroughput();
@@ -779,6 +799,8 @@ RoutingExperiment::Run()
     {
         flowmon->SerializeToXmlFile(m_filePathResults + tr_name + ".flowmon", false, false);
     }
+
+
 
     Simulator::Destroy();
 }

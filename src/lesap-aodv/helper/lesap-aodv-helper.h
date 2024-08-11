@@ -76,6 +76,15 @@ class LesapAodvHelper : public Ipv4RoutingHelper
      * \return the number of stream indices assigned by this helper
      */
     int64_t AssignStreams(NodeContainer c, int64_t stream);
+    void PrintReportTableAllAt(Time printTime,
+                                              Ptr<OutputStreamWrapper> stream,
+                                              Time::Unit unit);
+    void Print(Ptr<Node> node, Ptr<OutputStreamWrapper> stream, Time::Unit unit);
+    void PrintReportTableAt(Time printTime,
+                                        Ptr<Node> node,
+                                        Ptr<OutputStreamWrapper> stream,
+                                        Time::Unit unit);
+
 
   private:
     /** the factory to create LESAP-AODV routing object */

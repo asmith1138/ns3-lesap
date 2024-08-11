@@ -3266,5 +3266,17 @@ RoutingProtocol::AddDirectRoute(Ipv4Address address, Ptr<const NetDevice> idev){
     m_routingTable.AddRoute(newEntry);
 }
 
+void
+RoutingProtocol::PrintReports(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
+{
+    *stream->GetStream() << "Node: " << m_ipv4->GetObject<Node>()->GetId()
+                         << "; Time: " << Now().As(unit)
+                         << ", Local time: " << m_ipv4->GetObject<Node>()->GetLocalTime().As(unit)
+                         << ", LESAP-AODV Report table" << std::endl;
+
+    m_reportTable.Print(stream, unit);
+    *stream->GetStream() << std::endl;
+}
+
 } // namespace lesapAodv
 } // namespace ns3
