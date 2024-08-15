@@ -183,7 +183,7 @@ LidarNeighbors::CheckCollisions(uint32_t x, uint32_t y, uint32_t z, Ipv4Address 
     for (auto i = m_nb.begin(); i != m_nb.end(); ++i)
     {
         double seconds = now.GetSeconds() - i->m_timeSeen.GetSeconds();
-        if (seconds <= 3 && i->m_neighborAddress != address)
+        if (seconds <= 1 && i->m_neighborAddress != address)
         {
             // multiply the velocity by seconds (time between now and adding the lidar neighbor) and add to position
             Vector position(i->m_xPosition,i->m_yPosition,i->m_zPosition);

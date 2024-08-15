@@ -160,7 +160,7 @@ class RoutingExperiment
     std::string m_reportLogFile{"manet-routing.output.reports.txt"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_filePathResults{"/home/andrew/Documents/thesis/resultsLogging/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
-    std::string m_filePathResultsPcap{"/media/andrew/Secondary/thesis/pcap/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
+    std::string m_filePathResultsPcap{"/home/andrew/Documents/thesis/resultsLogging/pcap/"};//"/media/andrew/Secondary/thesis/pcap/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_simsToRun{"aodv-all"};                           //!< Start file for mobility.
     bool m_flowMonitor{true};                             //!< Enable FlowMonitor.
 };
