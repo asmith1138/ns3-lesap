@@ -183,6 +183,38 @@ CourseChange(std::string foo, Ptr<const MobilityModel> mobility)
 }
 
 static inline std::string
+WriteRecievedPacketToCSV(Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddress)
+{
+    std::ostringstream csvLine;
+    Address myAddr;
+    socket->GetSockName(myAddr);
+    InetSocketAddress iaddr = InetSocketAddress::ConvertFrom (myAddr);
+    Ipv4Address defaultAddr;
+
+    csvLine << Simulator::Now().GetSeconds() << "," ;//time
+
+    //if (InetSocketAddress::IsMatchingType(senderAddress))
+    //{
+        InetSocketAddress saddr = InetSocketAddress::ConvertFrom(senderAddress);
+        csvLine << packet->GetUid() << ","//packet id
+                << "Recieved" << ","//status
+                << packet->GetSize() << ","//packet size
+                << iaddr.GetIpv4() << ","//nodeIP(Receiver)
+                << defaultAddr << ","//sender
+                << saddr.GetIpv4() << ","//Origin
+                << iaddr.GetIpv4() << ","//destinationIP(Receiver)
+                << "Delivered" << std::endl;
+
+    //}
+    //else
+    //{
+    //    csvLine << " received one packet!";
+    //}
+    return csvLine.str();
+}
+
+
+static inline std::string
 PrintReceivedPacket(Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddress)
 {
     std::ostringstream oss;
@@ -192,7 +224,7 @@ PrintReceivedPacket(Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddres
     if (InetSocketAddress::IsMatchingType(senderAddress))
     {
         InetSocketAddress addr = InetSocketAddress::ConvertFrom(senderAddress);
-        oss << " received one packet from " << addr.GetIpv4();
+        oss << " received one packet " << packet->GetUid() << " from " << addr.GetIpv4();
     }
     else
     {
@@ -239,12 +271,15 @@ RoutingExperiment::ReceivePacket(Ptr<Socket> socket)
 {
     Ptr<Packet> packet;
     Address senderAddress;
+    std::ofstream finalOut(m_filePathResults + m_csvLogFile, std::ios::app);
     while ((packet = socket->RecvFrom(senderAddress)))
     {
         bytesTotal += packet->GetSize();
         packetsReceived += 1;
         NS_LOG_UNCOND(PrintReceivedPacket(socket, packet, senderAddress));
+        finalOut << WriteRecievedPacketToCSV(socket, packet, senderAddress);
     }
+    finalOut.close();
 }
 
 void
@@ -505,6 +540,7 @@ RoutingExperiment::Run()
         << "NodeIP,"
         << "SenderIP,"
         << "OriginIP,"
+        << "DestIP,"
         << "Reason" << std::endl;
     finalOut.close();
 
@@ -673,53 +709,87 @@ RoutingExperiment::Run()
 
 
     bool useCustomApp = false;
+    bool sendAllNodes = false;
 
     //Add applications
     for (int i = 0; i < m_nWifis; i++)
     {
-        int j = i + 5;
-        int k = i + 10;
-        j = (j >= m_nWifis) ? (j - m_nWifis) : j;
-        k = (k >= m_nWifis) ? (k - m_nWifis) : k;
-        NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for "  << k << " and " << j);
+        if(sendAllNodes){
+            for (int m = 0; m < m_nWifis; m++)
+            {
+                NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for "  << m);
+                if(useCustomApp){
+                    // Address should be the reciever not sender
+                    // Add multiple with new setuppacketrecieve
+                    Ptr<BsmApp> app1 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
-        if(useCustomApp){
-            // Address should be the reciever not sender
+                    adhocNodes.Get(m)->AddApplication(app1);
+                    app1->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(m)));
+                    app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(m)));
+                }
+                else
+                {
+                    OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+                    onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+                    onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+                    onoff1.SetConstantRate(DataRate("1280bps"),128);
 
-            // Add multiple with new setuppacketrecieve
-            Ptr<BsmApp> app1 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
-            Ptr<BsmApp> app2 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+                    Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
-            //Address sinkAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+                    AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+                    onoff1.SetAttribute("Remote", remoteAddress);
 
-            //Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(adhocNodes.Get(i), UdpSocketFactory::GetTypeId());
-            //ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
+                    ApplicationContainer temp = onoff1.Install(adhocNodes.Get(m));
+                    temp.Start(Seconds(ns2Start.GetStartTimeForNode(m)));
+                    temp.Stop(Seconds(ns2Start.GetEndTimeForNode(m)));
+                }
+            }
+        }
+        else
+        {
+            int j = i + 5;
+            int k = i + 10;
+            j = (j >= m_nWifis) ? (j - m_nWifis) : j;
+            k = (k >= m_nWifis) ? (k - m_nWifis) : k;
+            NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for "  << k << " and " << j);
 
-            //Ptr<BsmApp> app = CreateObject<BsmApp>();
-            //app->Setup(ns3UdpSocket, sinkAddress, 1040, 1000, DataRate("1Mbps"));
-            adhocNodes.Get(j)->AddApplication(app1);
-            adhocNodes.Get(k)->AddApplication(app2);
-            app1->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(j)));
-            app2->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(k)));
-            app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(j)));
-            app2->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(k)));
-        }else{
-            OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
-            onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
-            onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
-            onoff1.SetConstantRate(DataRate("1280bps"),128);
+            if(useCustomApp){
+                // Address should be the reciever not sender
+                // Add multiple with new setuppacketrecieve
+                Ptr<BsmApp> app1 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+                Ptr<BsmApp> app2 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
-            Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+                //Address sinkAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
 
-            AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
-            onoff1.SetAttribute("Remote", remoteAddress);
+                //Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(adhocNodes.Get(i), UdpSocketFactory::GetTypeId());
+                //ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
 
-            ApplicationContainer temp = onoff1.Install(adhocNodes.Get(j));
-            ApplicationContainer temp2 = onoff1.Install(adhocNodes.Get(k));
-            temp.Start(Seconds(ns2Start.GetStartTimeForNode(j)));
-            temp2.Start(Seconds(ns2Start.GetStartTimeForNode(k)));
-            temp.Stop(Seconds(ns2Start.GetEndTimeForNode(j)));
-            temp2.Stop(Seconds(ns2Start.GetEndTimeForNode(k)));
+                //Ptr<BsmApp> app = CreateObject<BsmApp>();
+                //app->Setup(ns3UdpSocket, sinkAddress, 1040, 1000, DataRate("1Mbps"));
+                adhocNodes.Get(j)->AddApplication(app1);
+                adhocNodes.Get(k)->AddApplication(app2);
+                app1->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(j)));
+                app2->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(k)));
+                app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(j)));
+                app2->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(k)));
+            }else{
+                OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+                onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+                onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+                onoff1.SetConstantRate(DataRate("1280bps"),128);
+
+                Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+
+                AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+                onoff1.SetAttribute("Remote", remoteAddress);
+
+                ApplicationContainer temp = onoff1.Install(adhocNodes.Get(j));
+                ApplicationContainer temp2 = onoff1.Install(adhocNodes.Get(k));
+                temp.Start(Seconds(ns2Start.GetStartTimeForNode(j)));
+                temp2.Start(Seconds(ns2Start.GetStartTimeForNode(k)));
+                temp.Stop(Seconds(ns2Start.GetEndTimeForNode(j)));
+                temp2.Stop(Seconds(ns2Start.GetEndTimeForNode(k)));
+            }
         }
     }
 

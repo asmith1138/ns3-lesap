@@ -20,6 +20,7 @@ java -jar ../../../tracemetrics-1.4.0/tracemetrics.jar
 gnuplot mygnucode.plt 
 gnuplot
 mergecap -w All.pcap *.pcap
+mergecap -w LESAP100Norm.pcap LESAP-AODV.100.normal*.pcap
 
 
 Sumo

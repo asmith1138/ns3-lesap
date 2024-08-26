@@ -530,12 +530,12 @@ RoutingProtocol::DeferredRouteOutput(Ptr<const Packet> p,
 }
 
 void
-RoutingProtocol::PrintPacketToCSV(uint64_t packetId, uint32_t packetSize, std::string status, std::string reason, Ipv4Address sender, Ipv4Address origin)
+RoutingProtocol::PrintPacketToCSV(uint64_t packetId, uint32_t packetSize, std::string status, std::string reason, Ipv4Address sender, Ipv4Address origin, Ipv4Address destination)
 {
         std::ofstream out(m_csvLogFile, std::ios::app);
 
         out << Simulator::Now().GetSeconds() << "," << packetId << "," << status << "," << packetSize << ","
-            << GetOwnAddress() << "," << sender << "," << origin << "," << reason << "" << std::endl;
+            << GetOwnAddress() << "," << sender << "," << origin << "," << destination << "," << reason << "" << std::endl;
 
         out.close();
 }
@@ -554,7 +554,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     {
         NS_LOG_LOGIC("No lesap-aodv interfaces");
         //Log Dropped packet
-        PrintPacketToCSV(p->GetUid(), p->GetSize(),"Dropped","No Interface",header.GetSource(),header.GetSource());
+        PrintPacketToCSV(p->GetUid(), p->GetSize(),"Dropped","No Interface",header.GetSource(),header.GetSource(), header.GetDestination());
         return false;
     }
     NS_ASSERT(m_ipv4);
@@ -572,7 +572,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     if(IsBlackhole()){
         // Drop packets, blackhole node
         //Log Dropped packet
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Blackhole",origin,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Blackhole",origin,origin, dst);
         return true;
     }
     if(IsGrayhole() || IsSybil()){
@@ -580,7 +580,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         uint8_t randomNum = rand() % 10;
         if (randomNum < 2){
             //Log Dropped packet
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","GrayholeSybil",origin,origin);
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","GrayholeSybil",origin,origin, dst);
             return true;
         }
     }
@@ -642,11 +642,11 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     //Defer until verified sender
                     DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
                     //Log deferred packet
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Deferred","Sender Unverified",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Deferred","Sender Unverified",senderAddr,origin, dst);
                     return true;
                 }else{
                     //Log Dropped packet
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Sender not within Lidar range",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Sender not within Lidar range",senderAddr,origin, dst);
                     return false;
                 }
 
@@ -663,7 +663,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         {
             DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
             //Log deferred packet
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Deferred","Deferred Route Request",senderAddr,origin);
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Deferred","Deferred Route Request",senderAddr,origin, dst);
             return true;
         }
     }
@@ -672,7 +672,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     if (IsMyOwnAddress(origin))
     {
         //Log duplicate packet
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Duplicate","Duplicate of own packet",senderAddr,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Duplicate","Duplicate of own packet",senderAddr,origin, dst);
         return true;
     }
 
@@ -680,7 +680,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
     if (dst.IsMulticast())
     {
         //Log Dropped packet
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Multicast",senderAddr,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Multicast",senderAddr,origin, dst);
         return false;
     }
 
@@ -697,7 +697,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     NS_LOG_DEBUG("Duplicated packet " << p->GetUid() << " from " << origin
                                                       << ". Drop.");
                     //Log duplicated packet
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Duplicate","Duplicate packet",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Duplicate","Duplicate packet",senderAddr,origin, dst);
                     return true;
                 }
                 UpdateRouteLifeTime(origin, m_activeRouteTimeout);
@@ -708,7 +708,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     lcb(p, header, iif);
                     // Fall through to additional processing
                     //Log managed packet not returned
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered Fall Through","Broadcast local delivery",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered Fall Through","Broadcast local delivery",senderAddr,origin, dst);
                 }
                 else
                 {
@@ -716,12 +716,12 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                                  << p->GetUid() << " from " << origin);
                     ecb(p, header, Socket::ERROR_NOROUTETOHOST);
                     //Log Dropped packet not returned
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped Fall Through","Broadcast null callback local",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped Fall Through","Broadcast null callback local",senderAddr,origin, dst);
                 }
                 if (!m_enableBroadcast)
                 {
                     //Log Dropped packet
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Broadcast disabled",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Broadcast disabled",senderAddr,origin, dst);
                     return true;
                 }
                 if (header.GetProtocol() == UdpL4Protocol::PROT_NUMBER)
@@ -732,7 +732,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                     {
                         // LESAP-AODV packets sent in broadcast are already managed
                         //Log managed packet
-                        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Already Managed",senderAddr,origin);
+                        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Already Managed",senderAddr,origin, dst);
                         return true;
                     }
                 }
@@ -745,20 +745,20 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                         Ptr<Ipv4Route> route = toBroadcast.GetRoute();
                         ucb(route, packet, header);
                         //Log managed packet
-                        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Forward broadcast",senderAddr,origin);
+                        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Forward broadcast",senderAddr,origin, dst);
                     }
                     else
                     {
                         NS_LOG_DEBUG("No route to forward broadcast. Drop packet " << p->GetUid());
                         //Log Dropped packet
-                        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","No route to forward",senderAddr,origin);
+                        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","No route to forward",senderAddr,origin, dst);
                     }
                 }
                 else
                 {
                     NS_LOG_DEBUG("TTL exceeded. Drop packet " << p->GetUid());
                     //Log Dropped packet
-                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","TTL exceeded",senderAddr,origin);
+                    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","TTL exceeded",senderAddr,origin, dst);
                 }
                 return true;
             }
@@ -789,7 +789,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                  SendHello(toOrigin.GetNextHop());
                  DeferredRouteOutput(p, header, idev, ucb, ecb, lcb);
                  //Log deferred packet
-                 PrintPacketToCSV(p->GetUid(),p->GetSize(),"Deferred","Looking for route",senderAddr,origin);
+                 PrintPacketToCSV(p->GetUid(),p->GetSize(),"Deferred","Looking for route",senderAddr,origin, dst);
                  return true;
                 }
             }
@@ -798,7 +798,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         {
             NS_LOG_LOGIC("Unicast local delivery to " << dst);
             //Log managed packet
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Unicast local delivery",senderAddr,origin);
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Unicast local delivery",senderAddr,origin, dst);
             lcb(p, header, iif);
 
         }
@@ -808,7 +808,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                          << p->GetUid() << " from " << origin);
             ecb(p, header, Socket::ERROR_NOROUTETOHOST);
             //Log Dropped packet
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Null Callback",senderAddr,origin);
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Null Callback",senderAddr,origin, dst);
         }
         return true;
     }
@@ -819,13 +819,13 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
         NS_LOG_LOGIC("Forwarding disabled for this interface");
         ecb(p, header, Socket::ERROR_NOROUTETOHOST);
         //Log Dropped packet
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Forwarding disabled",senderAddr,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Forwarding disabled",senderAddr,origin, dst);
         return true;
     }
 
     // Forwarding
     //Log forward packet
-    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Forward","Forwarding",senderAddr,origin);
+    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Forward","Forwarding",senderAddr,origin, dst);
     return Forwarding(p, header, idev, ucb, ecb);
 }
 
@@ -921,7 +921,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
 
             ucb(route, p, header);
             //Log managed packet
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Forwarded",senderAddr,origin);
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Delivered","Forwarded",senderAddr,origin, dst);
             return true;
         }
         else
@@ -931,7 +931,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
                 SendRerrWhenNoRouteToForward(dst, toDst.GetSeqNo(), origin);
                 NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
                 //Log Dropped packet
-                PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","No Route to forward",senderAddr,origin);
+                PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","No Route to forward",senderAddr,origin, dst);
                 return false;
             }
         }
@@ -940,7 +940,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
     NS_LOG_DEBUG("Drop packet " << p->GetUid() << " because no route to forward it.");
     SendRerrWhenNoRouteToForward(dst, 0, origin);
     //Log Dropped packet
-    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","No Route to forward send err",senderAddr,origin);
+    PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","No Route to forward send err",senderAddr,origin, dst);
     return false;
 }
 
@@ -1589,7 +1589,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     {
         NS_LOG_DEBUG("LESAP-AODV message " << packet->GetUid() << " with unknown type received: "
                                      << tHeader.Get() << ". Drop");
-        PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Message Type Unknown",sender,sender);
+        PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Message Type Unknown",sender,sender, GetOwnAddress());
         return; // drop
     }
 
@@ -1608,7 +1608,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
                 SendNeedKey(sender);
                 SendHello(sender);
             }
-            PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Sender not within Lidar range",sender,sender);
+            PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Dropped","Sender not within Lidar range",sender,sender, GetOwnAddress());
             return; // drop
 
             //Can only be rrep and not a neighbor
@@ -1665,7 +1665,7 @@ RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
     }
     }
     //Control handled
-    PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Handled","LESAPAODV message was handled successfully",sender,sender);
+    PrintPacketToCSV(packet->GetUid(),packet->GetSize(),"Control-Handled","LESAPAODV message was handled successfully",sender,sender, GetOwnAddress());
 }
 
 bool
@@ -1757,7 +1757,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         {
             NS_LOG_DEBUG("Ignoring RREQ from node in blacklist");
             //control blacklisted
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src,rreqHeader.GetOrigin());
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src,rreqHeader.GetOrigin(),rreqHeader.GetDst());
             return;
         }
     }
@@ -1774,7 +1774,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     {
         NS_LOG_DEBUG("Ignoring RREQ due to duplicate");
         //control duplicate
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Duplicate",src,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Duplicate",src,origin, rreqHeader.GetDst());
         return;
     }
 
@@ -1900,7 +1900,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     if(m_reportTable.LookupValidReport(src, rpSrc) || m_reportTable.LookupValidReport(origin, rp)){
         NS_LOG_DEBUG("Src or Origin is blacklists so we are dropping the rreq");
         //control drop blacklist
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",src,origin, rreqHeader.GetDst());
         return;
     }
     //Always send rrep when malicious
@@ -1934,7 +1934,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
         {
             NS_LOG_DEBUG("Drop RREQ from " << src << ", dest next hop " << toDst.GetNextHop());
             //control drop loop
-            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Loop",src,origin);
+            PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Loop",src,origin,rreqHeader.GetDst());
             return;
         }
         /*
@@ -1966,7 +1966,7 @@ RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sr
     {
         NS_LOG_DEBUG("TTL exceeded. Drop RREQ origin " << src << " destination " << dst);
         //control drop
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",src,origin);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",src,origin,rreqHeader.GetDst());
         return;
     }
 
@@ -2212,7 +2212,7 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
                 SendHello(sender);
                 //PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Processed","Sender needs verified",sender);
             }else{
-                PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Sender not within Lidar range",sender, rrepHeader.GetOrigin());
+                PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Sender not within Lidar range",sender, rrepHeader.GetOrigin(),rrepHeader.GetDst());
             }
             return; // drop
         }
@@ -2249,7 +2249,7 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     if(m_reportTable.LookupValidReport(dst, rpDst) || m_reportTable.LookupValidReport(sender, rpSender)){
         NS_LOG_DEBUG("Sender or destination is blacklisted so we are dropping the rrep");
         //control drop blacklisted
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",sender, rrepHeader.GetOrigin());
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",sender, rrepHeader.GetOrigin(),rrepHeader.GetDst());
         return;
     }
 
@@ -2315,7 +2315,7 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
         toOrigin.GetFlag() == IN_SEARCH)
     {
         //control drop impossible
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Impossible",sender, rrepHeader.GetOrigin());
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Impossible",sender, rrepHeader.GetOrigin(),rrepHeader.GetDst());
         return; // Impossible! drop.
     }
 
@@ -2325,7 +2325,7 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
     if(m_reportTable.LookupValidReport(rrepHeader.GetOrigin(), rpOri) || m_reportTable.LookupValidReport(toOrigin.GetNextHop(), rpNxtHp)){
         NS_LOG_DEBUG("Origin or Next Hop is blacklisted so we are dropping the rrep");
         //control drop blacklisted
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",sender,rrepHeader.GetOrigin());
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","Blacklisted",sender,rrepHeader.GetOrigin(),rrepHeader.GetDst());
         return;
     }
     toOrigin.SetLifeTime(std::max(m_activeRouteTimeout, toOrigin.GetLifeTime()));
@@ -2357,7 +2357,7 @@ RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address send
         NS_LOG_DEBUG("TTL exceeded. Drop RREP destination " << dst << " origin "
                                                             << rrepHeader.GetOrigin());
         //control drop ttl exceeded
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",sender,rrepHeader.GetOrigin());
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","TTL Exceeded",sender,rrepHeader.GetOrigin(),rrepHeader.GetDst());
         return;
     }
 
@@ -2382,7 +2382,7 @@ RoutingProtocol::RecvReplyAck(Ipv4Address neighbor)
     if (m_reportTable.LookupValidReport(neighbor, rp)){
         NS_LOG_DEBUG("Dropping Reply ack from blacklisted node " << neighbor);
         //control drop blacklisted
-        PrintPacketToCSV(0,1,"Control-Dropped","Blacklisted",neighbor, neighbor);
+        PrintPacketToCSV(0,1,"Control-Dropped","Blacklisted",neighbor, neighbor, GetOwnAddress());
         return;
     }
     RoutingTableEntry rt;
@@ -2408,7 +2408,7 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
     if (m_reportTable.LookupValidReport(rrepHeader.GetDst(), rp)){
         NS_LOG_DEBUG("Dropping hello from blacklisted node " << rrepHeader.GetDst());
         //control drop blacklisted
-        PrintPacketToCSV(0,19,"Control-Dropped","Blacklisted",rrepHeader.GetDst(), rrepHeader.GetOrigin());
+        PrintPacketToCSV(0,19,"Control-Dropped","Blacklisted",rrepHeader.GetDst(), rrepHeader.GetOrigin(), rrepHeader.GetDst());
         return;
     }
     // Checking the distance and add/update the lidar neighbor table if within lidar distance
@@ -3137,7 +3137,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
             }
         }
         //control drop and blacklist
-        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","New Blacklisted",address, address);
+        PrintPacketToCSV(p->GetUid(),p->GetSize(),"Control-Dropped","New Blacklisted",address, address, GetOwnAddress());
         return;
     }
     // The position is not within 2.5 meters of any other node
