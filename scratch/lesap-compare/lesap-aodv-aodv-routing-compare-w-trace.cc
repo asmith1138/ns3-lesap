@@ -131,12 +131,15 @@ class RoutingExperiment
      * \return the socket.
      */
     Ptr<Socket> SetupPacketReceive(Ipv4Address addr, Ptr<Node> node);
+    void SetupPacketSend(ApplicationContainer apps);
     Ptr<BsmApp> SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node);
     /**
      * Receive a packet.
      * \param socket The receiving socket.
      */
     void ReceivePacket(Ptr<Socket> socket);
+    void SendPacket(Ptr<const Packet> packet, const Address& sender, const Address& destination);
+
     /**
      * Compute the throughput.
      */
@@ -213,6 +216,47 @@ WriteRecievedPacketToCSV(Ptr<Socket> socket, Ptr<Packet> packet, Address senderA
     return csvLine.str();
 }
 
+static inline std::string
+WriteSentPacketToCSV(Address destinationAddress, Ptr<const Packet> packet, Address senderAddress)
+{
+    std::ostringstream csvLine;
+    //Address myAddr;
+    //socket->GetSockName(myAddr);
+    InetSocketAddress daddr = InetSocketAddress::ConvertFrom (destinationAddress);
+    InetSocketAddress saddr = InetSocketAddress::ConvertFrom (senderAddress);
+    //Ipv4Address defaultAddr;
+    //Ptr<Packet> copy = packet->Copy();
+    //UdpHeader uHeader;
+    //Ipv4Header ipHeader;
+    //copy->RemoveHeader(ipHeader);
+    //Ipv4Header ipHeader2;
+    //copy->RemoveHeader(ipHeader2);
+    //Ipv4Header ipHeader3;
+    //copy->RemoveHeader(ipHeader3);
+    //Ipv4Header ipHeader4;
+    //copy->RemoveHeader(ipHeader4);
+    csvLine << Simulator::Now().GetSeconds() << "," ;//time
+
+    //if (InetSocketAddress::IsMatchingType(senderAddress))
+    //{
+    //InetSocketAddress saddr = InetSocketAddress::ConvertFrom(senderAddress);
+    csvLine << packet->GetUid() << ","//packet id
+            << "Sent" << ","//status
+            << packet->GetSize() << ","//packet size
+            << saddr.GetIpv4() << ","//nodeIP(Receiver)
+            << saddr.GetIpv4() << ","//sender
+            << saddr.GetIpv4() << ","//Origin
+            << daddr.GetIpv4() << ","//destinationIP(Receiver)
+            << "Sent" << std::endl;
+
+    //}
+    //else
+    //{
+    //    csvLine << " received one packet!";
+    //}
+    return csvLine.str();
+}
+
 
 static inline std::string
 PrintReceivedPacket(Ptr<Socket> socket, Ptr<Packet> packet, Address senderAddress)
@@ -267,6 +311,14 @@ RoutingExperiment::TurnOffFlowmon()
 }
 
 void
+RoutingExperiment::SendPacket(Ptr<const Packet> packet, const Address& sender, const Address& destination)
+{
+    std::ofstream finalOut(m_filePathResults + m_csvLogFile, std::ios::app);
+    finalOut << WriteSentPacketToCSV(destination, packet, sender);
+    finalOut.close();
+}
+
+void
 RoutingExperiment::ReceivePacket(Ptr<Socket> socket)
 {
     Ptr<Packet> packet;
@@ -296,6 +348,12 @@ RoutingExperiment::CheckThroughput()
     out.close();
     packetsReceived = 0;
     Simulator::Schedule(Seconds(1.0), &RoutingExperiment::CheckThroughput, this);
+}
+
+void
+RoutingExperiment::SetupPacketSend(ApplicationContainer apps)
+{
+    apps.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket, this));
 }
 
 Ptr<Socket>
@@ -777,6 +835,8 @@ RoutingExperiment::Run()
                 onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
                 onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
                 onoff1.SetConstantRate(DataRate("1280bps"),128);
+                //TODO: setup packet send set attr TX?
+                //onoff1.SetAttribute("TxWithAddresses", MakeCallback(&RoutingExperiment::SendPacket, this));
 
                 Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
@@ -789,6 +849,10 @@ RoutingExperiment::Run()
                 temp2.Start(Seconds(ns2Start.GetStartTimeForNode(k)));
                 temp.Stop(Seconds(ns2Start.GetEndTimeForNode(j)));
                 temp2.Stop(Seconds(ns2Start.GetEndTimeForNode(k)));
+                SetupPacketSend(temp);
+                SetupPacketSend(temp2);
+                //temp.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket, this));
+                //temp2.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket, this));
             }
         }
     }
