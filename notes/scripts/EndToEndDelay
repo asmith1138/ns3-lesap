@@ -1,0 +1,86 @@
+SELECT AVG("delay"), 'Aodv25NormDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."AODV25Normal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Aodv25MalDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."AODV25Mal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Aodv50NormDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."AODV50Normal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Aodv50MalDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."AODV50Mal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Aodv100NormDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."AODV100Normal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Aodv100MalDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."AODV100Mal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+
+UNION
+
+SELECT AVG("delay"), 'Lesap25NormDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."LESAP25Normal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Lesap25MalDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."LESAP25Mal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Lesap50NormDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."LESAP50Normal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Lesap50MalDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."LESAP50Mal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Lesap100NormDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."LESAP100Normal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+UNION
+SELECT AVG("delay"), 'Lesap100MalDelay' as title FROM (SELECT "PacketID", Count(*), MAX("SimulationTime") - MIN("SimulationTime") AS delay 
+FROM public."LESAP100Mal"
+WHERE "PacketStatus" in ('Sent', 'Recieved')
+GROUP BY "PacketID"
+HAVING Count(*) > 1
+ORDER BY "delay" desc) AS EndToEndDelay
+ORDER BY "title"

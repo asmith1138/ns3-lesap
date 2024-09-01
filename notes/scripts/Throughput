@@ -1,0 +1,63 @@
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."AODV25Normal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."AODV25Normal"), 'Aodv25Norm' as title
+	FROM public."AODV25Normal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."AODV25Mal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."AODV25Mal"), 'Aodv25Mal' as title
+	FROM public."AODV25Mal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."AODV50Normal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."AODV50Normal"), 'Aodv50Norm' as title
+	FROM public."AODV50Normal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."AODV50Mal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."AODV50Mal"), 'Aodv50Mal' as title
+	FROM public."AODV50Mal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."AODV100Normal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."AODV100Normal"), 'Aodv100Norm' as title
+	FROM public."AODV100Normal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."AODV100Mal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."AODV100Mal"), 'Aodv100Mal' as title
+	FROM public."AODV100Mal"
+	WHERE "PacketStatus"='Recieved'
+
+UNION
+
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."LESAP25Normal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."LESAP25Normal"), 'Lesap25Norm' as title
+	FROM public."LESAP25Normal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."LESAP25Mal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."LESAP25Mal"), 'Lesap25Mal' as title
+	FROM public."LESAP25Mal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."LESAP50Normal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."LESAP50Normal"), 'Lesap50Norm' as title
+	FROM public."LESAP50Normal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."LESAP50Mal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."LESAP50Mal"), 'Lesap50Mal' as title
+	FROM public."LESAP50Mal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."LESAP100Normal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."LESAP100Normal"), 'Lesap100Norm' as title
+	FROM public."LESAP100Normal"
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT SUM("PacketSize") / (SELECT MAX("SimulationTime") FROM public."LESAP100Mal"),
+		SUM("PacketSize"), (SELECT MAX("SimulationTime") FROM public."LESAP100Mal"), 'Lesap100Mal' as title
+	FROM public."LESAP100Mal"
+	WHERE "PacketStatus"='Recieved'
+
+ORDER BY "title"

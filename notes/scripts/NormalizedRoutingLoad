@@ -1,0 +1,114 @@
+WITH ControlPacketsAODV25Normal AS (SELECT COUNT(*) AS ControlPkts FROM public."AODV25Normal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully') 
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsAODV25Normal AS (SELECT COUNT(*) AS DataPkts FROM public."AODV25Normal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsAODV25Mal AS (SELECT COUNT(*) AS ControlPkts FROM public."AODV25Mal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsAODV25Mal AS (SELECT COUNT(*) AS DataPkts FROM public."AODV25Mal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsAODV50Normal AS (SELECT COUNT(*) AS ControlPkts FROM public."AODV50Normal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully') 
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsAODV50Normal AS (SELECT COUNT(*) AS DataPkts FROM public."AODV50Normal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsAODV50Mal AS (SELECT COUNT(*) AS ControlPkts FROM public."AODV50Mal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsAODV50Mal AS (SELECT COUNT(*) AS DataPkts FROM public."AODV50Mal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsAODV100Normal AS (SELECT COUNT(*) AS ControlPkts FROM public."AODV100Normal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully') 
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsAODV100Normal AS (SELECT COUNT(*) AS DataPkts FROM public."AODV100Normal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsAODV100Mal AS (SELECT COUNT(*) AS ControlPkts FROM public."AODV100Mal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsAODV100Mal AS (SELECT COUNT(*) AS DataPkts FROM public."AODV100Mal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsLESAP25Normal AS (SELECT COUNT(*) AS ControlPkts FROM public."LESAP25Normal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully') 
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsLESAP25Normal AS (SELECT COUNT(*) AS DataPkts FROM public."LESAP25Normal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsLESAP25Mal AS (SELECT COUNT(*) AS ControlPkts FROM public."LESAP25Mal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsLESAP25Mal AS (SELECT COUNT(*) AS DataPkts FROM public."LESAP25Mal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsLESAP50Normal AS (SELECT COUNT(*) AS ControlPkts FROM public."LESAP50Normal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully') 
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsLESAP50Normal AS (SELECT COUNT(*) AS DataPkts FROM public."LESAP50Normal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsLESAP50Mal AS (SELECT COUNT(*) AS ControlPkts FROM public."LESAP50Mal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsLESAP50Mal AS (SELECT COUNT(*) AS DataPkts FROM public."LESAP50Mal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsLESAP100Normal AS (SELECT COUNT(*) AS ControlPkts FROM public."LESAP100Normal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully') 
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsLESAP100Normal AS (SELECT COUNT(*) AS DataPkts FROM public."LESAP100Normal" WHERE "PacketStatus" = 'Recieved')
+,
+ControlPacketsLESAP100Mal AS (SELECT COUNT(*) AS ControlPkts FROM public."LESAP100Mal"
+WHERE ("PacketStatus" = 'Control-Handled' AND "Reason" = 'LESAPAODV message was handled successfully')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Message Type Unknown')
+OR ("PacketStatus" = 'Control-Dropped' AND "Reason" = 'Sender not within Lidar range')), 
+DataPacketsLESAP100Mal AS (SELECT COUNT(*) AS DataPkts FROM public."LESAP100Mal" WHERE "PacketStatus" = 'Recieved')
+
+
+
+
+
+
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Aodv25Norm' as title
+FROM ControlPacketsAODV25Normal, DataPacketsAODV25Normal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Aodv25Mal' as title
+FROM ControlPacketsAODV25Mal, DataPacketsAODV25Mal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Aodv50Norm' as title
+FROM ControlPacketsAODV50Normal, DataPacketsAODV50Normal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Aodv50Mal' as title
+FROM ControlPacketsAODV50Mal, DataPacketsAODV50Mal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Aodv100Norm' as title
+FROM ControlPacketsAODV100Normal, DataPacketsAODV100Normal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Aodv100Mal' as title
+FROM ControlPacketsAODV100Mal, DataPacketsAODV100Mal
+
+UNION
+
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap25Norm' as title
+FROM ControlPacketsLESAP25Normal, DataPacketsLESAP25Normal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap25Mal' as title
+FROM ControlPacketsLESAP25Mal, DataPacketsLESAP25Mal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap50Norm' as title
+FROM ControlPacketsLESAP50Normal, DataPacketsLESAP50Normal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap50Mal' as title
+FROM ControlPacketsLESAP50Mal, DataPacketsLESAP50Mal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap100Norm' as title
+FROM ControlPacketsLESAP100Normal, DataPacketsLESAP100Normal
+UNION
+SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap100Mal' as title
+FROM ControlPacketsLESAP100Mal, DataPacketsLESAP100Mal

@@ -1,0 +1,96 @@
+SELECT Count(*), 'Lesap25NormSent' as title
+	FROM public."LESAP25Normal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Lesap25NormRecieved' as title
+	FROM public."LESAP25Normal" 
+	WHERE "PacketStatus"='Recieved'
+	UNION
+	SELECT Count(*), 'Aodv25NormSent' as title
+	FROM public."AODV25Normal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Aodv25NormRecieved' as title
+	FROM public."AODV25Normal" 
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT Count(*), 'Lesap25MalSent' as title
+	FROM public."LESAP25Mal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Lesap25MalRecieved' as title
+	FROM public."LESAP25Mal" 
+	WHERE "PacketStatus"='Recieved'
+	UNION
+	SELECT Count(*), 'Aodv25MalSent' as title
+	FROM public."AODV25Mal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Aodv25MalRecieved' as title
+	FROM public."AODV25Mal" 
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT Count(*), 'Lesap50NormSent' as title
+	FROM public."LESAP50Normal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Lesap50NormRecieved' as title
+	FROM public."LESAP50Normal" 
+	WHERE "PacketStatus"='Recieved'
+	UNION
+	SELECT Count(*), 'Aodv50NormSent' as title
+	FROM public."AODV50Normal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Aodv50NormRecieved' as title
+	FROM public."AODV50Normal" 
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT Count(*), 'Lesap50MalSent' as title
+	FROM public."LESAP50Mal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Lesap50MalRecieved' as title
+	FROM public."LESAP50Mal" 
+	WHERE "PacketStatus"='Recieved'
+	UNION
+	SELECT Count(*), 'Aodv50MalSent' as title
+	FROM public."AODV50Mal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Aodv50MalRecieved' as title
+	FROM public."AODV50Mal" 
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT Count(*), 'Lesap100NormSent' as title
+	FROM public."LESAP100Normal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Lesap100NormRecieved' as title
+	FROM public."LESAP100Normal" 
+	WHERE "PacketStatus"='Recieved'
+	UNION
+	SELECT Count(*), 'Aodv100NormSent' as title
+	FROM public."AODV100Normal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Aodv100NormRecieved' as title
+	FROM public."AODV100Normal" 
+	WHERE "PacketStatus"='Recieved'
+UNION
+SELECT Count(*), 'Lesap100MalSent' as title
+	FROM public."LESAP100Mal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Lesap100MalRecieved' as title
+	FROM public."LESAP100Mal" 
+	WHERE "PacketStatus"='Recieved'
+	UNION
+	SELECT Count(*), 'Aodv100MalSent' as title
+	FROM public."AODV100Mal"
+	WHERE "PacketStatus"='Sent'
+	UNION
+SELECT Count(*), 'Aodv100MalRecieved' as title
+	FROM public."AODV100Mal" 
+	WHERE "PacketStatus"='Recieved'
+	ORDER BY title;

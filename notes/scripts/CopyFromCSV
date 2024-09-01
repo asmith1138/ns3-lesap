@@ -1,0 +1,60 @@
+COPY public."LESAP100Mal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/LESAP-AODV.100.mal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."LESAP100Normal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/LESAP-AODV.100.normal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."LESAP50Mal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/LESAP-AODV.50.mal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."LESAP50Normal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/LESAP-AODV.50.normal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."LESAP25Mal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/LESAP-AODV.25.mal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."LESAP25Normal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/LESAP-AODV.25.normal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."AODV100Mal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/AODV.100.mal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."AODV100Normal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/AODV.100.normal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."AODV50Mal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/AODV.50.mal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."AODV50Normal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/AODV.50.normal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."AODV25Mal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/AODV.25.mal.log.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY public."AODV25Normal"
+FROM '/home/andrew/Documents/thesis/resultsLogging/packetLogs/AODV.25.normal.log.csv'
+DELIMITER ','
+CSV HEADER;
+

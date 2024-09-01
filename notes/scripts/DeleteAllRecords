@@ -1,0 +1,12 @@
+DELETE FROM public."AODV25Mal";
+DELETE FROM public."AODV25Normal";
+DELETE FROM public."AODV50Mal";
+DELETE FROM public."AODV50Normal";
+DELETE FROM public."AODV100Mal";
+DELETE FROM public."AODV100Normal";
+DELETE FROM public."LESAP25Mal";
+DELETE FROM public."LESAP25Normal";
+DELETE FROM public."LESAP50Mal";
+DELETE FROM public."LESAP50Normal";
+DELETE FROM public."LESAP100Mal";
+DELETE FROM public."LESAP100Normal";
