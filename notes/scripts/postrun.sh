@@ -1,6 +1,6 @@
 mv *.tr ./trace/
 mv *.log.csv ./packetLogs/
-mv *.reports.txt ./reportLogs/
+mv *.reports.csv ./reportLogs/
 mv *.flowmon ./flowmon/
 mv *.csv ./csv/
 cd pcap

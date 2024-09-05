@@ -112,3 +112,4 @@ FROM ControlPacketsLESAP100Normal, DataPacketsLESAP100Normal
 UNION
 SELECT *, ControlPkts / DataPkts AS NormalizedRoutingLoad, 'Lesap100Mal' as title
 FROM ControlPacketsLESAP100Mal, DataPacketsLESAP100Mal
+ORDER BY title;

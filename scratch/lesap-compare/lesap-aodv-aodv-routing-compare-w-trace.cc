@@ -160,7 +160,7 @@ class RoutingExperiment
     std::string m_traceFile{"manet-trace.ns2"};                           //!< Trace file for mobility.
     std::string m_startFile{"manet-trace.init"};                           //!< Start file for mobility.
     std::string m_csvLogFile{"manet-routing.output.log.csv"};                           //!< Start file for mobility.
-    std::string m_reportLogFile{"manet-routing.output.reports.txt"};                           //!< Start file for mobility.
+    std::string m_reportLogFile{"manet-routing.output.reports.csv"};                           //!< Start file for mobility.
     std::string m_filePath{"/home/andrew/ns-3-dev/scratch/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_filePathResults{"/home/andrew/Documents/thesis/resultsLogging/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
     std::string m_filePathResultsPcap{"/home/andrew/Documents/thesis/resultsLogging/pcap/"};//"/media/andrew/Secondary/thesis/pcap/"};//"/home/andrew/ns-3-dev/results/lesap-compare/"};                           //!< Start file for mobility.
@@ -283,7 +283,7 @@ RoutingExperiment::SetProtocol(std::string protocol)
     m_protocolName = protocol;
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
-    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.csv";
 }
 
 void
@@ -291,7 +291,7 @@ RoutingExperiment::SetMalicious(bool mal)
 {
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
-    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.csv";
     m_enableMalicious = mal;
 }
 
@@ -301,7 +301,7 @@ void RoutingExperiment::SetNNodeWTrace(std::string nNodes){
     m_startFile = nNodes + ".init";
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
-    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.csv";
 }
 
 void 
@@ -581,7 +581,7 @@ RoutingExperiment::Run()
     // blank out the last output file and write the column headers
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
-    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.txt";
+    m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.csv";
     std::ofstream out(m_filePathResults + m_CSVfileName);
     out << "SimulationSecond,"
         << "ReceiveRate,"
@@ -911,6 +911,7 @@ RoutingExperiment::Run()
     if (m_protocolName == "LESAP-AODV"){
         //std::ofstream reportsOut(m_filePathResults + m_reportLogFile);
         Ptr<OutputStreamWrapper> wrapper = Create<OutputStreamWrapper>(m_filePathResults + m_reportLogFile, std::ios::out);
+        *wrapper->GetStream() << "Node,ReportsCount,FlaggedIP,Flag,OriginIP,IsBlacklisted,Precursors" << std::endl;
         for (int i = 0; i < m_nWifis; i++)
         {
             //lesapAodv.PrintReportTableAllAt(Simulator::GetMaximumSimulationTime(),wrapper,Time::S);

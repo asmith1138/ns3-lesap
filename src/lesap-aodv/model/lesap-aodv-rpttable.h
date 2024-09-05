@@ -288,6 +288,7 @@ class ReportTableEntry
      * \param unit The time unit to use (default Time::S)
      */
     void Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
+    void PrintCsv(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
 
   private:
     /**
@@ -415,6 +416,7 @@ class ReportTable
      * \param unit The time unit to use (default Time::S)
      */
     void Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
+    void PrintCsv(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S, uint32_t node = 0) const;
 
   private:
     /// The routing table

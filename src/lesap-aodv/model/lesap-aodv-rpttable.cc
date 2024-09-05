@@ -253,6 +253,60 @@ ReportTableEntry::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Ti
     (*os).copyfmt(oldState);
 }
 
+void
+ReportTableEntry::PrintCsv(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
+{
+    std::ostream* os = stream->GetStream();
+
+    // Copy the current ostream state
+    std::ios oldState(nullptr);
+    oldState.copyfmt(*os);
+    *os << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
+
+    std::ostringstream mal;
+    std::ostringstream origin;
+    std::ostringstream reportCount;
+    std::ostringstream blacklisted;
+    std::ostringstream precursors;
+
+    mal << m_maliciousNodeAddr;
+    origin << m_originAddress;
+    reportCount << unsigned(m_repCount);
+    blacklisted << m_blackListState;
+
+    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
+    {
+        std::ostringstream prec;
+        prec << i->first;
+        precursors << prec.str() << "(" << i->second.As(unit) << ")";
+    }
+
+    *os << reportCount.str() << ",";
+    *os << mal.str() << ",";
+    switch (m_flag)
+    {
+    case REPORT_VALID: {
+        *os << "UP";
+        break;
+    }
+    case REPORT_INVALID: {
+        *os << "DOWN";
+        break;
+    }
+    case REPORT_IN_SEARCH: {
+        *os << "IN_SEARCH";
+        break;
+    }
+    }
+    *os  << ",";
+    *os << origin.str() << ",";
+    *os << blacklisted.str() << ",";
+    *os << precursors.str() << ",";
+    *os << std::endl;
+    // Restore the previous ostream state
+    (*os).copyfmt(oldState);
+}
+
 /*
  The Routing Table
  */
@@ -576,6 +630,37 @@ ReportTable::Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S
     }
     *stream->GetStream() << std::endl;
 }
+
+void
+ReportTable::PrintCsv(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */, uint32_t node) const
+{
+    std::map<Ipv4Address, ReportTableEntry> table = m_ipv4AddressEntry;
+    Purge(table);
+    std::ostream* os = stream->GetStream();
+    // Copy the current ostream state
+    std::ios oldState(nullptr);
+    oldState.copyfmt(*os);
+
+    *os << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
+    //*os << "\nLESAP-AODV Routing table\n";
+    //*os << std::setw(16) << "Malicious IP";
+    //*os << std::setw(16) << "Origin IP";
+    //*os << std::setw(16) << "Flag";
+    //*os << std::setw(16) << "Expire";
+    //*os << std::setw(16) << "ReportTimeout";
+    //*os << std::setw(16) << "BlacklistTimeout";
+    //*os << std::setw(16) << "ReportCount";
+    //*os << std::setw(16) << "IsBlacklisted";
+    //*os << "Precursors" << std::endl;
+
+    for (auto i = table.begin(); i != table.end(); ++i)
+    {
+        *os << node << ",";
+        i->second.PrintCsv(stream, unit);
+    }
+    //*stream->GetStream() << std::endl;
+}
+
 
 } // namespace lesapAodv
 } // namespace ns3

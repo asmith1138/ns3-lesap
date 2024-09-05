@@ -3269,13 +3269,13 @@ RoutingProtocol::AddDirectRoute(Ipv4Address address, Ptr<const NetDevice> idev){
 void
 RoutingProtocol::PrintReports(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const
 {
-    *stream->GetStream() << "Node: " << m_ipv4->GetObject<Node>()->GetId()
-                         << "; Time: " << Now().As(unit)
-                         << ", Local time: " << m_ipv4->GetObject<Node>()->GetLocalTime().As(unit)
-                         << ", LESAP-AODV Report table" << std::endl;
+    //*stream->GetStream() << "Node: " << m_ipv4->GetObject<Node>()->GetId()
+    //                     << "; Time: " << Now().As(unit)
+    //                     << ", Local time: " << m_ipv4->GetObject<Node>()->GetLocalTime().As(unit)
+    //                     << ", LESAP-AODV Report table" << std::endl;
 
-    m_reportTable.Print(stream, unit);
-    *stream->GetStream() << std::endl;
+    m_reportTable.PrintCsv(stream, unit, m_ipv4->GetObject<Node>()->GetId());
+    //*stream->GetStream() << std::endl;
 }
 
 } // namespace lesapAodv
