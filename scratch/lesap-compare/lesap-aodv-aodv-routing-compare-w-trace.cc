@@ -751,7 +751,7 @@ RoutingExperiment::Run()
                     }
                     addReport = true;
                 }
-                if (addReport && (i % 5 == 1 || i % 5 == 2))
+                if (addReport && (i % 5 == 1 || i % 5 == 2 || i % 5 == 3 || i % 5 == 4))
                 {
                     // set starting reports
 
@@ -759,7 +759,7 @@ RoutingExperiment::Run()
                                               adhocInterfaces.GetAddress(i),
                                               Time(Seconds(ns2Start.GetSimTime())));
                     protocol->AddToBlacklist(newEntry);
-                    addReport = i % 5 != 2;
+                    addReport = i % 5 != 4;
                 }
             }
         }

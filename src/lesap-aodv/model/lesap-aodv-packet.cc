@@ -682,7 +682,7 @@ SendKeyHeader::GetInstanceTypeId() const
 uint32_t
 SendKeyHeader::GetSerializedSize() const
 {
-    return 28 + 256;
+    return 28 + 256 + 2;
 }
 
 
@@ -729,6 +729,7 @@ SendKeyHeader::Serialize(Buffer::Iterator i) const
     i.WriteU64(m_key2);//8 - 268
     i.WriteU64(m_key3);//8 - 276
     i.WriteU64(m_key4);//8 - 284
+    i.WriteU16(0);
 }
 
 
@@ -776,6 +777,7 @@ SendKeyHeader::Deserialize(Buffer::Iterator start)
     m_key2 = i.ReadU64();
     m_key3 = i.ReadU64();
     m_key4 = i.ReadU64();
+    i.ReadU16();
 
     uint32_t dist = i.GetDistanceFrom(start);
     NS_ASSERT(dist == GetSerializedSize());

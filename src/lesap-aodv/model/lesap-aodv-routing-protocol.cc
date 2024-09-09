@@ -158,7 +158,7 @@ RoutingProtocol::RoutingProtocol()
       m_rreqRateLimit(10),
       m_rerrRateLimit(10),
       m_activeRouteTimeout(Seconds(3)),
-      m_activeReportTimeout(Seconds(3)),
+      m_activeReportTimeout(Seconds(1000)),
       m_netDiameter(35),
       m_nodeTraversalTime(MilliSeconds(40)),
       m_netTraversalTime(Time((2 * m_netDiameter) * m_nodeTraversalTime)),
@@ -183,7 +183,7 @@ RoutingProtocol::RoutingProtocol()
       m_dpd(m_pathDiscoveryTime),
       m_nb(m_helloInterval),
       m_lnb(m_helloInterval),
-      m_lidarDistance(200),
+      m_lidarDistance(500),
       m_rreqCount(0),
       m_rerrCount(0),
       m_nodeType(LESAPAODVNODE),
@@ -273,7 +273,7 @@ RoutingProtocol::GetTypeId()
                           MakeTimeChecker())
             .AddAttribute("ActiveReportTimeout",
                           "Period of time during which the report is considered to be valid",
-                          TimeValue(Seconds(3)),
+                          TimeValue(Seconds(30)),
                           MakeTimeAccessor(&RoutingProtocol::m_activeReportTimeout),
                           MakeTimeChecker())
             .AddAttribute("MyRouteTimeout",
