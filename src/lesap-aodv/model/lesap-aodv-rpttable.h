@@ -373,6 +373,14 @@ class ReportTable
      */
     bool Update(ReportTableEntry& rt);
     /**
+     * Update routing table precursors
+     * \param rt entry with destination address dst, if exists
+     * \param ip new precursor Ip address
+     * \param timeout precursor expiration
+     * \return true on success
+     */
+    bool UpdatePrecursors(ReportTableEntry& rt, Ipv4Address ip, Time expires);
+    /**
      * Update routing table to blacklist
      * \param rt entry with destination address dst, if exists
      * \param ip origin for blacklist

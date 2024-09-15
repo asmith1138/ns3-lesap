@@ -758,6 +758,8 @@ RoutingExperiment::Run()
                     lesapAodv::ReportTableEntry newEntry(adhocInterfaces.GetAddress((i - (i % 5))),
                                               adhocInterfaces.GetAddress(i),
                                               Time(Seconds(ns2Start.GetSimTime())));
+                    newEntry.InsertPrecursor(adhocInterfaces.GetAddress((i - (i % 5))),Simulator::GetMaximumSimulationTime());
+
                     protocol->AddToBlacklist(newEntry);
                     addReport = i % 5 != 4;
                 }

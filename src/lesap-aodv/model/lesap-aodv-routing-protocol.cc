@@ -175,7 +175,7 @@ RoutingProtocol::RoutingProtocol()
       m_gratuitousReply(true),
       m_enableHello(false),
       m_routingTable(m_deletePeriod),
-      m_reportTable(Seconds(10),2),
+      m_reportTable(Seconds(1000),2),
       m_queue(m_maxQueueLen, m_maxQueueTime),
       m_requestId(0),
       m_seqNo(0),
@@ -3169,7 +3169,7 @@ RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
         if(rp.LookupPrecursor(address)){
             rp.UpdatePrecursorTimeout(address,m_activeReportTimeout);
         }else{
-            rp.InsertPrecursor(address,m_activeReportTimeout);
+            m_reportTable.UpdatePrecursors(rp, address,m_activeReportTimeout);
             if(m_reportTable.ValidateReports(reportHeader.GetMal())){
                 RoutingTableEntry rt;
                 if(m_routingTable.LookupRoute(reportHeader.GetMal(), rt)){

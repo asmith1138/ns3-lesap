@@ -54,7 +54,7 @@ ReportTableEntry::ReportTableEntry(Ipv4Address mal,
       m_maliciousNodeAddr(mal),
       m_originAddress(origin),
       m_flag(REPORT_IN_SEARCH),
-      m_repCount(0),
+      m_repCount(1),
       m_blackListState(false),
       m_blackListTimeout(Simulator::Now())
 {
@@ -372,10 +372,7 @@ ReportTable::AddReport(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
     Purge();
-    if (rt.GetFlag() != REPORT_IN_SEARCH)
-    {
-        rt.SetRepCnt(1);
-    }
+    rt.SetRepCnt(1);
     auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetMaliciousAddr(), rt));
     return result.second;
 }
@@ -385,10 +382,7 @@ ReportTable::AddReportToBlacklist(ReportTableEntry& rt)
 {
     NS_LOG_FUNCTION(this);
     Purge();
-    if (rt.GetFlag() != REPORT_IN_SEARCH)
-    {
-        rt.SetRepCnt(1);
-    }
+    rt.SetRepCnt(1);
 
     rt.SetFlag(REPORT_VALID);
     rt.SetBlacklisted(true);
@@ -414,6 +408,22 @@ ReportTable::Update(ReportTableEntry& rt)
         NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " set RepCnt to n+1");
         i->second.SetRepCnt(i->second.GetRepCnt()+1);
     }
+    return true;
+}
+
+bool
+ReportTable::UpdatePrecursors(ReportTableEntry& rt, Ipv4Address ip, Time expires)
+{
+    NS_LOG_FUNCTION(this);
+    auto i = m_ipv4AddressEntry.find(rt.GetMaliciousAddr());
+    if (i == m_ipv4AddressEntry.end())
+    {
+        NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " fails; not found");
+        return false;
+    }
+    i->second = rt;
+    NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " set RepCnt to n+1");
+    i->second.InsertPrecursor(ip, expires);
     return true;
 }
 
