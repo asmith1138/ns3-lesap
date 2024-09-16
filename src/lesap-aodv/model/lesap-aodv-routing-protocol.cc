@@ -174,6 +174,8 @@ RoutingProtocol::RoutingProtocol()
       m_destinationOnly(false),
       m_gratuitousReply(true),
       m_enableHello(false),
+      m_disableLidar(false),
+      m_disableReports(false),
       m_routingTable(m_deletePeriod),
       m_reportTable(Seconds(1000),2),
       m_queue(m_maxQueueLen, m_maxQueueTime),
@@ -362,6 +364,18 @@ RoutingProtocol::GetTypeId()
                           BooleanValue(true),
                           MakeBooleanAccessor(&RoutingProtocol::SetBroadcastEnable,
                                               &RoutingProtocol::GetBroadcastEnable),
+                          MakeBooleanChecker())
+            .AddAttribute("DisableLidar",
+                          "Indicates whether lidar distance is checked.",
+                          BooleanValue(false),
+                          MakeBooleanAccessor(&RoutingProtocol::SetLidarDisable,
+                                              &RoutingProtocol::GetLidarDisable),
+                          MakeBooleanChecker())
+            .AddAttribute("DisableReports",
+                          "Indicates whether reports are sent.",
+                          BooleanValue(false),
+                          MakeBooleanAccessor(&RoutingProtocol::SetReportsDisable,
+                                              &RoutingProtocol::GetReportsDisable),
                           MakeBooleanChecker())
             .AddAttribute("UniformRv",
                           "Access to the underlying UniformRandomVariable",
@@ -1553,6 +1567,10 @@ bool
 RoutingProtocol::IsNodeWithinLidar(double distance)
 {
     NS_LOG_FUNCTION(this << distance);
+    if (m_disableLidar)
+    {
+        return true;
+    }
     return distance <= m_lidarDistance;
 }
 
@@ -2661,6 +2679,9 @@ RoutingProtocol::SendReports()
      *   Origin IP Address            The original reporter's IP address.
      *   Lifetime                     m_activeReportTimeout
      */
+    if(m_disableReports){
+        return;
+    }
     m_reportTable.ValidateReports();
     for (auto j = m_socketAddresses.begin(); j != m_socketAddresses.end(); ++j)
     {
@@ -2669,12 +2690,11 @@ RoutingProtocol::SendReports()
 
         // Loop thru blacklist
         std::vector<ReportTableEntry> blacklist = m_reportTable.GetValidReports();
+        ReportHeader reportHeader(/*malSeqNo=*/m_seqNo,
+                                  /*Lifetime=*/m_activeReportTimeout);
         for (auto i = blacklist.begin(); i != blacklist.end(); ++i)
         {
-            ReportHeader reportHeader(/*Mal=*/i->GetMaliciousAddr(),
-                                      /*malSeqNo=*/m_seqNo,
-                                      /*Origin=*/i->GetOrigin(),
-                                      /*Lifetime=*/m_activeReportTimeout);
+            reportHeader.AddBlacklisted(i->GetMaliciousAddr(), i->GetOrigin());
             Ptr<Packet> packet = Create<Packet>();
             SocketIpTtlTag tag;
             tag.SetTtl(1);
@@ -2715,12 +2735,12 @@ RoutingProtocol::SendSybilReports()
 
         // Loop thru neighbors
         std::vector<Ipv4Address> neighbors = m_nb.GetNeighbors();
+        ReportHeader reportHeader(/*malSeqNo=*/m_seqNo,
+                                  /*Lifetime=*/m_activeReportTimeout);
+
         for (auto i = neighbors.begin(); i != neighbors.end(); ++i)
         {
-            ReportHeader reportHeader(/*Mal=*/*i,
-                                      /*malSeqNo=*/m_seqNo,
-                                      /*Origin=*/iface.GetLocal(),
-                                      /*Lifetime=*/m_activeReportTimeout);
+            reportHeader.AddBlacklisted(*i,iface.GetLocal());
             Ptr<Packet> packet = Create<Packet>();
             SocketIpTtlTag tag;
             tag.SetTtl(1);
@@ -3110,7 +3130,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     SendKeyHeader sendKeyHeader;
     p->RemoveHeader(sendKeyHeader);
     // Check for lidar collisions based on position and velocity
-    if(m_lnb.CheckCollisions(sendKeyHeader.GetX(), sendKeyHeader.GetY(), sendKeyHeader.GetZ(), address)){
+    if(!m_disableLidar && m_lnb.CheckCollisions(sendKeyHeader.GetX(), sendKeyHeader.GetY(), sendKeyHeader.GetZ(), address)){
         //report node as malicious and add to blacklist
         Ipv4InterfaceAddress iaddr = m_ipv4->GetAddress (1,0);
         Ipv4Address ipAddr = iaddr.GetLocal();
@@ -3165,29 +3185,40 @@ RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
     p->RemoveHeader(reportHeader);
     //m_reportTable.Purge();
     ReportTableEntry rp;
-    if(m_reportTable.LookupReport(reportHeader.GetMal(), rp)){
-        if(rp.LookupPrecursor(address)){
-            rp.UpdatePrecursorTimeout(address,m_activeReportTimeout);
-        }else{
-            m_reportTable.UpdatePrecursors(rp, address,m_activeReportTimeout);
-            if(m_reportTable.ValidateReports(reportHeader.GetMal())){
-                RoutingTableEntry rt;
-                if(m_routingTable.LookupRoute(reportHeader.GetMal(), rt)){
-                    m_routingTable.MarkLinkAsUnidirectional(
-                        reportHeader.GetMal(),
-                        Simulator::GetMaximumSimulationTime());
+    std::map<Ipv4Address,Ipv4Address> reportedBlacklist = reportHeader.GetBlacklist();
+    for (auto j = reportedBlacklist.begin(); j != reportedBlacklist .end(); ++j)
+    {
+        Ipv4Address mal = j->first;
+        Ipv4Address origin = j->second;
+
+
+        if(m_reportTable.LookupReport(mal, rp)){
+            if(rp.LookupPrecursor(address)){
+                rp.UpdatePrecursorTimeout(address,m_activeReportTimeout);
+            }else{
+                m_reportTable.UpdatePrecursors(rp, address,m_activeReportTimeout);
+                if(m_reportTable.ValidateReports(mal)){
+                    RoutingTableEntry rt;
+                    if(m_routingTable.LookupRoute(mal, rt)){
+                        m_routingTable.MarkLinkAsUnidirectional(
+                            mal,
+                            Simulator::GetMaximumSimulationTime());
+                    }
                 }
             }
-        }
-    }else{
-        ReportTableEntry newEntry(reportHeader.GetMal(),
-                                  reportHeader.GetOrigin(),
-                                  Simulator::GetMaximumSimulationTime());
-        newEntry.InsertPrecursor(address,m_activeReportTimeout);
+        }else{
+            ReportTableEntry newEntry(mal,
+                                      origin,
+                                      Simulator::GetMaximumSimulationTime());
+            newEntry.InsertPrecursor(address,m_activeReportTimeout);
 
-        m_reportTable.AddReport(newEntry);
+            m_reportTable.AddReport(newEntry);
+
+        }
+
 
     }
+
 }
 
 bool

@@ -884,10 +884,8 @@ class ReportHeader : public Header
      * \param origin the original reporter IP address
      * \param lifetime the lifetime
      */
-    ReportHeader(Ipv4Address mal = Ipv4Address(),
-               uint32_t malSeqNo = 0,
-               Ipv4Address origin = Ipv4Address(),
-               Time lifetime = MilliSeconds(0));
+    ReportHeader(uint32_t malSeqNo = 0,
+                 Time lifetime = MilliSeconds(0));
     /**
      * \brief Get the type ID.
      * \return the object TypeId
@@ -902,21 +900,12 @@ class ReportHeader : public Header
     // Fields
 
     /**
-     * \brief Set the destination address
-     * \param a the malicious address
+     * \brief Get the blacklist addresses
+     * \return the blacklist addresses and origins
      */
-    void SetMal(Ipv4Address a)
+    std::map<Ipv4Address,Ipv4Address> GetBlacklist() const
     {
-        m_mal = a;
-    }
-
-    /**
-     * \brief Get the malicious address
-     * \return the malicious address
-     */
-    Ipv4Address GetMal() const
-    {
-        return m_mal;
+        return m_blacklisted;
     }
 
     /**
@@ -938,24 +927,6 @@ class ReportHeader : public Header
     }
 
     /**
-     * \brief Set the origin address
-     * \param a the origin address
-     */
-    void SetOrigin(Ipv4Address a)
-    {
-        m_origin = a;
-    }
-
-    /**
-     * \brief Get the origin address
-     * \return the origin address
-     */
-    Ipv4Address GetOrigin() const
-    {
-        return m_origin;
-    }
-
-    /**
      * \brief Set the lifetime
      * \param t the lifetime
      */
@@ -965,6 +936,16 @@ class ReportHeader : public Header
      * \return the lifetime
      */
     Time GetLifeTime() const;
+
+    /**
+     * \returns number of unreachable destinations in RERR message
+     */
+    uint8_t GetBlacklistCount() const
+    {
+        return (uint8_t)m_blacklisted.size();
+    }
+
+    bool AddBlacklisted(Ipv4Address bl, Ipv4Address origin);
 
     // Flags
     /**
@@ -976,10 +957,9 @@ class ReportHeader : public Header
 
   private:
     uint64_t m_Cert;        ///< The Cert (x32)
-    Ipv4Address m_mal;    ///< malicious IP Address
     uint32_t m_malSeqNo;  ///< report Sequence Number
-    Ipv4Address m_origin; ///< Source IP Address
     uint32_t m_lifeTime;  ///< Lifetime (in milliseconds)
+    std::map<Ipv4Address, Ipv4Address> m_blacklisted;
 };
 
 /**

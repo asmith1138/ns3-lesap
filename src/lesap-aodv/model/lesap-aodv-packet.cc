@@ -827,14 +827,10 @@ operator<<(std::ostream& os, const SendKeyHeader& h)
 // Report
 //-----------------------------------------------------------------------------
 
-ReportHeader::ReportHeader(Ipv4Address mal,
-                       uint32_t malSeqNo,
-                       Ipv4Address origin,
+ReportHeader::ReportHeader(uint32_t malSeqNo,
                        Time lifeTime)
     : m_Cert(0),
-      m_mal(mal),
-      m_malSeqNo(malSeqNo),
-      m_origin(origin)
+      m_malSeqNo(malSeqNo)
 {
     m_lifeTime = uint32_t(lifeTime.GetMilliSeconds());
 }
@@ -857,30 +853,63 @@ ReportHeader::GetInstanceTypeId() const
     return GetTypeId();
 }
 
+bool
+ReportHeader::AddBlacklisted(ns3::Ipv4Address bl, ns3::Ipv4Address origin)
+{
+    if (m_blacklisted.find(bl) != m_blacklisted.end())
+    {
+        return true;
+    }
+
+    NS_ASSERT(GetBlacklistCount() < 255); // can't support more than 255 destinations in single RERR
+    m_blacklisted.insert(std::make_pair(bl, origin));
+    return true;
+}
+
 uint32_t
 ReportHeader::GetSerializedSize() const
 {
-    return 16 + 256;
+    return 9 + (8 * GetBlacklistCount()) + 256;
 }
 
 void
 ReportHeader::Serialize(Buffer::Iterator i) const
 {
-    WriteTo(i, m_mal);//4 - 4
+    //WriteTo(i, m_mal);//4 - 4
     i.WriteHtonU32(m_malSeqNo);//4 - 8
-    WriteTo(i, m_origin);//4 - 12
     i.WriteHtonU32(m_lifeTime);//4 - 16
+    i.WriteU8(GetBlacklistCount());
+    for (auto j = m_blacklisted.begin(); j != m_blacklisted.end(); ++j)
+    {
+        WriteTo(i, j->first);
+        WriteTo(i, j->second);
+    }
     WriteCertTo(i, m_Cert);// + 256
+
+
 }
 
 uint32_t
 ReportHeader::Deserialize(Buffer::Iterator start)
 {
     Buffer::Iterator i = start;
-    ReadFrom(i, m_mal);
     m_malSeqNo = i.ReadNtohU32();
-    ReadFrom(i, m_origin);
     m_lifeTime = i.ReadNtohU32();
+
+
+    uint8_t bls = i.ReadU8();
+    m_blacklisted.clear();
+    Ipv4Address blAddress;
+    Ipv4Address originAddress;
+    for (uint8_t k = 0; k < bls; ++k)
+    {
+        ReadFrom(i, blAddress);
+        //m_blacklisted.push_back(address);
+        ReadFrom(i, originAddress);
+        m_blacklisted.insert(std::make_pair(blAddress, originAddress));
+    }
+
+
     ReadCertFrom(i, m_Cert);
 
     uint32_t dist = i.GetDistanceFrom(start);
@@ -891,8 +920,8 @@ ReportHeader::Deserialize(Buffer::Iterator start)
 void
 ReportHeader::Print(std::ostream& os) const
 {
-    os << "Report malicious: ipv4 " << m_mal << " sequence number " << m_malSeqNo;
-    os << " original reporter ipv4 " << m_origin << " lifetime " << m_lifeTime;
+    os << "Report malicious: sequence number " << m_malSeqNo;
+    os << " lifetime " << m_lifeTime;
 }
 
 void
@@ -911,8 +940,8 @@ ReportHeader::GetLifeTime() const
 bool
 ReportHeader::operator==(const ReportHeader& o) const
 {
-    return (m_mal == o.m_mal && m_malSeqNo == o.m_malSeqNo &&
-            m_origin == o.m_origin && m_lifeTime == o.m_lifeTime);
+    return (m_malSeqNo == o.m_malSeqNo &&
+            m_lifeTime == o.m_lifeTime);
 }
 
 std::ostream&

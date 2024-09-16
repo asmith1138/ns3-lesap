@@ -249,6 +249,42 @@ class RoutingProtocol : public Ipv4RoutingProtocol
         return m_enableBroadcast;
     }
 
+    /**
+     * Set lidar disable flag
+     * \param f lidar disable flag
+     */
+    void SetLidarDisable(bool f)
+    {
+        m_disableLidar = f;
+    }
+
+    /**
+     * Get lidar disable flag
+     * \returns the lidar disable flag
+     */
+    bool GetLidarDisable() const
+    {
+        return m_disableLidar;
+    }
+
+    /**
+     * Set report disable flag
+     * \param f disable report flag
+     */
+    void SetReportsDisable(bool f)
+    {
+        m_disableReports = f;
+    }
+
+    /**
+     * Get report disable flag
+     * \returns the report disable flag
+     */
+    bool GetReportsDisable() const
+    {
+        return m_disableReports;
+    }
+
     void AddToBlacklist(ReportTableEntry rpt)
     {
         m_reportTable.AddReportToBlacklist(rpt);
@@ -329,6 +365,8 @@ class RoutingProtocol : public Ipv4RoutingProtocol
                              ///< originated route discovery.
     bool m_enableHello;      ///< Indicates whether a hello messages enable
     bool m_enableBroadcast;  ///< Indicates whether a a broadcast data packets forwarding enable
+    bool m_disableLidar;  ///< Indicates whether we check lidar
+    bool m_disableReports;  ///< Indicates whether we send reports
 
     /// IP protocol
     Ptr<Ipv4> m_ipv4;
