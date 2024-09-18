@@ -275,7 +275,7 @@ RoutingProtocol::GetTypeId()
                           MakeTimeChecker())
             .AddAttribute("ActiveReportTimeout",
                           "Period of time during which the report is considered to be valid",
-                          TimeValue(Seconds(30)),
+                          TimeValue(Seconds(1000)),
                           MakeTimeAccessor(&RoutingProtocol::m_activeReportTimeout),
                           MakeTimeChecker())
             .AddAttribute("MyRouteTimeout",
