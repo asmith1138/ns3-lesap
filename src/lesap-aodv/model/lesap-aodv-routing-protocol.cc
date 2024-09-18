@@ -365,6 +365,12 @@ RoutingProtocol::GetTypeId()
                           MakeBooleanAccessor(&RoutingProtocol::SetBroadcastEnable,
                                               &RoutingProtocol::GetBroadcastEnable),
                           MakeBooleanChecker())
+            .AddAttribute("EnableRoute",
+                          "Indicates whether routing is enabled.",
+                          BooleanValue(true),
+                          MakeBooleanAccessor(&RoutingProtocol::SetRouteEnable,
+                                              &RoutingProtocol::GetRouteEnable),
+                          MakeBooleanChecker())
             .AddAttribute("DisableLidar",
                           "Indicates whether lidar distance is checked.",
                           BooleanValue(false),
@@ -564,6 +570,10 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                             const ErrorCallback& ecb)
 {
     NS_LOG_FUNCTION(this << p->GetUid() << header.GetDestination() << idev->GetAddress());
+    if(!m_enableRouting){
+        return true;
+    }
+
     if (m_socketAddresses.empty())
     {
         NS_LOG_LOGIC("No lesap-aodv interfaces");
@@ -661,7 +671,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
                 }else{
                     //Log Dropped packet
                     PrintPacketToCSV(p->GetUid(),p->GetSize(),"Dropped","Sender not within Lidar range",senderAddr,origin, dst);
-                    return false;
+                    return true;
                 }
 
             }
@@ -1319,6 +1329,9 @@ void
 RoutingProtocol::SendRequest(Ipv4Address dst)
 {
     NS_LOG_FUNCTION(this << dst);
+    if(!m_enableRouting){
+        return;
+    }
     // Check blacklist for this dst
     ReportTableEntry rp;
     if(m_reportTable.LookupValidReport(dst, rp)){
@@ -1452,6 +1465,9 @@ RoutingProtocol::SendRequest(Ipv4Address dst)
 void
 RoutingProtocol::SendTo(Ptr<Socket> socket, Ptr<Packet> packet, Ipv4Address destination)
 {
+    if(!m_enableRouting){
+        return;
+    }
     socket->SendTo(packet, 0, InetSocketAddress(destination, LESAP_AODV_PORT));
 }
 
@@ -1578,6 +1594,9 @@ void
 RoutingProtocol::RecvLesapAodv(Ptr<Socket> socket)
 {
     NS_LOG_FUNCTION(this << socket);
+    if(!m_enableRouting){
+        return;
+    }
     Address sourceAddress;
     Ptr<Packet> packet = socket->RecvFrom(sourceAddress);
     InetSocketAddress inetSourceAddr = InetSocketAddress::ConvertFrom(sourceAddress);
@@ -1764,6 +1783,9 @@ void
 RoutingProtocol::RecvRequest(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address src)
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     RreqHeader rreqHeader;
     p->RemoveHeader(rreqHeader);
 
@@ -2023,6 +2045,9 @@ void
 RoutingProtocol::SendReply(const RreqHeader& rreqHeader, const RoutingTableEntry& toOrigin)
 {
     NS_LOG_FUNCTION(this << toOrigin.GetDestination());
+    if(!m_enableRouting){
+        return;
+    }
     /*
      * Destination node MUST increment its own sequence number by one if the sequence number in the
      * RREQ packet is equal to that incremented value. Otherwise, the destination does not change
@@ -2060,6 +2085,9 @@ RoutingProtocol::SendReplyByIntermediateNode(RoutingTableEntry& toDst,
                                              bool gratRep)
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     RrepHeader rrepHeader(/*prefixSize=*/0,
                           /*hopCount=*/toDst.GetHop(),
                           /*dst=*/toDst.GetDestination(),
@@ -2125,6 +2153,9 @@ void
 RoutingProtocol::SendReplyAck(Ipv4Address neighbor)
 {
     NS_LOG_FUNCTION(this << " to " << neighbor);
+    if(!m_enableRouting){
+        return;
+    }
     RrepAckHeader h;
     TypeHeader typeHeader(LESAPAODVTYPE_RREP_ACK);
     Ptr<Packet> packet = Create<Packet>();
@@ -2144,6 +2175,9 @@ void
 RoutingProtocol::SendSendKey(Ipv4Address neighbor)
 {
     NS_LOG_FUNCTION(this << " to " << neighbor);
+    if(!m_enableRouting){
+        return;
+    }
     Vector position = GetPosition();
     Vector velocity = GetVelocity();
     SendKeyHeader h(/*Key1*/m_key1,
@@ -2175,6 +2209,9 @@ void
 RoutingProtocol::SendNeedKey(Ipv4Address neighbor)
 {
     NS_LOG_FUNCTION(this << " to " << neighbor);
+    if(!m_enableRouting){
+        return;
+    }
     NeedKeyHeader h;
     TypeHeader typeHeader(LESAPAODVTYPE_NEEDKEY);
     Ptr<Packet> packet = Create<Packet>();
@@ -2203,6 +2240,9 @@ void
 RoutingProtocol::RecvReply(Ptr<Packet> p, Ipv4Address receiver, Ipv4Address sender)
 {
     NS_LOG_FUNCTION(this << " src " << sender);
+    if(!m_enableRouting){
+        return;
+    }
     RrepHeader rrepHeader;
     p->RemoveHeader(rrepHeader);
     Ipv4Address dst = rrepHeader.GetDst();
@@ -2631,6 +2671,9 @@ void
 RoutingProtocol::SendHello()
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     /* Broadcast a RREP with TTL = 1 with the RREP message fields set as follows:
      *   Destination IP Address         The node's IP address.
      *   Destination Sequence Number    The node's latest sequence number.
@@ -2673,6 +2716,9 @@ void
 RoutingProtocol::SendReports()
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     /* Broadcast a REPORT for all nodes blacklisted with TTL=1 and message fields set as follows:
      *   Malicious IP Address         The malicious node's IP address.
      *   Destination Sequence Number  The node's latest sequence number.
@@ -2722,6 +2768,9 @@ void
 RoutingProtocol::SendSybilReports()
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     /* Broadcast a REPORT for all neighbor nodes with TTL=1 and message fields set as follows:
      *   Malicious IP Address         The malicious node's IP address.
      *   Destination Sequence Number  The node's latest sequence number.
@@ -2768,6 +2817,9 @@ void
 RoutingProtocol::SendHello(Ipv4Address dst)
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     /* Broadcast a RREP with TTL = 1 with the RREP message fields set as follows:
      *   Destination IP Address         The node's IP address.
      *   Destination Sequence Number    The node's latest sequence number.
@@ -2933,6 +2985,9 @@ RoutingProtocol::SendRerrWhenNoRouteToForward(Ipv4Address dst,
                                               Ipv4Address origin)
 {
     NS_LOG_FUNCTION(this);
+    if(!m_enableRouting){
+        return;
+    }
     // A node SHOULD NOT originate more than RERR_RATELIMIT RERR messages per second.
     if (m_rerrCount == m_rerrRateLimit)
     {
@@ -2987,7 +3042,9 @@ void
 RoutingProtocol::SendRerrMessage(Ptr<Packet> packet, std::vector<Ipv4Address> precursors)
 {
     NS_LOG_FUNCTION(this);
-
+    if(!m_enableRouting){
+        return;
+    }
     if (precursors.empty())
     {
         NS_LOG_LOGIC("No precursors");

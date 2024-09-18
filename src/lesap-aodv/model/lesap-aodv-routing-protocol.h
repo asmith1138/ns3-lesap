@@ -268,6 +268,24 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     }
 
     /**
+     * Set broadcast enable flag
+     * \param f enable broadcast flag
+     */
+    void SetRouteEnable(bool f)
+    {
+        m_enableRouting = f;
+    }
+
+    /**
+     * Get broadcast enable flag
+     * \returns the broadcast enable flag
+     */
+    bool GetRouteEnable() const
+    {
+        return m_enableRouting;
+    }
+
+    /**
      * Set lidar disable flag
      * \param f lidar disable flag
      */
@@ -383,6 +401,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
                              ///< originated route discovery.
     bool m_enableHello;      ///< Indicates whether a hello messages enable
     bool m_enableBroadcast;  ///< Indicates whether a a broadcast data packets forwarding enable
+    bool m_enableRouting;  ///< Indicates whether to route packets
     bool m_disableLidar;  ///< Indicates whether we check lidar
     bool m_disableReports;  ///< Indicates whether we send reports
 

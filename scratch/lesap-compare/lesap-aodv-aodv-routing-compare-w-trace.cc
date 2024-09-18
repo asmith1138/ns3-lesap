@@ -185,6 +185,10 @@ CourseChange(std::string foo, Ptr<const MobilityModel> mobility)
     // Prints position and velocities
     oss << "Node: " << nodeId << " " << Simulator::Now().GetSeconds() << " POS: x=" << pos.x << ", y=" << pos.y << ", z=" << pos.z
         << "; VEL:" << vel.x << ", y=" << vel.y << ", z=" << vel.z << std::endl;
+    //if(nodeId==19){
+    //    NS_LOG_UNCOND(oss.str());
+    //}
+
 }
 
 static inline std::string
@@ -796,6 +800,27 @@ RoutingExperiment::Run()
     }
 
 
+    //Setting up some logging
+    if(m_protocolName == "AODV"){
+        for (int i = 0; i < m_nWifis; i++)
+        {
+            Ptr<aodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<aodv::RoutingProtocol>();
+            Simulator::Schedule(Seconds(0),&aodv::RoutingProtocol::SetRouteEnable,protocol,false);
+            Simulator::Schedule(Seconds(ns2Start.GetStartTimeForNode(i)), &aodv::RoutingProtocol::SetRouteEnable,protocol,true);
+            Simulator::Schedule(Seconds(ns2Start.GetEndTimeForNode(i)), &aodv::RoutingProtocol::SetRouteEnable,protocol,false);
+        }
+    }else if (m_protocolName == "LESAP-AODV"){
+        for (int i = 0; i < m_nWifis; i++)
+        {
+            Ptr<lesapAodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
+            Simulator::Schedule(Seconds(0),&lesapAodv::RoutingProtocol::SetRouteEnable,protocol,false);
+            Simulator::Schedule(Seconds(ns2Start.GetStartTimeForNode(i)), &lesapAodv::RoutingProtocol::SetRouteEnable,protocol,true);
+            Simulator::Schedule(Seconds(ns2Start.GetEndTimeForNode(i)), &lesapAodv::RoutingProtocol::SetRouteEnable,protocol,false);
+        }
+    }
+
+
+
     bool useCustomApp = false;
     bool sendAllNodes = false;
 
@@ -875,10 +900,10 @@ RoutingExperiment::Run()
 
                 ApplicationContainer temp = onoff1.Install(adhocNodes.Get(j));
                 ApplicationContainer temp2 = onoff1.Install(adhocNodes.Get(k));
-                temp.Start(Seconds(ns2Start.GetStartTimeForNode(j)));
-                temp2.Start(Seconds(ns2Start.GetStartTimeForNode(k)));
-                temp.Stop(Seconds(ns2Start.GetEndTimeForNode(j)));
-                temp2.Stop(Seconds(ns2Start.GetEndTimeForNode(k)));
+                temp.Start(Seconds(std::max(ns2Start.GetStartTimeForNode(j),ns2Start.GetStartTimeForNode(i))));
+                temp2.Start(Seconds(std::max(ns2Start.GetStartTimeForNode(k),ns2Start.GetStartTimeForNode(i))));
+                temp.Stop(Seconds(std::min(ns2Start.GetEndTimeForNode(j),ns2Start.GetEndTimeForNode(i))));
+                temp2.Stop(Seconds(std::min(ns2Start.GetEndTimeForNode(k),ns2Start.GetEndTimeForNode(i))));
                 SetupPacketSend(temp);
                 SetupPacketSend(temp2);
                 //temp.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket, this));
