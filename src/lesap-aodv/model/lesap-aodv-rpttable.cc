@@ -353,6 +353,62 @@ ReportTable::LookupValidReport(Ipv4Address id, ReportTableEntry& rt)
     return (rt.GetFlag() == REPORT_VALID) && rt.IsBlacklisted() && (rt.GetBlacklistTimeout() > Simulator::Now());
 }
 
+void
+ReportTableEntry::PrintNewBlacklistToCSV(std::string csvLogFile, uint32_t nodeId)
+{
+    std::ofstream out(csvLogFile, std::ios::app);
+
+    // Copy the current ostream state
+    out << std::resetiosflags(std::ios::adjustfield) << std::setiosflags(std::ios::left);
+
+    std::ostringstream node;
+    std::ostringstream mal;
+    std::ostringstream origin;
+    std::ostringstream reportCount;
+    std::ostringstream blacklisted;
+    std::ostringstream precursors;
+
+    // TODO: Add Simulation.Now()
+    node << nodeId;
+    mal << m_maliciousNodeAddr;
+    origin << m_originAddress;
+    reportCount << unsigned(m_repCount);
+    blacklisted << m_blackListState;
+
+    for (auto i = m_precursorList.begin(); i != m_precursorList.end(); ++i)
+    {
+        std::ostringstream prec;
+        prec << i->first;
+        precursors << prec.str() << "(" << i->second.As(Time::S) << ")";
+    }
+
+    out << node.str() << "," << Simulator::Now().GetSeconds() << ",";
+    out << reportCount.str() << ",";
+    out << mal.str() << ",";
+    switch (m_flag)
+    {
+    case REPORT_VALID: {
+        out << "UP";
+        break;
+    }
+    case REPORT_INVALID: {
+        out << "DOWN";
+        break;
+    }
+    case REPORT_IN_SEARCH: {
+        out << "IN_SEARCH";
+        break;
+    }
+    }
+    out  << ",";
+    out << origin.str() << ",";
+    out << blacklisted.str() << ",";
+    out << precursors.str() << ",";
+    out << std::endl;
+
+    out.close();
+}
+
 bool
 ReportTable::DeleteReport(Ipv4Address mal)
 {
@@ -384,10 +440,15 @@ ReportTable::AddReportToBlacklist(ReportTableEntry& rt)
     Purge();
     rt.SetRepCnt(1);
 
+    if(!rt.IsBlacklisted()){
+        rt.PrintNewBlacklistToCSV(m_csvLogFile, m_nodeId);
+    }
+
     rt.SetFlag(REPORT_VALID);
     rt.SetBlacklisted(true);
     rt.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
     rt.SetLifeTime(Simulator::GetMaximumSimulationTime());
+
     auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetMaliciousAddr(), rt));
     return result.second;
 }
@@ -444,7 +505,9 @@ ReportTable::UpdateToBlacklist(ReportTableEntry& rt, Ipv4Address ip)
         NS_LOG_LOGIC("Report update to " << rt.GetMaliciousAddr() << " set RepCnt to n+1");
         i->second.SetRepCnt(i->second.GetRepCnt()+1);
     }
-
+    if(!i->second.IsBlacklisted()){
+        i->second.PrintNewBlacklistToCSV(m_csvLogFile, m_nodeId);
+    }
     i->second.SetFlag(REPORT_VALID);
     i->second.SetBlacklisted(true);
     i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
@@ -494,6 +557,9 @@ ReportTable::ValidateReports()
     for (auto i = m_ipv4AddressEntry.begin(); i != m_ipv4AddressEntry.end(); ++i)
     {
         if(i->second.GetRepCnt()>=m_reportLimit){
+            if(!i->second.IsBlacklisted()){
+                i->second.PrintNewBlacklistToCSV(m_csvLogFile, m_nodeId);
+            }
             i->second.SetFlag(REPORT_VALID);
             i->second.SetBlacklisted(true);
             i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());
@@ -517,6 +583,9 @@ ReportTable::ValidateReports(Ipv4Address id)
     }
     if (i->second.GetRepCnt() >= m_reportLimit)
     {
+        if(!i->second.IsBlacklisted()){
+            i->second.PrintNewBlacklistToCSV(m_csvLogFile, m_nodeId);
+        }
         i->second.SetFlag(REPORT_VALID);
         i->second.SetBlacklisted(true);
         i->second.SetBlacklistTimeout(Simulator::GetMaximumSimulationTime());

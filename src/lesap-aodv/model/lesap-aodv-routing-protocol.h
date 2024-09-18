@@ -109,7 +109,6 @@ class RoutingProtocol : public Ipv4RoutingProtocol
                            Time::Unit unit = Time::S) const override;
     void PrintReports(Ptr<OutputStreamWrapper> stream, Time::Unit unit /* = Time::S */) const;
 
-
     // Handle protocol parameters
     /**
      * Get maximum queue time
@@ -229,6 +228,25 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     std::string GetCsvFileName() const
     {
         return m_csvLogFile;
+    }
+
+    /**
+     * Set csv file name
+     * \param csv the csv file name
+     */
+    void SetCsvReportFileName(std::string csv)
+    {
+        m_csvReportLogFile = csv;
+        m_reportTable.SetLogFileName(m_csvReportLogFile, m_ipv4->GetObject<Node>()->GetId());
+    }
+
+    /**
+     * Get csv file name
+     * \returns the csv file name
+     */
+    std::string GetCsvReportFileName() const
+    {
+        return m_csvReportLogFile;
     }
 
     /**
@@ -410,6 +428,7 @@ class RoutingProtocol : public Ipv4RoutingProtocol
     uint64_t m_key4;
     NodeType m_nodeType;
     std::string m_csvLogFile;
+    std::string m_csvReportLogFile;
 
   private:
     /// Start protocol operation

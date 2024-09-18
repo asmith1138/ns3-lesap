@@ -289,6 +289,7 @@ class ReportTableEntry
      */
     void Print(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
     void PrintCsv(Ptr<OutputStreamWrapper> stream, Time::Unit unit = Time::S) const;
+    void PrintNewBlacklistToCSV(std::string csvLogFile, uint32_t nodeId);
 
   private:
     /**
@@ -416,6 +417,16 @@ class ReportTable
         m_ipv4AddressEntry.clear();
     }
 
+    /**
+     * Set csv file name
+     * \param csv the csv file name
+     */
+    void SetLogFileName(std::string csv, uint32_t nodeId)
+    {
+        m_csvLogFile = csv;
+        m_nodeId = nodeId;
+    }
+
     /// Delete all outdated entries and invalidate valid entry if Lifetime is expired
     void Purge();
     /**
@@ -432,6 +443,8 @@ class ReportTable
     /// Deletion time for invalid routes
     Time m_badLinkLifetime;
     uint8_t m_reportLimit;
+    std::string m_csvLogFile;
+    uint32_t m_nodeId;
     /**
      * const version of Purge, for use by Print() method
      * \param table the routing table entry to purge
