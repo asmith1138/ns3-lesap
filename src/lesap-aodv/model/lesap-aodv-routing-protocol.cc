@@ -2472,7 +2472,7 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
     // Checking the distance and add/update the lidar neighbor table if within lidar distance
     if (IsNodeWithinLidar(DistanceFromNode(rrepHeader.GetDst()))){
         if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
-            m_lnb.Update(rrepHeader.GetDst(), Time(m_allowedHelloLoss * m_helloInterval));
+            m_lnb.Update(rrepHeader.GetDst(), Time(m_activeRouteTimeout));
         }else{
             //add route
             AddDirectRoute(rrepHeader.GetDst(), receiver);
@@ -3222,7 +3222,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     SendHello(address);
     // Create new lidar neighbor with the packet data,
     // update if it already exists for some reason
-    m_lnb.Update(address, Time(m_allowedHelloLoss * m_helloInterval),
+    m_lnb.Update(address, Time(m_activeRouteTimeout),
               sendKeyHeader.GetKey1(), sendKeyHeader.GetKey2(),
               sendKeyHeader.GetKey3(), sendKeyHeader.GetKey4(),
               sendKeyHeader.GetVelX(),sendKeyHeader.GetVelY(),sendKeyHeader.GetVelZ(),
@@ -3238,6 +3238,9 @@ void
 RoutingProtocol::RecvReport(Ptr<Packet> p, Ipv4Address address)
 {
     NS_LOG_FUNCTION(this << p);
+    if(IsMalicious()){
+        return;
+    }
     ReportHeader reportHeader;
     p->RemoveHeader(reportHeader);
     //m_reportTable.Purge();
