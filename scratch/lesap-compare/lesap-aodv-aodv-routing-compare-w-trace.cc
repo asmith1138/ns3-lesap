@@ -934,7 +934,7 @@ RoutingExperiment::Run()
 
     AsciiTraceHelper ascii;
     Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(m_filePathResults + tr_name + ".tr");
-    wifiPhy.EnableAsciiAll(osw);
+    //wifiPhy.EnableAsciiAll(osw);
     // AsciiTraceHelper ascii;
     //MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(m_filePathResults + tr_name + ".mob"));
 
