@@ -802,7 +802,7 @@ RoutingProtocol::RouteInput(Ptr<const Packet> p,
             // Check that next hop is within lidar distance
             if (IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop()))){
                 if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
-                    m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+                    m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout*100);
                 }
                 else{
                  // SendNeedKey and defer msg
@@ -915,7 +915,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
             {
                 if(m_lnb.IsNeighbor(route->GetGateway()))
                 {
-                    m_lnb.Update(route->GetGateway(), m_activeRouteTimeout);
+                    m_lnb.Update(route->GetGateway(), m_activeRouteTimeout*100);
                 }else{
                     //add route
                     Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
@@ -930,7 +930,7 @@ RoutingProtocol::Forwarding(Ptr<const Packet> p,
             if (IsNodeWithinLidar(DistanceFromNode(toOrigin.GetNextHop())))
             {
                 if(m_lnb.IsNeighbor(toOrigin.GetNextHop())){
-                    m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout);
+                    m_lnb.Update(toOrigin.GetNextHop(), m_activeRouteTimeout*100);
                 }else{
                     //add route
                     Ipv4Address receiver = m_ipv4->GetAddress(1,0).GetLocal();
@@ -2472,7 +2472,7 @@ RoutingProtocol::ProcessHello(const RrepHeader& rrepHeader, Ipv4Address receiver
     // Checking the distance and add/update the lidar neighbor table if within lidar distance
     if (IsNodeWithinLidar(DistanceFromNode(rrepHeader.GetDst()))){
         if(m_lnb.IsNeighbor(rrepHeader.GetDst())){
-            m_lnb.Update(rrepHeader.GetDst(), Time(m_activeRouteTimeout));
+            m_lnb.Update(rrepHeader.GetDst(), Time(m_activeRouteTimeout*100));
         }else{
             //add route
             AddDirectRoute(rrepHeader.GetDst(), receiver);
@@ -3222,7 +3222,7 @@ RoutingProtocol::RecvSendKey(Ptr<Packet> p, Ipv4Address address, Ptr<NetDevice> 
     SendHello(address);
     // Create new lidar neighbor with the packet data,
     // update if it already exists for some reason
-    m_lnb.Update(address, Time(m_activeRouteTimeout),
+    m_lnb.Update(address, Time(m_activeRouteTimeout*100),
               sendKeyHeader.GetKey1(), sendKeyHeader.GetKey2(),
               sendKeyHeader.GetKey3(), sendKeyHeader.GetKey4(),
               sendKeyHeader.GetVelX(),sendKeyHeader.GetVelY(),sendKeyHeader.GetVelZ(),

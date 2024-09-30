@@ -65,9 +65,6 @@
  *   left commented inline in the program
  */
 
-#include "ns2-node-start.h"
-#include "bsm-app.h"
-
 #include "ns3/aodv-module.h"
 #include "ns3/lesap-aodv-module.h"
 #include "ns3/applications-module.h"
@@ -83,7 +80,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("lesap-aodv-aodv-routing-compare-w-trace");
+NS_LOG_COMPONENT_DEFINE("lesap-aodv-aodv-routing-compare-constant-velocity");
 
 /**
  * Routing experiment class.
@@ -132,7 +129,6 @@ class RoutingExperiment
      */
     Ptr<Socket> SetupPacketReceive(Ipv4Address addr, Ptr<Node> node);
     void SetupPacketSend(ApplicationContainer apps);
-    Ptr<BsmApp> SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node);
     /**
      * Receive a packet.
      * \param socket The receiving socket.
@@ -153,7 +149,7 @@ class RoutingExperiment
     //int m_nSinks{10};                                      //!< Number of sink nodes.
     int m_nWifis{50};                                      //!< Number of nodes.
     std::string m_protocolName{"AODV"};                    //!< Protocol name.
-    double m_txp{7.5};                                     //!< Tx power.
+    double m_txp{30};                                     //!< Tx power.
     bool m_traceMobility{false};                           //!< Enable mobility tracing.
     bool m_netAnim{false};                           //!< Enable mobility tracing.
     bool m_enableMalicious{false};                           //!< Enable malicious nodes.
@@ -171,24 +167,6 @@ class RoutingExperiment
 
 RoutingExperiment::RoutingExperiment()
 {
-}
-
-// Prints actual position and velocity when a course change event occurs
-static void
-CourseChange(std::string foo, Ptr<const MobilityModel> mobility)
-{
-    std::ostringstream oss;
-    uint32_t  nodeId = mobility->GetObject<Node>()->GetId();
-    Vector pos = mobility->GetPosition(); // Get position
-    Vector vel = mobility->GetVelocity(); // Get velocity
-
-    // Prints position and velocities
-    oss << "Node: " << nodeId << " " << Simulator::Now().GetSeconds() << " POS: x=" << pos.x << ", y=" << pos.y << ", z=" << pos.z
-        << "; VEL:" << vel.x << ", y=" << vel.y << ", z=" << vel.z << std::endl;
-    //if(nodeId==19){
-    //    NS_LOG_UNCOND(oss.str());
-    //}
-
 }
 
 static inline std::string
@@ -388,29 +366,6 @@ RoutingExperiment::SetupPacketReceive(Ipv4Address addr, Ptr<Node> node)
     return ns3UdpSocket;
 }
 
-Ptr<BsmApp>
-RoutingExperiment::SetupPacketReceiveCustom(Ipv4Address addr, Ptr<Node> node)
-{
-    InetSocketAddress local(InetSocketAddress(addr, port));
-
-    Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(node, UdpSocketFactory::GetTypeId());
-    ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
-
-
-        Ptr<BsmApp> app = CreateObject<BsmApp>();
-        app->Setup(ns3UdpSocket, local, 64, 1000, DataRate("2048bps"));
-        ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
-    //Ptr<BsmApp> app = CreateObject<BsmApp>();
-    //app->Setup(ns3UdpSocket, local, 64, 1000, DataRate("2048bps"));
-    //ns3UdpSocket->SetRecvCallback(MakeCallback(&RoutingExperiment::ReceivePacket, this));
-    //node->AddApplication(app);
-    //app->SetStartTime(Seconds(start));
-    //app->SetStopTime(Seconds(end));
-
-
-    return app;
-}
-
 void
 RoutingExperiment::CommandSetup(int argc, char** argv)
 {
@@ -589,7 +544,7 @@ RoutingExperiment::Run()
     // blank out the last output file and write the column headers
     m_CSVfileName = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".csv";
     m_csvLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".log.csv";
-    m_reportRealtimeLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".realtimereports.log.csv";
+    m_reportRealtimeLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.realtime.log.csv";
     m_reportLogFile = m_protocolName + "." + std::to_string(m_nWifis) + "." + (m_enableMalicious ? "mal" : "normal") + ".reports.csv";
     std::ofstream out(m_filePathResults + m_CSVfileName);
     out << "SimulationSecond,"
@@ -638,6 +593,7 @@ RoutingExperiment::Run()
     // setting up wifi phy and channel using helpers
     WifiHelper wifi;
     wifi.SetStandard(WIFI_STANDARD_80211b);
+    //wifi.SetStandard(WIFI_STANDARD_80211p);
 
     YansWifiPhyHelper wifiPhy;
     YansWifiChannelHelper wifiChannel;
@@ -659,13 +615,33 @@ RoutingExperiment::Run()
     wifiMac.SetType("ns3::AdhocWifiMac");
     NetDeviceContainer adhocDevices = wifi.Install(wifiPhy, wifiMac, adhocNodes);
 
+
+    //Constant Velocity Mobility
+    MobilityHelper mobility;
+    mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
+    mobility.Install(adhocNodes);
+    for (int i=0 ; i<nWifis; i++)
+    {
+        //Ptr<MobilityModel> mob = CreateObject<ConstantVelocityMobilityModel>();
+        //set initial positions, and velocities
+        NS_LOG_LOGIC ("Setting up mobility for node " << i);
+        NS_LOG_ERROR ("An error happened :(");
+        Ptr<ConstantVelocityMobilityModel> cvmm = DynamicCast<ConstantVelocityMobilityModel> (adhocNodes.Get(i)->GetObject<MobilityModel>());
+        //mob->GetObject<ConstantVelocityMobilityModel>()->SetPosition ( Vector (20+i*180, 20+(i%3)*5, 0));
+        cvmm->SetPosition ( Vector (20+i*40, 20+(i%3)*5, 0));
+        cvmm->SetVelocity ( Vector (30+(i%3)*2,0,0) );
+        //mob->GetObject<ConstantVelocityMobilityModel>()->SetVelocity ( Vector (30+((i+1)%3)*2,0,0) );
+        //adhocNodes.Get(i)->AggregateObject(mob);
+    }
+
     //NS2 Trace file mobility
-    Ns2NodeStart ns2Start = Ns2NodeStart(m_filePath + m_startFile);
+    /*Ns2NodeStart ns2Start = Ns2NodeStart(m_filePath + m_startFile);
     Ns2MobilityHelper ns2 = Ns2MobilityHelper(m_filePath + m_traceFile);
-    ns2.Install();
+    ns2.Install();*/
     // Configure callback for logging
-    Config::Connect("/NodeList/*/$ns3::MobilityModel/CourseChange",
-                    MakeBoundCallback(&CourseChange));
+    //Config::Connect("/NodeList/*/$ns3::MobilityModel/CourseChange",
+    //                MakeBoundCallback(&CourseChange));
+
     /*//OLD Mobility
     MobilityHelper mobilityAdhoc;
     int64_t streamIndex = 0; // used to get consistent mobility across scenarios
@@ -789,7 +765,7 @@ RoutingExperiment::Run()
 
                     lesapAodv::ReportTableEntry newEntry(adhocInterfaces.GetAddress((i - (i % 5))),
                                               adhocInterfaces.GetAddress(i),
-                                              Time(Seconds(ns2Start.GetSimTime())));
+                                              Time(Seconds(300)));
                     newEntry.InsertPrecursor(adhocInterfaces.GetAddress((i - (i % 5))),Simulator::GetMaximumSimulationTime());
 
                     protocol->AddToBlacklist(newEntry);
@@ -801,7 +777,7 @@ RoutingExperiment::Run()
 
 
     //Setting up some logging
-    if(m_protocolName == "AODV"){
+    /*if(m_protocolName == "AODV"){
         for (int i = 0; i < m_nWifis; i++)
         {
             Ptr<aodv::RoutingProtocol> protocol = adhocNodes.Get(i)->GetObject<aodv::RoutingProtocol>();
@@ -817,45 +793,37 @@ RoutingExperiment::Run()
             Simulator::Schedule(Seconds(ns2Start.GetStartTimeForNode(i)), &lesapAodv::RoutingProtocol::SetRouteEnable,protocol,true);
             Simulator::Schedule(Seconds(ns2Start.GetEndTimeForNode(i)), &lesapAodv::RoutingProtocol::SetRouteEnable,protocol,false);
         }
-    }
+    }*/
 
 
 
-    bool useCustomApp = false;
     bool sendAllNodes = false;
 
-    //Add applications
+    // Add applications
     for (int i = 0; i < m_nWifis; i++)
     {
-        if(sendAllNodes){
+        if (sendAllNodes)
+        {
             for (int m = 0; m < m_nWifis; m++)
             {
-                NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for "  << m);
-                if(useCustomApp){
-                    // Address should be the reciever not sender
-                    // Add multiple with new setuppacketrecieve
-                    Ptr<BsmApp> app1 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+                NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for " << m);
 
-                    adhocNodes.Get(m)->AddApplication(app1);
-                    app1->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(m)));
-                    app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(m)));
-                }
-                else
-                {
-                    OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
-                    onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
-                    onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
-                    onoff1.SetConstantRate(DataRate("1280bps"),128);
+                OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+                onoff1.SetAttribute("OnTime",
+                                    StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+                onoff1.SetAttribute("OffTime",
+                                    StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+                onoff1.SetConstantRate(DataRate("1280bps"), 128);
 
-                    Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+                Ptr<Socket> ns3UdpSocket =
+                    SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
-                    AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
-                    onoff1.SetAttribute("Remote", remoteAddress);
+                AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+                onoff1.SetAttribute("Remote", remoteAddress);
 
-                    ApplicationContainer temp = onoff1.Install(adhocNodes.Get(m));
-                    temp.Start(Seconds(ns2Start.GetStartTimeForNode(m)));
-                    temp.Stop(Seconds(ns2Start.GetEndTimeForNode(m)));
-                }
+                ApplicationContainer temp = onoff1.Install(adhocNodes.Get(m));
+                temp.Start(Seconds(10));
+                temp.Stop(Seconds(210));
             }
         }
         else
@@ -864,51 +832,36 @@ RoutingExperiment::Run()
             int k = i + 10;
             j = (j >= m_nWifis) ? (j - m_nWifis) : j;
             k = (k >= m_nWifis) ? (k - m_nWifis) : k;
-            NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for "  << k << " and " << j);
+            NS_LOG_UNCOND("LESAP-AODV Node " << i << " is setting up apps for " << k << " and "
+                                             << j);
 
-            if(useCustomApp){
-                // Address should be the reciever not sender
-                // Add multiple with new setuppacketrecieve
-                Ptr<BsmApp> app1 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
-                Ptr<BsmApp> app2 = SetupPacketReceiveCustom(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
+            OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
+            onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
+            onoff1.SetAttribute("OffTime",
+                                StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
+            onoff1.SetConstantRate(DataRate("1280bps"), 128);
+            // TODO: setup packet send set attr TX?
+            // onoff1.SetAttribute("TxWithAddresses", MakeCallback(&RoutingExperiment::SendPacket,
+            // this));
 
-                //Address sinkAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+            Ptr<Socket> ns3UdpSocket =
+                SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
-                //Ptr<Socket> ns3UdpSocket = Socket::CreateSocket(adhocNodes.Get(i), UdpSocketFactory::GetTypeId());
-                //ns3UdpSocket->TraceConnectWithoutContext("CongestionWindow", MakeCallback(&CwndChange));
+            AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
+            onoff1.SetAttribute("Remote", remoteAddress);
 
-                //Ptr<BsmApp> app = CreateObject<BsmApp>();
-                //app->Setup(ns3UdpSocket, sinkAddress, 1040, 1000, DataRate("1Mbps"));
-                adhocNodes.Get(j)->AddApplication(app1);
-                adhocNodes.Get(k)->AddApplication(app2);
-                app1->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(j)));
-                app2->SetStartTime(Seconds(ns2Start.GetStartTimeForNode(k)));
-                app1->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(j)));
-                app2->SetStopTime(Seconds(ns2Start.GetEndTimeForNode(k)));
-            }else{
-                OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
-                onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
-                onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
-                onoff1.SetConstantRate(DataRate("1280bps"),128);
-                //TODO: setup packet send set attr TX?
-                //onoff1.SetAttribute("TxWithAddresses", MakeCallback(&RoutingExperiment::SendPacket, this));
-
-                Ptr<Socket> ns3UdpSocket = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
-
-                AddressValue remoteAddress(InetSocketAddress(adhocInterfaces.GetAddress(i), port));
-                onoff1.SetAttribute("Remote", remoteAddress);
-
-                ApplicationContainer temp = onoff1.Install(adhocNodes.Get(j));
-                ApplicationContainer temp2 = onoff1.Install(adhocNodes.Get(k));
-                temp.Start(Seconds(std::max(ns2Start.GetStartTimeForNode(j),ns2Start.GetStartTimeForNode(i))));
-                temp2.Start(Seconds(std::max(ns2Start.GetStartTimeForNode(k),ns2Start.GetStartTimeForNode(i))));
-                temp.Stop(Seconds(std::min(ns2Start.GetEndTimeForNode(j),ns2Start.GetEndTimeForNode(i))));
-                temp2.Stop(Seconds(std::min(ns2Start.GetEndTimeForNode(k),ns2Start.GetEndTimeForNode(i))));
-                SetupPacketSend(temp);
-                SetupPacketSend(temp2);
-                //temp.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket, this));
-                //temp2.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket, this));
-            }
+            ApplicationContainer temp = onoff1.Install(adhocNodes.Get(j));
+            ApplicationContainer temp2 = onoff1.Install(adhocNodes.Get(k));
+            temp.Start(Seconds(50));
+            temp2.Start(Seconds(50));
+            temp.Stop(Seconds(150));
+            temp2.Stop(Seconds(150));
+            SetupPacketSend(temp);
+            SetupPacketSend(temp2);
+            // temp.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket,
+            // this));
+            // temp2.Get(0)->TraceConnectWithoutContext("TxWithAddresses",MakeCallback(&RoutingExperiment::SendPacket,
+            // this));
         }
     }
 
@@ -916,12 +869,12 @@ RoutingExperiment::Run()
     ss << nWifis;
     std::string nodes = ss.str();
 
-    //std::stringstream ss2;
-    //ss2 << nodeSpeed;
-    //std::string sNodeSpeed = ss2.str();
+    // std::stringstream ss2;
+    // ss2 << nodeSpeed;
+    // std::string sNodeSpeed = ss2.str();
 
-    //std::stringstream ss3;
-    //ss3 << nodePause;
+    // std::stringstream ss3;
+    // ss3 << nodePause;
     //std::string sNodePause = ss3.str();
 
     std::stringstream ss4;
@@ -956,7 +909,7 @@ RoutingExperiment::Run()
         for (int i = 0; i < m_nWifis; i++)
         {
             //lesapAodv.PrintReportTableAllAt(Simulator::GetMaximumSimulationTime(),wrapper,Time::S);
-            lesapAodv.PrintReportTableAt(Seconds(ns2Start.GetEndTimeForNode(i)), adhocNodes.Get(i),wrapper,Time::S);
+            lesapAodv.PrintReportTableAt(Seconds(300), adhocNodes.Get(i),wrapper,Time::S);
             //lesapAodv.PrintReportTableAllAt(Seconds(ns2Start.GetSimTime()),wrapper,Time::S);
             //Ptr<lesapAodv::RoutingProtocol> protocol =
             //    adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
@@ -969,7 +922,7 @@ RoutingExperiment::Run()
 
     CheckThroughput();
 
-    Simulator::Stop(Seconds(ns2Start.GetSimTime()));
+    Simulator::Stop(Seconds(300));
     Simulator::Run();
 
     if (m_flowMonitor)
