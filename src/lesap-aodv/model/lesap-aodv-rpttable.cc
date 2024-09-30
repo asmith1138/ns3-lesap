@@ -430,7 +430,6 @@ ReportTable::AddReport(ReportTableEntry& rt)
     Purge();
     rt.SetRepCnt(1);
     auto result = m_ipv4AddressEntry.insert(std::make_pair(rt.GetMaliciousAddr(), rt));
-    //TODO: Print to other CSV
     std::string susLogFile =  m_csvLogFile + ".suspects.csv";
     result.first->second.PrintNewBlacklistToCSV(susLogFile, m_nodeId);
     return result.second;
