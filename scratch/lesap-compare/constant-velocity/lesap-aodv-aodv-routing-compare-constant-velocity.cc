@@ -439,21 +439,21 @@ main(int argc, char* argv[])
             experimentAODV50Mal.SetMalicious(true);
             experimentAODV50Mal.Run();
         }
-        if(simsToRun.find("all") != std::string::npos || simsToRun.find("100") != std::string::npos)
+        if(simsToRun.find("all") != std::string::npos || simsToRun.find("75") != std::string::npos)
         {
-            std::cout << "**100 Nodes**" << std::endl;
+            std::cout << "**75 Nodes**" << std::endl;
             RoutingExperiment experimentAODV100;
             experimentAODV100.CommandSetup(argc, argv);
             experimentAODV100.SetProtocol("AODV");
-            experimentAODV100.SetNNodeWTrace("100");
+            experimentAODV100.SetNNodeWTrace("75");
             experimentAODV100.SetMalicious(false);
             experimentAODV100.Run();
 
-            std::cout << "**100 Nodes w/malicious**" << std::endl;
+            std::cout << "**75 Nodes w/malicious**" << std::endl;
             RoutingExperiment experimentAODV100Mal;
             experimentAODV100Mal.CommandSetup(argc, argv);
             experimentAODV100Mal.SetProtocol("AODV");
-            experimentAODV100Mal.SetNNodeWTrace("100");
+            experimentAODV100Mal.SetNNodeWTrace("75");
             experimentAODV100Mal.SetMalicious(true);
             experimentAODV100Mal.Run();
         }
@@ -508,25 +508,25 @@ main(int argc, char* argv[])
                 experimentLESAPAODV50Mal.Run();
             }
         }
-        if (simsToRun.find("all") != std::string::npos || simsToRun.find("100") != std::string::npos)
+        if (simsToRun.find("all") != std::string::npos || simsToRun.find("75") != std::string::npos)
         {
             if (simsToRun.find("norm") != std::string::npos)
             {
-                std::cout << "**100 Nodes**" << std::endl;
+                std::cout << "**75 Nodes**" << std::endl;
                 RoutingExperiment experimentLESAPAODV100;
                 experimentLESAPAODV100.CommandSetup(argc, argv);
                 experimentLESAPAODV100.SetProtocol("LESAP-AODV");
-                experimentLESAPAODV100.SetNNodeWTrace("100");
+                experimentLESAPAODV100.SetNNodeWTrace("75");
                 experimentLESAPAODV100.SetMalicious(false);
                 experimentLESAPAODV100.Run();
             }
             if (simsToRun.find("mal") != std::string::npos)
             {
-                std::cout << "**100 Nodes w/malicious**" << std::endl;
+                std::cout << "**75 Nodes w/malicious**" << std::endl;
                 RoutingExperiment experimentLESAPAODV100Mal;
                 experimentLESAPAODV100Mal.CommandSetup(argc, argv);
                 experimentLESAPAODV100Mal.SetProtocol("LESAP-AODV");
-                experimentLESAPAODV100Mal.SetNNodeWTrace("100");
+                experimentLESAPAODV100Mal.SetNNodeWTrace("75");
                 experimentLESAPAODV100Mal.SetMalicious(true);
                 experimentLESAPAODV100Mal.Run();
             }
@@ -570,6 +570,10 @@ RoutingExperiment::Run()
     reportOut << "Node,Time,ReportsCount,FlaggedIP,Flag,OriginIP,IsBlacklisted,Precursors" << std::endl;
     reportOut.close();
 
+    std::ofstream suspectOut(m_filePathResults + m_reportRealtimeLogFile + ".suspects.csv");
+    suspectOut << "Node,Time,ReportsCount,FlaggedIP,Flag,OriginIP,IsBlacklisted,Precursors" << std::endl;
+    suspectOut.close();
+
     int nWifis = m_nWifis;
 
     //double TotalTime = 200.0;
@@ -595,10 +599,11 @@ RoutingExperiment::Run()
     wifi.SetStandard(WIFI_STANDARD_80211b);
     //wifi.SetStandard(WIFI_STANDARD_80211p);
 
-    YansWifiPhyHelper wifiPhy;
-    YansWifiChannelHelper wifiChannel;
+    YansWifiPhyHelper wifiPhy;// = YansWifiPhyHelper::Default();
+    YansWifiChannelHelper wifiChannel;// = YansWifiChannelHelper::Default();
     wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
     wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+    //wifiChannel.AddPropagationLoss("ns3::LogDistancePropagationLossModel");
     wifiPhy.SetChannel(wifiChannel.Create());
 
     // Add a mac and disable rate control
@@ -885,8 +890,8 @@ RoutingExperiment::Run()
     // tr_name = tr_name + "_" + m_protocolName +"_" + nodes + "nodes_" + sNodeSpeed + "speed_" +
     // sNodePause + "pause_" + sRate + "rate";
 
-    AsciiTraceHelper ascii;
-    Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(m_filePathResults + tr_name + ".tr");
+    //AsciiTraceHelper ascii;
+    //Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(m_filePathResults + tr_name + ".tr");
     //wifiPhy.EnableAsciiAll(osw);
     // AsciiTraceHelper ascii;
     //MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(m_filePathResults + tr_name + ".mob"));
@@ -909,7 +914,7 @@ RoutingExperiment::Run()
         for (int i = 0; i < m_nWifis; i++)
         {
             //lesapAodv.PrintReportTableAllAt(Simulator::GetMaximumSimulationTime(),wrapper,Time::S);
-            lesapAodv.PrintReportTableAt(Seconds(300), adhocNodes.Get(i),wrapper,Time::S);
+            lesapAodv.PrintReportTableAt(Seconds(180), adhocNodes.Get(i),wrapper,Time::S);
             //lesapAodv.PrintReportTableAllAt(Seconds(ns2Start.GetSimTime()),wrapper,Time::S);
             //Ptr<lesapAodv::RoutingProtocol> protocol =
             //    adhocNodes.Get(i)->GetObject<lesapAodv::RoutingProtocol>();
@@ -922,7 +927,7 @@ RoutingExperiment::Run()
 
     CheckThroughput();
 
-    Simulator::Stop(Seconds(300));
+    Simulator::Stop(Seconds(180));
     Simulator::Run();
 
     if (m_flowMonitor)

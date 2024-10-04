@@ -444,6 +444,7 @@ ReportTable::AddReportToBlacklist(ReportTableEntry& rt)
 
     if(!rt.IsBlacklisted()){
         rt.PrintNewBlacklistToCSV(m_csvLogFile, m_nodeId);
+        rt.PrintNewBlacklistToCSV(m_csvLogFile + ".suspects.csv", m_nodeId);
     }
 
     rt.SetFlag(REPORT_VALID);
